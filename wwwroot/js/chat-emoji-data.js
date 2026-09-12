@@ -1,0 +1,165 @@
+// ADDED (2026-08-22): Full emoji dataset for the chat "more emojis" picker.
+// Used by both the message-reaction popup and the "Quick emoji" insert grid
+// in chat.js. Kept as a separate small file (loaded before chat.js) so the
+// picker/search/frequency logic in chat.js stays easy to read.
+//
+// Each entry is [emoji, "search keywords separated by spaces"]. Categories
+// are grouped for the tab strip. This is a curated common-use set (a few
+// hundred emoji) rather than the full multi-thousand Unicode range - that
+// keeps the picker fast, offline-friendly (no external emoji font/CDN) and
+// genuinely usable on a phone screen.
+window.CHAT_EMOJI_CATEGORIES = [
+    {
+        name: 'Smileys', icon: '😀',
+        items: [
+            ['😀', 'grinning happy smile'], ['😃', 'happy smile joy'], ['😄', 'happy smile joy laugh'],
+            ['😁', 'grin happy smile'], ['😆', 'laugh haha lol'], ['😅', 'sweat laugh relief'],
+            ['🤣', 'rofl lol funny'], ['😂', 'joy laugh funny lol'], ['🙂', 'smile slight'],
+            ['🙃', 'upside down silly'], ['😉', 'wink'], ['😊', 'smile blush happy'],
+            ['😇', 'angel innocent halo'], ['🥰', 'love hearts smile'], ['😍', 'love heart eyes'],
+            ['🤩', 'star eyes excited wow'], ['😘', 'kiss love'], ['😗', 'kiss'],
+            ['☺️', 'smile relaxed'], ['😚', 'kiss closed eyes'], ['😙', 'kiss smile'],
+            ['🥲', 'happy tear'], ['😋', 'yum tasty food'], ['😛', 'tongue playful'],
+            ['😜', 'wink tongue silly'], ['🤪', 'zany crazy silly'], ['😝', 'tongue closed eyes'],
+            ['🤑', 'money greedy rich'], ['🤗', 'hug'], ['🤭', 'giggle oops'],
+            ['🤫', 'shh quiet secret'], ['🤔', 'think hmm'], ['🤐', 'zip mouth silent'],
+            ['🤨', 'suspicious eyebrow'], ['😐', 'neutral meh'], ['😑', 'expressionless'],
+            ['😶', 'no mouth silent'], ['😏', 'smirk'], ['😒', 'unamused annoyed'],
+            ['🙄', 'eyeroll annoyed'], ['😬', 'grimace awkward'], ['🤥', 'lying nose'],
+            ['😌', 'relieved calm'], ['😔', 'sad pensive'], ['😪', 'sleepy tired'],
+            ['🤤', 'drool'], ['😴', 'sleep zzz tired'], ['😷', 'mask sick ill'],
+            ['🤒', 'sick fever thermometer'], ['🤕', 'hurt bandage injured'], ['🤢', 'sick nausea'],
+            ['🤮', 'vomit sick'], ['🤧', 'sneeze sick'], ['🥵', 'hot sweat'],
+            ['🥶', 'cold freezing'], ['🥴', 'dizzy woozy'], ['😵', 'dizzy dead'],
+            ['🤯', 'mind blown shocked'], ['🤠', 'cowboy'], ['🥳', 'party celebrate'],
+            ['🥸', 'disguise glasses'], ['😎', 'cool sunglasses'], ['🤓', 'nerd glasses'],
+            ['🧐', 'monocle curious'],
+        ],
+    },
+    {
+        name: 'Sad & Angry', icon: '😢',
+        items: [
+            ['😕', 'confused'], ['🙁', 'sad frown'], ['☹️', 'sad frown'],
+            ['😟', 'worried'], ['😮', 'wow surprised'], ['😯', 'surprised gasp'],
+            ['😲', 'shocked astonished'], ['😳', 'flushed embarrassed'], ['🥺', 'pleading please cute'],
+            ['😦', 'frown open mouth'], ['😧', 'anguished'], ['😨', 'fearful scared'],
+            ['😰', 'anxious sweat scared'], ['😥', 'sad relieved'], ['😢', 'cry sad tear'],
+            ['😭', 'cry sob sad'], ['😱', 'scream scared shocked'], ['😖', 'confounded'],
+            ['😣', 'persevere struggle'], ['😞', 'disappointed sad'], ['😓', 'sweat downcast'],
+            ['😩', 'weary tired'], ['😫', 'tired exhausted'], ['🥱', 'yawn tired bored'],
+            ['😤', 'huff angry proud'], ['😡', 'angry mad'], ['😠', 'angry mad'],
+            ['🤬', 'swearing angry curse'], ['😈', 'devil evil smile'], ['👿', 'devil angry evil'],
+        ],
+    },
+    {
+        name: 'Gestures', icon: '👍',
+        items: [
+            ['👍', 'thumbs up like good yes'], ['👎', 'thumbs down dislike bad no'],
+            ['👌', 'ok okay perfect'], ['🤌', 'pinch italian'], ['🤏', 'small pinch tiny'],
+            ['✌️', 'peace victory'], ['🤞', 'fingers crossed luck hope'], ['🫰', 'snap heart'],
+            ['🤟', 'love you rock'], ['🤘', 'rock horns'], ['🤙', 'call me shaka'],
+            ['👈', 'point left'], ['👉', 'point right'], ['👆', 'point up'], ['👇', 'point down'],
+            ['☝️', 'point up one'], ['✋', 'stop hand high five'], ['🤚', 'raised back hand'],
+            ['🖐️', 'hand five fingers'], ['🖖', 'vulcan spock'], ['👋', 'wave hello bye'],
+            ['🤝', 'handshake deal agree'], ['🙏', 'pray thanks please namaste'], ['✍️', 'write hand'],
+            ['💪', 'muscle strong flex'], ['🦾', 'mechanical arm strong'], ['👏', 'clap applause'],
+            ['🙌', 'praise hooray hands up'], ['👐', 'open hands hug'], ['🤲', 'palms up pray'],
+            ['🫶', 'heart hands love'], ['❤️‍🔥', 'heart fire passion'], ['💅', 'nails glam'],
+        ],
+    },
+    {
+        name: 'Hearts', icon: '❤️',
+        items: [
+            ['❤️', 'love red heart'], ['🧡', 'orange heart love'], ['💛', 'yellow heart love'],
+            ['💚', 'green heart love'], ['💙', 'blue heart love'], ['💜', 'purple heart love'],
+            ['🖤', 'black heart love'], ['🤍', 'white heart love'], ['🤎', 'brown heart love'],
+            ['💔', 'broken heart heartbreak sad'], ['❤️‍🩹', 'mending heart healing'], ['❣️', 'heart exclamation'],
+            ['💕', 'two hearts love'], ['💞', 'revolving hearts love'], ['💓', 'beating heart love'],
+            ['💗', 'growing heart love'], ['💖', 'sparkling heart love'], ['💘', 'cupid heart arrow love'],
+            ['💝', 'gift heart love'], ['💟', 'heart decoration'], ['💯', 'hundred perfect'],
+        ],
+    },
+    {
+        name: 'Animals', icon: '🐶',
+        items: [
+            ['🐶', 'dog puppy'], ['🐱', 'cat kitten'], ['🐭', 'mouse'], ['🐹', 'hamster'],
+            ['🐰', 'rabbit bunny'], ['🦊', 'fox'], ['🐻', 'bear'], ['🐼', 'panda'],
+            ['🐨', 'koala'], ['🐯', 'tiger'], ['🦁', 'lion'], ['🐮', 'cow'],
+            ['🐷', 'pig'], ['🐸', 'frog'], ['🐵', 'monkey'], ['🙈', 'see no evil monkey'],
+            ['🐔', 'chicken'], ['🐧', 'penguin'], ['🐦', 'bird'], ['🦅', 'eagle'],
+            ['🦉', 'owl'], ['🦄', 'unicorn'], ['🐝', 'bee'], ['🦋', 'butterfly'],
+            ['🐢', 'turtle'], ['🐍', 'snake'], ['🐳', 'whale'], ['🐬', 'dolphin'],
+            ['🐟', 'fish'], ['🐙', 'octopus'], ['🐕', 'dog'], ['🐈', 'cat'],
+        ],
+    },
+    {
+        name: 'Food', icon: '🍕',
+        items: [
+            ['🍏', 'green apple'], ['🍎', 'apple'], ['🍊', 'orange'], ['🍋', 'lemon'],
+            ['🍌', 'banana'], ['🍉', 'watermelon'], ['🍇', 'grapes'], ['🍓', 'strawberry'],
+            ['🍒', 'cherry'], ['🍍', 'pineapple'], ['🥭', 'mango'], ['🥑', 'avocado'],
+            ['🍅', 'tomato'], ['🌶️', 'chili spicy'], ['🌽', 'corn'], ['🥕', 'carrot'],
+            ['🍞', 'bread'], ['🧀', 'cheese'], ['🥚', 'egg'], ['🥞', 'pancakes'],
+            ['🍗', 'chicken leg'], ['🍔', 'burger'], ['🍟', 'fries'], ['🍕', 'pizza'],
+            ['🌭', 'hotdog'], ['🥪', 'sandwich'], ['🌮', 'taco'], ['🌯', 'burrito'],
+            ['🍜', 'noodles ramen soup'], ['🍲', 'stew curry'], ['🍛', 'curry rice'], ['🍣', 'sushi'],
+            ['🍰', 'cake dessert'], ['🎂', 'birthday cake'], ['🍩', 'donut'], ['🍪', 'cookie'],
+            ['🍫', 'chocolate'], ['🍬', 'candy'], ['🍭', 'lollipop'], ['🍦', 'ice cream'],
+            ['☕', 'coffee tea'], ['🍵', 'tea'], ['🧋', 'bubble tea'], ['🥤', 'drink soda'],
+            ['🍺', 'beer'], ['🍻', 'cheers beer'], ['🥂', 'cheers champagne toast'], ['🍾', 'champagne celebrate'],
+        ],
+    },
+    {
+        name: 'Activities', icon: '🎉',
+        items: [
+            ['🎉', 'party celebrate confetti'], ['🎊', 'confetti party'], ['🎈', 'balloon party'],
+            ['🎁', 'gift present'], ['🏆', 'trophy win champion'], ['🥇', 'gold medal first'],
+            ['🥈', 'silver medal second'], ['🥉', 'bronze medal third'], ['⚽', 'football soccer'],
+            ['🏀', 'basketball'], ['🏏', 'cricket'], ['🏸', 'badminton'],
+            ['🎯', 'target dart goal'], ['🎮', 'game controller gaming'], ['🎲', 'dice game'],
+            ['🎵', 'music note'], ['🎶', 'music notes'], ['🎤', 'mic karaoke sing'],
+            ['🎧', 'headphones music'], ['🎬', 'movie clapper film'], ['📷', 'camera photo'],
+            ['🎨', 'art paint palette'], ['✈️', 'flight plane travel'], ['🚗', 'car'],
+            ['🚀', 'rocket launch space'], ['🏖️', 'beach vacation'], ['🎓', 'graduation cap education'],
+        ],
+    },
+    {
+        name: 'Objects', icon: '💡',
+        items: [
+            ['💡', 'idea bulb light'], ['🔥', 'fire lit hot great'], ['⭐', 'star'],
+            ['🌟', 'glowing star'], ['✨', 'sparkles shiny'], ['⚡', 'lightning bolt fast'],
+            ['🌈', 'rainbow'], ['☀️', 'sun sunny'], ['🌙', 'moon night'],
+            ['⏰', 'alarm clock time reminder'], ['⏳', 'hourglass time waiting'], ['📅', 'calendar date'],
+            ['📌', 'pin note important'], ['📎', 'paperclip attach'], ['📝', 'note memo write'],
+            ['📄', 'document file page'], ['📁', 'folder file'], ['📦', 'package box delivery'],
+            ['📈', 'chart up growth profit'], ['📉', 'chart down loss'], ['💰', 'money bag rich'],
+            ['💵', 'money cash dollar'], ['💳', 'credit card payment'], ['🧾', 'receipt bill invoice'],
+            ['📱', 'phone mobile'], ['💻', 'laptop computer'], ['🖥️', 'desktop computer'],
+            ['📧', 'email mail'], ['🔍', 'search magnifier'], ['🔒', 'lock secure'],
+            ['🔓', 'unlock open'], ['🔑', 'key access'], ['🛠️', 'tools fix repair'],
+            ['⚙️', 'settings gear'], ['🧠', 'brain smart idea'], ['👀', 'eyes look watch'],
+        ],
+    },
+    {
+        name: 'Symbols', icon: '✅',
+        items: [
+            ['✅', 'check done ok correct yes'], ['❌', 'cross wrong no cancel'], ['❓', 'question confused'],
+            ['❗', 'exclamation important'], ['⁉️', 'confused surprised'], ['‼️', 'important urgent'],
+            ['⚠️', 'warning caution alert'], ['🚫', 'no forbidden banned'], ['🔴', 'red circle stop'],
+            ['🟠', 'orange circle'], ['🟡', 'yellow circle'], ['🟢', 'green circle go'],
+            ['🔵', 'blue circle'], ['🟣', 'purple circle'], ['⚪', 'white circle'],
+            ['⚫', 'black circle'], ['🔺', 'red triangle up'], ['🔻', 'red triangle down'],
+            ['♻️', 'recycle repeat'], ['🔄', 'refresh reload sync'], ['🆕', 'new'],
+            ['🆗', 'ok'], ['🆓', 'free'], ['💬', 'speech chat bubble message'],
+            ['💭', 'thought bubble think'], ['🔔', 'bell notification'], ['🔕', 'bell off mute silent'],
+        ],
+    },
+    {
+        name: 'Flags', icon: '🚩',
+        items: [
+            ['🇮🇳', 'india flag'], ['🇺🇸', 'usa america flag'], ['🇬🇧', 'uk britain flag'],
+            ['🇦🇪', 'uae dubai flag'], ['🇨🇦', 'canada flag'], ['🇦🇺', 'australia flag'],
+            ['🚩', 'flag red'], ['🏁', 'checkered flag finish'], ['🎌', 'crossed flags'],
+        ],
+    },
+];

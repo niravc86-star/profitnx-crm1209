@@ -1,0 +1,15 @@
+{
+  "Notifications": {
+    "Crm": true,
+    "Email": false,
+    "WhatsApp": true,
+    "WhatsAppDefaultNumber": "",
+    "WhatsAppUseApp": false
+  },
+  "Implementation": {
+    "FeedbackReceiverEmail": "support@profitnx.com",
+    "ReminderMinutes": "15",
+    "PublicBaseUrl": "",
+    "NotifyAllAdmins": true
+  }
+}

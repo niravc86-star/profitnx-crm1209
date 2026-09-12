@@ -1,0 +1,894 @@
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@inject ProfitNx.CRM.Services.INotificationService NotificationService
+@inject ProfitNx.CRM.Services.IChatService ChatService
+@using System.Security.Claims
+@{
+    var currentRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+    var currentName = User.Identity?.Name ?? "User";
+    var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    var isLoggedIn = User.Identity?.IsAuthenticated ?? false;
+    var isAdmin = currentRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+    var isSupport = currentRole.Equals("Support", StringComparison.OrdinalIgnoreCase);
+    var isPartner = currentRole.Equals("Partner", StringComparison.OrdinalIgnoreCase);
+    var isSupportHead = currentRole.Equals("SupportHead", StringComparison.OrdinalIgnoreCase);
+    var canNotifications = isLoggedIn && await PermissionService.HasPermissionAsync(User, "notifications.view");
+    var canManageNotifications = isLoggedIn && await PermissionService.HasPermissionAsync(User, "notifications.send");
+    var canChat = isLoggedIn && await PermissionService.HasPermissionAsync(User, "chat.access");
+    var routeController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var isOnChatPage = routeController.Equals("Chat", StringComparison.OrdinalIgnoreCase);
+    var showChatFab = canChat && !isOnChatPage;
+    var notificationCount = 0;
+    if (canNotifications)
+    {
+        try { notificationCount = await NotificationService.GetUnreadCountForUserAsync(currentUserId, currentName, currentRole); }
+        catch { notificationCount = 0; }
+    }
+    var notificationBadgeStyle = notificationCount > 0 ? string.Empty : "display:none";
+    var chatUnreadCount = 0;
+    if (canChat)
+    {
+        try { chatUnreadCount = await ChatService.GetUnreadCountAsync(currentUserId); }
+        catch { chatUnreadCount = 0; }
+    }
+    var chatBadgeStyle = chatUnreadCount > 0 ? string.Empty : "display:none";
+    var profileInitial = string.IsNullOrWhiteSpace(currentName) ? "U" : currentName[..1].ToUpperInvariant();
+    // Credential-wise theme: for a signed-in user this comes from their saved account
+    // preference (claim set at login / on theme change), so it is correct even on a
+    // brand-new device before localStorage has anything saved.
+    var serverTheme = isLoggedIn ? (User.FindFirst("ThemePreference")?.Value ?? "classic") : string.Empty;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1330" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="ProfitNx CRM" />
+    <meta name="msapplication-TileColor" content="#0b1330" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ProfitNx CRM" />
+    <title>@ViewData["Title"] - ProfitNx CRM</title>
+    <script>
+    // Apply the correct theme before first paint, so switching themes (or logging in
+    // on a new device) never causes a flash of the wrong colors on page load.
+    // Priority: this account's saved server-side preference (signed in) > this browser's
+    // last known theme (cookie, works pre-login too) > localStorage.
+    (function(){
+        try{
+            var server = @Html.Raw(string.IsNullOrWhiteSpace(serverTheme) ? "''" : "'" + serverTheme.Replace("'", "") + "'");
+            var cookieMatch = document.cookie.match(/(?:^|; )pnx_theme=([^;]+)/);
+            var cookie = cookieMatch ? decodeURIComponent(cookieMatch[1]) : '';
+            var stored = localStorage.getItem('profitnx-app-theme') || '';
+            var t = server || cookie || stored || 'classic';
+            if (t && t !== 'classic') document.documentElement.setAttribute('data-app-theme', t);
+            else document.documentElement.removeAttribute('data-app-theme');
+            if (t === 'midnight') document.documentElement.setAttribute('data-dark-mode', '1');
+            else document.documentElement.removeAttribute('data-dark-mode');
+            if (t) localStorage.setItem('profitnx-app-theme', t);
+
+            var fsCookieMatch = document.cookie.match(/(?:^|; )pnx_font_style=([^;]+)/);
+            var fontStyle = (fsCookieMatch ? decodeURIComponent(fsCookieMatch[1]) : '') || localStorage.getItem('profitnx-app-font-style') || 'default';
+            if (fontStyle && fontStyle !== 'default') document.documentElement.setAttribute('data-app-font-style', fontStyle);
+
+            var fzCookieMatch = document.cookie.match(/(?:^|; )pnx_font_size=([^;]+)/);
+            var fontSize = (fzCookieMatch ? decodeURIComponent(fzCookieMatch[1]) : '') || localStorage.getItem('profitnx-app-font-size') || 'md';
+            if (fontSize && fontSize !== 'md') document.documentElement.setAttribute('data-app-font-scale', fontSize);
+        }catch(e){}
+    })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Merriweather:wght@400;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="~/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="~/icons/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="~/icons/icon-144.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="~/icons/favicon-32.png" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/professional-ui.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/premium-2026.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/crm-reference-ui.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/corporate-ui-2026.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/crm-polish-2026-07-29.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/new-ui-reference-2026-07-29.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/final-ui-correction-2026-07-30.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/chat-system.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/quickfix-sidebar-search-2026-08-02.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/quickfix-task-flash-2026-08-05.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/app-theme-switcher.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/live-dashboard.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/login-report.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/mobile-fix-2026-08-11.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-implementation-parity-2026-08-12.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/required-field-highlight.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-readability-guard-2026-08-17.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-contrast-fix-2026-08-18.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-readability-guard-2026-08-22.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-report-hero-contrast-fix-2026-08-24.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-header-chat-contrast-fix-2026-08-24.css" rel="stylesheet" asp-append-version="true" />
+    <!-- GLOBAL root-cause fix for Premium Elite / Midnight (Dark) contrast — see file header.
+         Always keep this include LAST so it wins over every earlier partial patch above. -->
+    <link href="~/css/theme-global-dark-fix-FINAL-2026-08-24.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-3d-dashboard-and-hover-polish-2026-08-24.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-notification-logs-visibility-2026-08-27.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-premium-heading-standard-2026-08-25.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-elite-midnight-audit-FINAL-2026-08-27.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-followup-button-contrast-2026-09-01.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/inquiry-action-panel-2026-09-01.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-ui-hotfix-2026-09-01.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/enterprise-ui-2026-09-08.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/action-column-freeze-fix-2026-09-10.css" rel="stylesheet" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="@(isLoggedIn ? "crm-app-body" : "crm-public-body")">
+@if (isLoggedIn)
+{
+    var canDashboard = await PermissionService.HasPermissionAsync(User, "dashboard.view");
+    // dashboard.live is a fully separate right from dashboard.view — it must not
+    // fall back to canDashboard, otherwise Support/SupportHead (who have Dashboard
+    // View but not Live Dashboard) still see the Live Dashboard menu, and turning
+    // Dashboard View off for a role incorrectly hides Live Dashboard too.
+    var canLiveDashboard = await PermissionService.HasPermissionAsync(User, "dashboard.live");
+    var canInquiryView = await PermissionService.HasPermissionAsync(User, "inquiry.view");
+    var canInquiry = canInquiryView;
+    var canCreateInquiry = await PermissionService.HasPermissionAsync(User, "inquiry.create")
+        || await PermissionService.HasPermissionAsync(User, "inquiry.create.support");
+    var canReportOverview = await PermissionService.HasPermissionAsync(User, "reports.view");
+    var canReportProduct = await PermissionService.HasPermissionAsync(User, "reports.product");
+    var canReportPartner = await PermissionService.HasPermissionAsync(User, "reports.partner");
+    var canReportUser = await PermissionService.HasPermissionAsync(User, "reports.user");
+    var canReportSupport = await PermissionService.HasPermissionAsync(User, "reports.support");
+    var canReportAdmin = await PermissionService.HasPermissionAsync(User, "reports.admin");
+    var canReportDetailed = await PermissionService.HasPermissionAsync(User, "reports.detailed");
+    var canReportAi = await PermissionService.HasPermissionAsync(User, "reports.ai");
+    var canReportSource = await PermissionService.HasPermissionAsync(User, "reports.source");
+    var canReportTraining = await PermissionService.HasPermissionAsync(User, "reports.training");
+    var canReports = canReportOverview || canReportProduct || canReportPartner || canReportUser || canReportSupport || canReportAdmin || canReportDetailed || canReportAi || canReportSource || canReportTraining;
+    var canUsers = await PermissionService.HasPermissionAsync(User, "users.view");
+    var canLoginReport = await PermissionService.HasPermissionAsync(User, "loginreport.view") || currentRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+    var canRoles = await PermissionService.HasPermissionAsync(User, "roles.view");
+    var canPermissions = await PermissionService.HasPermissionAsync(User, "permissions.manage");
+    var canUserWisePermissions = await PermissionService.HasPermissionAsync(User, "userpermissions.manage");
+    var canPartnerMaster = await PermissionService.HasPermissionAsync(User, "dealer.view");
+    var canProduct = await PermissionService.HasPermissionAsync(User, "product.view");
+    var canScheme = await PermissionService.HasPermissionAsync(User, "scheme.view");
+    var canStock = await PermissionService.HasPermissionAsync(User, "stock.view");
+    var canStockAmount = await PermissionService.HasPermissionAsync(User, "stock.amountreport.view");
+    var canStockBill = await PermissionService.HasPermissionAsync(User, "stock.bill.create");
+    var canCommission = await PermissionService.HasPermissionAsync(User, "commission.view");
+    var canSettings = await PermissionService.HasPermissionAsync(User, "settings.view");
+    var canImplementation = await PermissionService.HasPermissionAsync(User, "implementation.view");
+    var canImplementationCreate = await PermissionService.HasPermissionAsync(User, "implementation.create");
+    var canImplementationReminder = await PermissionService.HasPermissionAsync(User, "implementation.reminder.view");
+    var canSoldImplementationSetup = await PermissionService.HasPermissionAsync(User, "implementation.sold.setup");
+    var canShortcuts = await PermissionService.HasPermissionAsync(User, "shortcuts.view");
+    var canHelp = await PermissionService.HasPermissionAsync(User, "help.view");
+    var canLock = isLoggedIn && await PermissionService.HasPermissionAsync(User, "lock.screen.use");
+    var canAttention = await PermissionService.HasPermissionAsync(User, "inquiry.attention.alert.view");
+    var achievementMessage = TempData["AchievementFlash"]?.ToString() ?? string.Empty;
+    var homeUrl = canDashboard ? Url.Action("Index", "Dashboard")
+        : canLiveDashboard ? Url.Action("Live", "Dashboard")
+        : canInquiryView ? Url.Action("Index", "Inquiry")
+        : canCreateInquiry ? Url.Action("Create", "Inquiry")
+        : canReportOverview ? Url.Action("Index", "Reports")
+        : canReportProduct ? Url.Action("Index", "Reports", new { reportType = "product" })
+        : canReportPartner ? Url.Action("Index", "Reports", new { reportType = "partner" })
+        : canReportUser ? Url.Action("Index", "Reports", new { reportType = "user" })
+        : canReportSupport ? Url.Action("Index", "Reports", new { reportType = "support" })
+        : canReportAdmin ? Url.Action("Index", "Reports", new { reportType = "admin" })
+        : canReportDetailed ? Url.Action("Index", "Reports", new { reportType = "detailed" })
+        : canReportAi ? Url.Action("Index", "Reports", new { reportType = "ai" })
+        : canImplementation ? Url.Action("Index", "Implementation")
+        : canNotifications ? Url.Action("Index", "Notifications")
+        : canUsers ? Url.Action("Users", "Admin")
+        : canRoles ? Url.Action("Index", "Role")
+        : canPermissions ? Url.Action("Permissions", "Role")
+        : canUserWisePermissions ? Url.Action("UserWiseRights", "Role")
+        : canSettings ? Url.Action("Index", "Settings")
+        : canPartnerMaster ? Url.Action("Index", "Dealer")
+        : canProduct ? Url.Action("Index", "Product")
+        : canStock ? Url.Action("Index", "Stock")
+        : canStockAmount ? Url.Action("AmountReport", "Stock")
+        : canStockBill ? Url.Action("CreateBill", "Stock")
+        : canScheme ? Url.Action("Index", "Scheme")
+        : canCommission ? Url.Action("Index", "Commission")
+        : Url.Action("Logout", "Account");
+
+    <div class="app-shell"
+         data-crm-shell
+         data-attention-enabled="@(canAttention ? "true" : "false")"
+         data-attention-endpoint="@Url.Action("PendingAttention", "Inquiry")"
+         data-implementation-reminder-enabled="@(canImplementationReminder ? "true" : "false")"
+         data-implementation-reminder-endpoint="@Url.Action("UpcomingReminders", "Implementation")"
+         data-achievement-message="@achievementMessage">
+        <aside class="side-rail" id="crmSidebar" aria-label="CRM navigation">
+            <a class="brand-block" href="@homeUrl" data-bs-toggle="tooltip" data-bs-title="Open first permitted CRM page">
+                <div class="brand-logo-wrap"><img src="/img-profit-logo.png" alt="ProfitNx" /></div>
+                <div><div class="brand-name">ProfitNx</div><div class="brand-caption">CRM System</div></div>
+            </a>
+            <button type="button" class="sidebar-collapse-toggle" id="sidebarCollapseToggle"
+                    aria-controls="crmSidebar" aria-expanded="true" aria-label="Collapse sidebar"
+                    data-bs-toggle="tooltip" data-bs-title="Collapse sidebar" data-bs-placement="right">
+                <i class="bi bi-chevron-double-left" aria-hidden="true"></i>
+            </button>
+            <div class="sidebar-overline"><span></span> Business Workspace</div>
+            <div class="sidebar-search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" id="sidebarMenuSearch" placeholder="Search menu..." autocomplete="off" aria-label="Search navigation menu" />
+                <button type="button" class="sidebar-search-clear d-none" id="sidebarMenuSearchClear" title="Clear search"><i class="bi bi-x-circle-fill"></i></button>
+            </div>
+            <nav class="menu-list premium-menu-list" aria-label="Main navigation">
+                <div class="menu-group">
+                    <div class="menu-group-label"><i class="bi bi-grid-1x2-fill"></i><span>Workspace</span></div>
+                    @* Single Dashboard menu entry. Live Dashboard remains at /Dashboard/Live for bookmarks
+                       and is linked from inside the main Dashboard when the user has dashboard.live. *@
+                    @if (canDashboard)
+                    {
+                        <a asp-controller="Dashboard" asp-action="Index" class="menu-link" data-shortcut="Alt+D" data-bs-toggle="tooltip" data-bs-title="Open dashboard (Alt+D)"><span class="menu-icon"><i class="bi bi-speedometer2"></i></span><span class="menu-text">Dashboard</span><kbd class="menu-shortcut">D</kbd></a>
+                    }
+                    else if (canLiveDashboard)
+                    {
+                        <a asp-controller="Dashboard" asp-action="Live" class="menu-link" data-shortcut="Alt+D" data-bs-toggle="tooltip" data-bs-title="Open dashboard (Alt+D)"><span class="menu-icon"><i class="bi bi-speedometer2"></i></span><span class="menu-text">Dashboard</span><kbd class="menu-shortcut">D</kbd></a>
+                    }
+                    @if (canInquiry)
+                    {
+                        <a asp-controller="Inquiry" asp-action="Index" class="menu-link" data-shortcut="Alt+I" data-bs-toggle="tooltip" data-bs-title="Open inquiry workspace (Alt+I)"><span class="menu-icon"><i class="bi bi-kanban-fill"></i></span><span class="menu-text">@GetInquiryMenu(currentRole)</span><kbd class="menu-shortcut">I</kbd></a>
+                    }
+                    @if (canCreateInquiry)
+                    {
+                        <a asp-controller="Inquiry" asp-action="Create" class="menu-link primary-menu-action" data-shortcut="Alt+N" data-bs-toggle="tooltip" data-bs-title="Create inquiry (Alt+N)"><span class="menu-icon"><i class="bi bi-plus-lg"></i></span><span class="menu-text">@(isSupport ? "Send Inquiry" : "New Inquiry")</span><kbd class="menu-shortcut">N</kbd></a>
+                    }
+                    @if (canNotifications)
+                    {
+                        <a asp-controller="Notifications" asp-action="Index" class="menu-link with-badge" data-shortcut="Alt+B" data-bs-toggle="tooltip" data-bs-title="Open your notifications (Alt+B)"><span class="menu-icon"><i class="bi bi-bell-fill"></i></span><span class="menu-text">@(canManageNotifications ? "Notifications" : "My Alerts")</span><b class="notify-badge" data-notification-badge style="@notificationBadgeStyle">@(notificationCount > 99 ? "99+" : notificationCount)</b><kbd class="menu-shortcut">B</kbd></a>
+                    }
+                    @if (canChat)
+                    {
+                        <a asp-controller="Chat" asp-action="Index" class="menu-link with-badge" data-shortcut="Alt+X" data-bs-toggle="tooltip" data-bs-title="Open Chat (Alt+X)"><span class="menu-icon"><i class="bi bi-chat-dots-fill"></i></span><span class="menu-text">Chat</span><b class="notify-badge" data-chat-badge style="@chatBadgeStyle">@(chatUnreadCount > 99 ? "99+" : chatUnreadCount)</b><kbd class="menu-shortcut">X</kbd></a>
+                    }
+                </div>
+
+                @if (canImplementation || canImplementationCreate)
+                {
+                    <div class="menu-group">
+                        <div class="menu-group-label"><i class="bi bi-diagram-3-fill"></i><span>Customer Success</span></div>
+                        @if (canImplementation)
+                        {
+                            <a asp-controller="Implementation" asp-action="Index" class="menu-link implementation-menu-link" data-shortcut="Alt+K" data-bs-toggle="tooltip" data-bs-title="Implementation and training control center (Alt+K)"><span class="menu-icon"><i class="bi bi-mortarboard-fill"></i></span><span class="menu-text">Implementation & Training</span><kbd class="menu-shortcut">K</kbd></a>
+                        }
+                        @if (canImplementationCreate)
+                        {
+                            <a asp-controller="Implementation" asp-action="Create" class="menu-link sub-menu-link" data-shortcut="Alt+J" data-bs-toggle="tooltip" data-bs-title="Create implementation / training record (Alt+J)"><span class="menu-icon"><i class="bi bi-person-workspace"></i></span><span class="menu-text">New Implementation / Training</span><kbd class="menu-shortcut">J</kbd></a>
+                        }
+                    </div>
+                }
+
+                @if (canReports)
+                {
+                    <div class="menu-group">
+                        <div class="menu-group-label"><i class="bi bi-graph-up-arrow"></i><span>Intelligence</span></div>
+                        @if (canReportOverview)
+                        {
+                            <a asp-controller="Reports" asp-action="Index" class="menu-link" data-shortcut="Alt+R" data-bs-toggle="tooltip" data-bs-title="Open reports (Alt+R)"><span class="menu-icon"><i class="bi bi-bar-chart-fill"></i></span><span class="menu-text">@GetReportMenu(currentRole)</span><kbd class="menu-shortcut">R</kbd></a>
+                        }
+                        @if (canReportProduct) { <a asp-controller="Reports" asp-action="Index" asp-route-reportType="product" class="menu-link sub-menu-link" data-shortcut="Alt+1" data-bs-toggle="tooltip" data-bs-title="Product and version sold report (Alt+1)"><span class="menu-icon"><i class="bi bi-box-seam"></i></span><span class="menu-text">Product / Version Sold</span><kbd class="menu-shortcut">1</kbd></a> }
+                        @if (canReportPartner) { <a asp-controller="Reports" asp-action="Index" asp-route-reportType="partner" class="menu-link sub-menu-link" data-shortcut="Alt+2" data-bs-toggle="tooltip" data-bs-title="Partner performance report (Alt+2)"><span class="menu-icon"><i class="bi bi-building"></i></span><span class="menu-text">Partner Performance</span><kbd class="menu-shortcut">2</kbd></a> }
+                        @if (canReportUser) { <a asp-controller="Reports" asp-action="Index" asp-route-reportType="user" class="menu-link sub-menu-link" data-shortcut="Alt+3" data-bs-toggle="tooltip" data-bs-title="User performance report (Alt+3)"><span class="menu-icon"><i class="bi bi-person-badge"></i></span><span class="menu-text">User Performance</span><kbd class="menu-shortcut">3</kbd></a> }
+                        @if (canReportSupport) { <a asp-controller="Reports" asp-action="Index" asp-route-reportType="support" class="menu-link sub-menu-link" data-shortcut="Alt+4" data-bs-toggle="tooltip" data-bs-title="Support team performance report (Alt+4)"><span class="menu-icon"><i class="bi bi-headset"></i></span><span class="menu-text">Support Team Performance</span><kbd class="menu-shortcut">4</kbd></a> }
+                        @if (canReportAdmin) { <a asp-controller="Reports" asp-action="Index" asp-route-reportType="admin" class="menu-link sub-menu-link" data-shortcut="Alt+5" data-bs-toggle="tooltip" data-bs-title="Admin performance report (Alt+5)"><span class="menu-icon"><i class="bi bi-shield-check"></i></span><span class="menu-text">Admin Performance</span><kbd class="menu-shortcut">5</kbd></a> }
+                        @if (canReportDetailed) { <a asp-controller="Reports" asp-action="Index" asp-route-reportType="detailed" class="menu-link sub-menu-link" data-shortcut="Alt+6" data-bs-toggle="tooltip" data-bs-title="Detailed pipeline grid (Alt+6)"><span class="menu-icon"><i class="bi bi-table"></i></span><span class="menu-text">Detailed Pipeline Grid</span><kbd class="menu-shortcut">6</kbd></a> }
+                        @if (canReportSource) { <a asp-controller="Reports" asp-action="Index" asp-route-reportType="source" class="menu-link sub-menu-link" data-bs-toggle="tooltip" data-bs-title="Total inquiry list, source wise with forward, sold, pending and follow-up counts"><span class="menu-icon"><i class="bi bi-signpost-split-fill"></i></span><span class="menu-text">Total Inquiry List (Source Wise)</span></a> }
+                        @if (canReportTraining) { <a asp-controller="Reports" asp-action="Index" asp-route-reportType="training" class="menu-link sub-menu-link" data-bs-toggle="tooltip" data-bs-title="Implementation / training completed, paused, reopened and paid training report"><span class="menu-icon"><i class="bi bi-mortarboard-fill"></i></span><span class="menu-text">Implementation / Training Report</span></a> }
+                        @if (canReportAi)
+                        {
+                            <div class="ai-menu-heading"><span><i class="bi bi-cpu-fill"></i> AI Based Reports</span></div>
+                            <a asp-controller="Reports" asp-action="Index" asp-route-reportType="ai" class="menu-link sub-menu-link ai-menu-link" data-shortcut="Alt+A" data-bs-toggle="tooltip" data-bs-title="AI business summary (Alt+A)"><span class="menu-icon"><i class="bi bi-stars"></i></span><span class="menu-text">AI Business Summary</span><span class="menu-mini-badge">AI</span><kbd class="menu-shortcut">A</kbd></a>
+                            <a asp-controller="Reports" asp-action="Index" asp-route-reportType="ai-followup" class="menu-link sub-menu-link ai-menu-link" data-shortcut="Alt+7" data-bs-toggle="tooltip" data-bs-title="AI follow-up priority report (Alt+7)"><span class="menu-icon"><i class="bi bi-alarm-fill"></i></span><span class="menu-text">Follow-up Priority</span><kbd class="menu-shortcut">7</kbd></a>
+                            <a asp-controller="Reports" asp-action="Index" asp-route-reportType="ai-conversion" class="menu-link sub-menu-link ai-menu-link" data-shortcut="Alt+8" data-bs-toggle="tooltip" data-bs-title="AI conversion coach report (Alt+8)"><span class="menu-icon"><i class="bi bi-funnel-fill"></i></span><span class="menu-text">Conversion Coach</span><kbd class="menu-shortcut">8</kbd></a>
+                            <a asp-controller="Reports" asp-action="Index" asp-route-reportType="ai-focus" class="menu-link sub-menu-link ai-menu-link" data-shortcut="Alt+9" data-bs-toggle="tooltip" data-bs-title="AI product and partner focus report (Alt+9)"><span class="menu-icon"><i class="bi bi-bullseye"></i></span><span class="menu-text">Growth Focus</span><kbd class="menu-shortcut">9</kbd></a>
+                        }
+                    </div>
+                }
+
+                @if (canUsers || canRoles || canPermissions || canUserWisePermissions || canSettings)
+                {
+                    <div class="menu-group">
+                        <div class="menu-group-label"><i class="bi bi-shield-lock-fill"></i><span>Administration</span></div>
+                        @if (canUsers) { <a asp-controller="Admin" asp-action="Users" class="menu-link" data-shortcut="Alt+U" data-bs-toggle="tooltip" data-bs-title="Manage users (Alt+U)"><span class="menu-icon"><i class="bi bi-people-fill"></i></span><span class="menu-text">Users</span><kbd class="menu-shortcut">U</kbd></a> }
+                        @if (canLoginReport) { <a asp-controller="Admin" asp-action="LoginReport" class="menu-link" data-bs-toggle="tooltip" data-bs-title="Login history and live users"><span class="menu-icon"><i class="bi bi-clock-history"></i></span><span class="menu-text">Login Report</span><span class="menu-live-badge" data-live-users-badge style="display:none">0</span></a> }
+                        @if (canRoles) { <a asp-controller="Role" asp-action="Index" class="menu-link" data-shortcut="Alt+L" data-bs-toggle="tooltip" data-bs-title="Manage CRM roles (Alt+L)"><span class="menu-icon"><i class="bi bi-person-gear"></i></span><span class="menu-text">Roles</span><kbd class="menu-shortcut">L</kbd></a> }
+                        @if (canPermissions) { <a asp-controller="Role" asp-action="Permissions" class="menu-link sub-menu-link" data-shortcut="Alt+W" data-bs-toggle="tooltip" data-bs-title="Set role-wise inherited permissions (Alt+W)"><span class="menu-icon"><i class="bi bi-shield-check"></i></span><span class="menu-text">Role Wise Rights</span><kbd class="menu-shortcut">W</kbd></a> }
+                        @if (canUserWisePermissions) { <a asp-controller="Role" asp-action="UserWiseRights" class="menu-link sub-menu-link" data-shortcut="Alt+Y" data-bs-toggle="tooltip" data-bs-title="Set individual user overrides (Alt+Y)"><span class="menu-icon"><i class="bi bi-person-check"></i></span><span class="menu-text">User Wise Rights</span><kbd class="menu-shortcut">Y</kbd></a> }
+                        @if (canSettings) { <a asp-controller="Settings" asp-action="Index" class="menu-link" data-shortcut="Alt+G" data-bs-toggle="tooltip" data-bs-title="CRM settings (Alt+G)"><span class="menu-icon"><i class="bi bi-gear-fill"></i></span><span class="menu-text">Settings</span><kbd class="menu-shortcut">G</kbd></a> }
+                    </div>
+                }
+
+                @if (canPartnerMaster || canProduct || canStock || canStockAmount || canStockBill || canScheme || canCommission)
+                {
+                    <div class="menu-group">
+                        <div class="menu-group-label"><i class="bi bi-gem"></i><span>Business Masters</span></div>
+                        @if (canPartnerMaster) { <a asp-controller="Dealer" asp-action="Index" class="menu-link" data-shortcut="Alt+T" data-bs-toggle="tooltip" data-bs-title="Partner master (Alt+T)"><span class="menu-icon"><i class="bi bi-building-fill"></i></span><span class="menu-text">Partners</span><kbd class="menu-shortcut">T</kbd></a> }
+                        @if (canProduct) { <a asp-controller="Product" asp-action="Index" class="menu-link" data-shortcut="Alt+P" data-bs-toggle="tooltip" data-bs-title="Direct and partner product prices (Alt+P)"><span class="menu-icon"><i class="bi bi-box-seam-fill"></i></span><span class="menu-text">Products</span><kbd class="menu-shortcut">P</kbd></a> }
+                        @if (canStock) { <a asp-controller="Stock" asp-action="Index" class="menu-link" data-shortcut="Alt+S" data-bs-toggle="tooltip" data-bs-title="Partner stock (Alt+S)"><span class="menu-icon"><i class="bi bi-layers-fill"></i></span><span class="menu-text">Stock</span><kbd class="menu-shortcut">S</kbd></a> }
+                        @if (canStockAmount) { <a asp-controller="Stock" asp-action="AmountReport" class="menu-link sub-menu-link" data-shortcut="Alt+M" data-bs-toggle="tooltip" data-bs-title="Partner stock amount report (Alt+M)"><span class="menu-icon"><i class="bi bi-clipboard-data-fill"></i></span><span class="menu-text">Stock Amount Report</span><kbd class="menu-shortcut">M</kbd></a> }
+                        @if (canStockBill) { <a asp-controller="Stock" asp-action="CreateBill" class="menu-link sub-menu-link" data-shortcut="Alt+C" data-bs-toggle="tooltip" data-bs-title="Create partner stock bill (Alt+C)"><span class="menu-icon"><i class="bi bi-receipt-cutoff"></i></span><span class="menu-text">Create Stock Bill</span><kbd class="menu-shortcut">C</kbd></a> }
+                        @if (canScheme) { <a asp-controller="Scheme" asp-action="Index" class="menu-link" data-shortcut="Alt+E" data-bs-toggle="tooltip" data-bs-title="Schemes (Alt+E)"><span class="menu-icon"><i class="bi bi-stars"></i></span><span class="menu-text">Schemes</span><kbd class="menu-shortcut">E</kbd></a> }
+                        @if (canCommission) { <a asp-controller="Commission" asp-action="Index" class="menu-link" data-shortcut="Alt+O" data-bs-toggle="tooltip" data-bs-title="Partner commission (Alt+O)"><span class="menu-icon"><i class="bi bi-cash-coin"></i></span><span class="menu-text">Commission</span><kbd class="menu-shortcut">O</kbd></a> }
+                    </div>
+                }
+            </nav>
+        </aside>
+        <div class="crm-sidebar-backdrop" data-sidebar-backdrop aria-hidden="true"></div>
+        <section class="main-panel">
+            <header class="top-panel clean-top-panel">
+                <button type="button" class="mobile-nav-toggle" data-sidebar-toggle aria-controls="crmSidebar" aria-expanded="false" aria-label="Open navigation"><i class="bi bi-list"></i></button>
+                <div>
+                    @* Role name removed from every page heading — identity lives only in the top-right profile. *@
+                    <h1>@ViewData["Title"]</h1>
+                    @if (ViewData["Subtitle"] != null) { <p>@ViewData["Subtitle"]</p> }
+                </div>
+                <div class="profile-area">
+                    <button type="button" class="top-action-button" data-install-app data-bs-toggle="tooltip" data-bs-title="Install ProfitNx CRM app"><i class="bi bi-phone-fill"></i></button>
+                    @if (canHelp) { <button type="button" class="top-action-button" data-crm-help data-bs-toggle="tooltip" data-bs-title="Help for this page (Alt+H)"><i class="bi bi-question-circle-fill"></i></button> }
+                    @if (canLock) { <button type="button" class="top-action-button" data-crm-lock-trigger data-shortcut="Alt+Q" data-shortcut-label="Lock this screen" data-bs-toggle="tooltip" data-bs-title="Lock this screen (Alt+Q)"><i class="bi bi-lock-fill"></i></button> }
+                    @if (canShortcuts) { <button type="button" class="top-action-button" data-crm-shortcuts data-bs-toggle="tooltip" data-bs-title="Keyboard shortcut list (Alt+/)"><i class="bi bi-keyboard-fill"></i></button> }
+                    <div class="theme-switch-wrap">
+                        <button type="button" class="theme-switch-btn" id="themeSwitchBtn" data-bs-toggle="tooltip" data-bs-title="Change theme"><i class="bi bi-palette-fill"></i></button>
+                        <div class="theme-switch-menu" id="themeSwitchMenu">
+                            <div class="theme-switch-menu-label">Appearance</div>
+                            <button type="button" class="theme-switch-option dark-mode-menu-toggle" id="darkModeToggle" data-dark-mode-toggle>
+                                <span class="theme-switch-dot midnight"></span>
+                                <span class="dark-mode-menu-text">Dark Mode</span>
+                                <span class="theme-switch-badge" id="darkModeMenuState">OFF</span>
+                            </button>
+                            <div class="theme-switch-menu-label" style="margin-top:8px">Choose theme</div>
+                            <button type="button" class="theme-switch-option" data-theme="classic"><span class="theme-switch-dot classic"></span>Classic</button>
+                            <button type="button" class="theme-switch-option" data-theme="premium"><span class="theme-switch-dot premium"></span>Premium Elite</button>
+                            <button type="button" class="theme-switch-option" data-theme="saas"><span class="theme-switch-dot saas"></span>Professional SaaS</button>
+                            <button type="button" class="theme-switch-option" data-theme="dompet"><span class="theme-switch-dot dompet"></span>Dompet Blue</button>
+                            <button type="button" class="theme-switch-option" data-theme="midnight"><span class="theme-switch-dot midnight"></span>Midnight (Dark)</button>
+                            <button type="button" class="theme-switch-option" data-theme="emerald"><span class="theme-switch-dot emerald"></span>Emerald</button>
+                            <button type="button" class="theme-switch-option" data-theme="rosegold"><span class="theme-switch-dot rosegold"></span>Rose Gold</button>
+                            <div class="theme-switch-menu-label" style="margin-top:6px">Font style</div>
+                            <div class="theme-switch-font-row" id="fontStyleRow" data-font-row>
+                                <button type="button" class="font-style-option" data-font-style="default">Default</button>
+                                <button type="button" class="font-style-option" data-font-style="modern">Modern</button>
+                                <button type="button" class="font-style-option" data-font-style="elegant">Elegant</button>
+                                <button type="button" class="font-style-option" data-font-style="rounded">Rounded</button>
+                            </div>
+                            <div class="theme-switch-menu-label">Font size</div>
+                            <div class="theme-switch-font-row" id="fontSizeRow" data-font-row>
+                                <button type="button" class="font-size-option" data-font-size="sm">Small</button>
+                                <button type="button" class="font-size-option" data-font-size="md">Medium</button>
+                                <button type="button" class="font-size-option" data-font-size="lg">Large</button>
+                            </div>
+                            <label class="theme-switch-default-row">
+                                <input type="checkbox" id="themeSetDefaultChk" checked />
+                                <span>Set as my default theme (applies at login too)</span>
+                            </label>
+                        </div>
+                    </div>
+                    @if (isLoggedIn)
+                    {
+                        <form id="themeSaveDefaultForm" asp-controller="Account" asp-action="SetTheme" method="post" class="d-none" autocomplete="off">
+                            @Html.AntiForgeryToken()
+                        </form>
+                    }
+                    @if (canLoginReport) {
+                        <a asp-controller="Admin" asp-action="LoginReport" class="top-alert" data-live-users-pill data-bs-toggle="tooltip" data-bs-title="Live users / Login report" style="display:none">
+                            <i class="bi bi-people-fill"></i><b data-live-count>0</b>
+                        </a>
+                    }
+                    @if (canNotifications) { <a asp-controller="Notifications" asp-action="Index" class="top-alert" data-bs-toggle="tooltip" data-bs-title="Notifications"><i class="bi bi-bell-fill"></i><b data-notification-badge style="@notificationBadgeStyle">@(notificationCount > 99 ? "99+" : notificationCount)</b></a> }
+                    @if (canChat) { <a asp-controller="Chat" asp-action="Index" class="top-alert" data-bs-toggle="tooltip" data-bs-title="Chat"><i class="bi bi-chat-dots-fill"></i><b data-chat-badge style="@chatBadgeStyle">@(chatUnreadCount > 99 ? "99+" : chatUnreadCount)</b></a> }
+                    <div class="top-profile-summary" title="@currentName (@currentRole)">
+                        <div class="profile-dot">@profileInitial</div>
+                        <div class="profile-copy d-none"><strong>@currentName</strong></div>
+                    </div>
+                    <a class="top-logout-button" asp-controller="Account" asp-action="Logout"
+                       data-bs-toggle="tooltip" data-bs-title="Logout" data-bs-placement="bottom"
+                       aria-label="Logout" title="Logout">
+                        <i class="bi bi-power" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </header>
+            <main class="page-surface">
+                @if (TempData["Success"] != null) { <div class="alert alert-success border-0 rounded-4 shadow-sm">@TempData["Success"]</div> }
+                @if (TempData["FollowUpFlash"] != null && canInquiryView) { <div class="alert alert-warning border-0 rounded-4 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2"><span><strong>Follow-up Reminder:</strong> @TempData["FollowUpFlash"]</span><a asp-controller="Inquiry" asp-action="Index" asp-route-TodayFollowUps="true" asp-fragment="inquiryReport" class="btn btn-sm btn-followup-today">Today Follow-ups</a></div> }
+                @if (TempData["ImplementationFlash"] != null) { <div class="alert alert-info border-0 rounded-4 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2"><span><strong>Implementation / Training:</strong> @TempData["ImplementationFlash"]</span><a asp-controller="Implementation" asp-action="Index" class="btn btn-sm btn-followup-today">View Training</a></div> }
+                @if (TempData["Error"] != null) { <div class="alert alert-danger border-0 rounded-4 shadow-sm">@TempData["Error"]</div> }
+                @RenderBody()
+            </main>
+        </section>
+    </div>
+
+    @if (canShortcuts)
+    {
+        <div class="modal fade" id="crmShortcutModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content crm-modal-card">
+                <div class="modal-header"><div><span class="crm-modal-eyebrow">Rights-aware</span><h5 class="modal-title">Keyboard Shortcuts</h5></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><div class="shortcut-grid" data-shortcut-list></div></div>
+                <div class="modal-footer justify-content-start"><small class="text-muted">Only shortcuts for options visible to your login are listed. Press <kbd>Esc</kbd> to close any popup.</small></div>
+            </div></div>
+        </div>
+    }
+    @if (canHelp)
+    {
+        <div class="modal fade" id="crmHelpModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content crm-modal-card">
+                <div class="modal-header"><div><span class="crm-modal-eyebrow">Internal CRM Help</span><h5 class="modal-title" data-help-title>Page Help</h5></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body" data-help-body></div>
+                <div class="modal-footer help-modal-footer flex-wrap justify-content-start gap-2">
+                    <div class="d-flex align-items-center gap-2 me-2">
+                        <label class="small text-muted mb-0" data-help-lang-label>Help language</label>
+                        <select class="form-select form-select-sm" style="width:auto;min-width:120px" data-help-lang aria-label="Help language">
+                            <option value="en" selected>English</option>
+                            <option value="gu">ગુજરાતી</option>
+                            <option value="hi">हिन्दी</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-help-voice-btn aria-pressed="false"><i class="bi bi-volume-up-fill"></i> <span data-help-voice-label>Read Steps Aloud</span></button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-help-video-btn disabled aria-disabled="true" title="Video guide coming soon"><i class="bi bi-play-circle-fill"></i> <span data-help-video-label>Video Guide (coming soon)</span></button>
+                    <small class="text-muted ms-auto d-none d-md-inline">Default English — switch language for text &amp; voice.</small>
+                    <div class="w-100 small text-warning-emphasis mt-1" data-help-voice-note style="display:none;"></div>
+                </div>
+            </div></div>
+        </div>
+    }
+    @if (canLock)
+    {
+        <div class="crm-lock-overlay" id="crmLockOverlay" aria-hidden="true">
+            <div class="crm-lock-card">
+                <div class="crm-lock-icon"><i class="bi bi-shield-lock-fill"></i></div>
+                <h4>CRM Locked</h4>
+                <p><strong>@currentName</strong> · @currentRole</p>
+                <form id="crmLockUnlockForm" asp-controller="Account" asp-action="VerifyUnlockPassword" method="post" autocomplete="off">
+                    @Html.AntiForgeryToken()
+                    <div class="password-field-wrap">
+                        <input type="password" name="password" id="crmLockPasswordInput" class="form-control" placeholder="Enter your password to unlock" required autocomplete="current-password" />
+                        <button type="button" class="password-toggle-btn" id="crmLockPasswordToggle" tabindex="-1" aria-label="Show password"><i class="bi bi-eye"></i></button>
+                    </div>
+                    <div class="crm-lock-error d-none" id="crmLockError"><i class="bi bi-exclamation-triangle-fill"></i> Wrong password. Try again.</div>
+                    <button type="submit" class="btn btn-brand w-100 mt-3" id="crmLockUnlockBtn"><i class="bi bi-unlock-fill"></i> Unlock</button>
+                </form>
+                <a class="crm-lock-logout" asp-controller="Account" asp-action="Logout"><i class="bi bi-box-arrow-right"></i> Not you? Sign out instead</a>
+            </div>
+        </div>
+    }
+    @if (canAttention)
+    {
+        <div class="modal fade" id="crmAttentionModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content attention-modal-card">
+                <div class="modal-header"><div><span class="crm-modal-eyebrow">Action Required</span><h5 class="modal-title"><i class="bi bi-alarm-fill"></i> Pending Inquiry Attention</h5></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><p class="text-muted">These inquiries need a call or update from you - either forwarded to you and not yet attended, or their next follow-up date has fully passed. A follow-up due later today will not show here yet; it only appears once that day is over and still unattended. Sold/Closed inquiries never show here. Tap a card below to call or open it.</p><div class="attention-list" data-attention-list></div></div>
+            </div></div>
+        </div>
+    }
+    @if (canImplementationReminder)
+    {
+        <div class="modal fade" id="implementationReminderModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content reminder-modal-card">
+                <div class="modal-header"><div><span class="crm-modal-eyebrow">Starts within 15 minutes</span><h5 class="modal-title"><i class="bi bi-bell-fill"></i> Implementation Session Reminder</h5></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><p class="text-muted">Review the customer, license and planned topics before starting.</p><div class="implementation-reminder-list" data-implementation-reminder-list></div></div>
+            </div></div>
+        </div>
+    }
+    @if (canSoldImplementationSetup)
+    {
+        <div class="modal fade implementation-setup-modal" id="implementationSetupConfirmModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                <div class="modal-header"><div><span class="crm-modal-eyebrow">Sold Order Handover</span><h5 class="modal-title">Start Implementation Setup?</h5></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">
+                    <div class="implementation-setup-hero">
+                        <div class="implementation-setup-icon"><i class="bi bi-person-workspace"></i></div>
+                        <div><h4>Sale is ready for customer onboarding</h4><p>ProfitNx can fetch customer, product, license and bill details from this Sold inquiry and create the implementation workflow.</p></div>
+                    </div>
+                    <div class="implementation-setup-summary">
+                        <div><span>Customer</span><strong data-implementation-customer>Sold inquiry customer</strong></div>
+                        <div><span>Product</span><strong data-implementation-product>Selected product</strong></div>
+                    </div>
+                    <div class="implementation-setup-flow"><i class="bi bi-arrow-right-circle-fill"></i><span>Yes: create setup and open assignment/schedule. No: save only the Sold inquiry.</span></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-implementation-choice="no"><i class="bi bi-check2"></i> No, Save Sale Only</button>
+                    <button type="button" class="btn btn-primary" data-implementation-choice="yes"><i class="bi bi-person-plus-fill"></i> Yes, Create Setup</button>
+                </div>
+            </div></div>
+        </div>
+    }
+    <div class="modal fade pwa-install-modal" id="pwaInstallModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Install ProfitNx CRM</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="pwa-install-icon"><img src="/icons/icon-192.png" alt="ProfitNx CRM" width="64" height="64" style="border-radius:16px;display:block" /></div>
+                <h4>Use CRM like a mobile app</h4>
+                <p data-pwa-install-message>Install it on Android or iPhone without disturbing the normal web version.</p>
+                <div class="pwa-install-steps" data-pwa-install-steps>
+                    <div><b>1</b><span>Open this CRM in your mobile browser.</span></div>
+                    <div><b>2</b><span>Use browser menu and choose Add to Home Screen.</span></div>
+                    <div><b>3</b><span>Open ProfitNx CRM from the app icon.</span></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-primary w-100" data-pwa-install-now><i class="bi bi-download"></i> Install App</button></div>
+        </div></div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(achievementMessage))
+    {
+        <div class="modal fade" id="crmAchievementModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered"><div class="modal-content achievement-modal-card">
+                <div class="achievement-confetti">🎉 ✨ 🏆 🚀 👏</div>
+                <div class="modal-body text-center p-5"><div class="achievement-icon">🏆</div><h3>Good Work!</h3><p data-achievement-text>@achievementMessage</p><button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">Keep Going 🚀</button></div>
+            </div></div>
+        </div>
+    }
+}
+else
+{
+    <main>@RenderBody()</main>
+}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/crm-help-i18n.js" asp-append-version="true"></script>
+<script>
+/* pnx-early-sw: register SW ASAP so desktop notifications work when minimized */
+(function(){
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+})();
+</script>
+<script src="~/js/crm-ui.js" asp-append-version="true"></script>
+<script src="~/js/required-field-highlight.js" asp-append-version="true"></script>
+<script src="~/js/app-theme-switcher.js" asp-append-version="true"></script>
+<script>
+(function () {
+  if (!document.body.classList.contains('crm-app-body')) return;
+  function pulse() {
+    fetch('/Account/Heartbeat', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        const n = data.live || 0;
+        document.querySelectorAll('[data-live-count]').forEach(el => { el.textContent = n > 99 ? '99+' : n; });
+        document.querySelectorAll('[data-live-users-pill]').forEach(el => { el.style.display = n > 0 ? '' : 'none'; });
+        document.querySelectorAll('[data-live-users-badge]').forEach(el => {
+          el.textContent = n > 0 ? String(n) : '';
+          el.style.display = n > 0 ? '' : 'none';
+        });
+      }).catch(() => {});
+  }
+  pulse();
+  setInterval(pulse, 60000);
+})();
+</script>
+<script src="~/js/sidebar-autofit.js" asp-append-version="true"></script>
+<script>window.__pnxUserId = '@(currentUserId ?? "")';</script>
+<script src="~/js/enterprise-ui-2026-09-08.js" asp-append-version="true"></script>
+@if (canNotifications)
+{
+<script>
+(function(){
+  const endpoint = '@Url.Action("UnreadCount", "Notifications")';
+  const badges = () => document.querySelectorAll('[data-notification-badge]');
+  function renderNotificationCount(count){
+    const display = count > 99 ? '99+' : String(count || 0);
+    badges().forEach(badge => { badge.textContent = display; badge.style.display = count > 0 ? '' : 'none'; });
+  }
+  async function refreshNotificationCount(){
+    try{
+      const response = await fetch(endpoint, { cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if(!response.ok) return;
+      const data = await response.json();
+      renderNotificationCount(Number(data.count || 0));
+    }catch{}
+  }
+  window.setTimeout(refreshNotificationCount, 800);
+  window.setInterval(refreshNotificationCount, 30000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) refreshNotificationCount(); });
+})();
+</script>
+<div class="task-flash-stack" id="taskFlashStack" aria-live="polite"></div>
+<script>
+// Change 1 (2026-08-05): pending-task flash message.
+// - Every pending/unread task for THIS logged-in user (already scoped by
+//   the server to their rights, same as the notification bell) is combined
+//   into ONE flash card instead of one popup per task.
+// - Closing the card only snoozes it - if the task(s) are still pending
+//   next time we poll, it comes back on its own after a short while. It
+//   only stops coming back once the task is actually handled (opened from
+//   My Alerts / Notifications, which is what already marks it read).
+// - A task that is brand new since this browser last checked (i.e. just
+//   got assigned) is always shown right away, even if the snooze for older
+//   pending items hasn't expired yet, and even if the CRM tab/window is
+//   minimized (uses the same desktop Notification permission already asked
+//   for by the chat widget below).
+(function(){
+  const LIST_ENDPOINT = '@Url.Action("PendingList", "Notifications")';
+  const SNOOZE_MS = 5 * 60 * 1000; // "thodi var pachi pacho aapo" - re-show after 5 minutes
+  const STORAGE_KEY = 'profitnx.taskFlash.' + '@currentUserId';
+  const stack = document.getElementById('taskFlashStack');
+  if (!stack) return;
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return { seen: parsed.seen || {}, dismissedAt: parsed.dismissedAt || {} };
+    }catch{ return { seen: {}, dismissedAt: {} }; }
+  }
+  function saveState(state){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch{}
+  }
+  let state = loadState();
+
+  function escapeHtml(value){
+    return String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function render(items, viewAllUrl){
+    if (!items.length) { stack.innerHTML = ''; stack.classList.remove('show'); return; }
+    // A batch made up only of "User Login Alert" items isn't a task queue -
+    // it should read and link like a login alert, not the generic task/
+    // notification menu.
+    const isLoginOnly = items.every((item) => item.flowType === 'UserLogin' || item.flowType === 'UserLogout');
+    const headTitle = isLoginOnly
+      ? `Login Alert${items.length > 1 ? 's' : ''} (${items.length})`
+      : `Pending Task${items.length > 1 ? 's' : ''} (${items.length})`;
+    const footerUrl = isLoginOnly ? items[0].actionUrl : viewAllUrl;
+    const footerLabel = isLoginOnly ? 'Open Login History Report' : 'Open All';
+    const rows = items.map((item) => `
+      <a class="task-flash-item" href="${escapeHtml(item.actionUrl)}">
+        <span class="task-flash-item-msg">${escapeHtml(item.message)}</span>
+        <span class="task-flash-item-meta">${escapeHtml(item.senderName)} &middot; ${escapeHtml(item.sentDate)}</span>
+      </a>`).join('');
+    stack.innerHTML = `
+      <div class="task-flash-card" role="alert">
+        <div class="task-flash-head">
+          <span><i class="bi bi-bell-fill"></i> ${headTitle}</span>
+          <button type="button" class="task-flash-close" id="taskFlashCloseBtn" title="Close" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="task-flash-body">${rows}</div>
+        <a class="task-flash-footer" href="${escapeHtml(footerUrl)}">${footerLabel}</a>
+      </div>`;
+    stack.classList.add('show');
+    document.getElementById('taskFlashCloseBtn')?.addEventListener('click', () => {
+      const now = Date.now();
+      items.forEach((item) => { state.dismissedAt[item.id] = now; });
+      saveState(state);
+      stack.innerHTML = '';
+      stack.classList.remove('show');
+    });
+  }
+
+  function notifyIfMinimized(newItems){
+    if (!newItems || !newItems.length) return;
+    const first = newItems[0];
+    // Login / Logout alerts → same wording as the in-app Login Alerts card
+    const isLoginOnly = newItems.every((item) => item.flowType === 'UserLogin' || item.flowType === 'UserLogout');
+    let title, body, targetUrl, tag;
+    if (isLoginOnly) {
+      title = newItems.length === 1
+        ? (first.flowType === 'UserLogout' ? 'User Logout Alert' : 'User Login Alert')
+        : ('Login Alerts (' + newItems.length + ')');
+      if (newItems.length === 1) {
+        body = first.message || title;
+        if (first.senderName) body += ' · ' + first.senderName;
+        if (first.sentDate) body += ' · ' + first.sentDate;
+      } else {
+        body = newItems.map((it) => it.message || '').filter(Boolean).slice(0, 3).join(' | ');
+        if (newItems.length > 3) body += ' …';
+      }
+      targetUrl = (first && first.actionUrl) || '/Admin/LoginReport';
+      tag = 'profitnx-login-alert-' + (first.id || 'batch');
+    } else {
+      title = 'ProfitNx CRM - Task Assigned';
+      body = newItems.length === 1
+        ? `${first.message} (assigned by ${first.senderName})`
+        : `You have ${newItems.length} new pending tasks.`;
+      targetUrl = (first && first.actionUrl) || '/Notifications';
+      tag = 'profitnx-task-' + (first.id || 'batch');
+    }
+    if (window.ProfitNxDesktopNotify) {
+      // Prefer helper; also treat document.hidden so Chrome (which can keep
+      // hasFocus true while minimized) still fires the OS notification.
+      var bg = window.ProfitNxDesktopNotify.isBackground()
+        || document.hidden
+        || document.visibilityState === 'hidden';
+      window.ProfitNxDesktopNotify.show({
+        title, body, url: targetUrl, tag,
+        force: bg
+      });
+      return;
+    }
+    // Fallback if helper not loaded yet
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!(document.hidden || document.visibilityState === 'hidden' || !document.hasFocus())) return;
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then((reg) => {
+          if (reg && reg.showNotification) {
+            reg.showNotification(title, { body, icon: '/icons/icon-192.png', tag, renotify: true, requireInteraction: true, data: { url: targetUrl } });
+          }
+        }).catch(() => {});
+      }
+      const n = new Notification(title, { body, icon: '/icons/icon-192.png', tag, renotify: true, requireInteraction: true });
+      n.onclick = () => { window.focus(); window.location.href = targetUrl; };
+    } catch {}
+  }
+
+  // Change 2 (2026-09-10): a desktop OS notification for ANY pending
+  // notification type (not just brand-new ones) keeps showing every ~90s
+  // while the CRM window stays minimized/unfocused and something is still
+  // unread - matching the Pending Inquiry attention flow. Previously this
+  // only fired once, on the first poll after an item appeared, so if the
+  // window was already minimized before that poll ran (or the user missed
+  // the single popup) no further desktop notification ever showed for it.
+  const DESKTOP_RENOTIFY_MS = 90 * 1000;
+  const desktopLastShownKey = STORAGE_KEY + '.desktopLastShown';
+
+  async function poll(){
+    try{
+      const response = await fetch(LIST_ENDPOINT, { cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (!response.ok) return;
+      const data = await response.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      const pendingIds = new Set(items.map((item) => item.id));
+
+      // Anything not pending any more (opened / handled) drops out of both
+      // the seen list and the dismissed-until list so it doesn't linger.
+      Object.keys(state.seen).forEach((id) => { if (!pendingIds.has(id)) delete state.seen[id]; });
+      Object.keys(state.dismissedAt).forEach((id) => { if (!pendingIds.has(id)) delete state.dismissedAt[id]; });
+
+      const newlyAssigned = items.filter((item) => !state.seen[item.id]);
+      items.forEach((item) => { state.seen[item.id] = true; });
+
+      const now = Date.now();
+      const due = items.filter((item) => {
+        if (!state.dismissedAt[item.id]) return true; // never closed, or just newly assigned
+        return (now - state.dismissedAt[item.id]) >= SNOOZE_MS;
+      });
+
+      const isBackground = document.hidden || document.visibilityState === 'hidden' || !document.hasFocus();
+      const lastDesktop = Number(sessionStorage.getItem(desktopLastShownKey) || 0);
+      if (newlyAssigned.length) {
+        notifyIfMinimized(newlyAssigned);
+        if (isBackground) sessionStorage.setItem(desktopLastShownKey, String(now));
+      } else if (items.length && isBackground && (now - lastDesktop) > DESKTOP_RENOTIFY_MS) {
+        // Nothing new, but the window is still minimized and there is still
+        // at least one unread item of any type - remind again.
+        notifyIfMinimized(items);
+        sessionStorage.setItem(desktopLastShownKey, String(now));
+      }
+      saveState(state);
+      render(due, data.viewAllUrl || '@Url.Action("Index", "Notifications")');
+    }catch{}
+  }
+
+  if ('Notification' in window && Notification.permission === 'default') {
+    const requestOnce = function(){
+      Notification.requestPermission();
+      document.removeEventListener('click', requestOnce);
+      document.removeEventListener('touchstart', requestOnce);
+      document.removeEventListener('keydown', requestOnce);
+    };
+    document.addEventListener('click', requestOnce, { once: true });
+    document.addEventListener('touchstart', requestOnce, { once: true, passive: true });
+    document.addEventListener('keydown', requestOnce, { once: true });
+  }
+
+  window.setTimeout(poll, 1500);
+  window.setInterval(poll, 30000);
+  document.addEventListener('visibilitychange', () => {
+    // Poll both when returning and when going background so desktop notifications
+    // can fire before the browser fully throttles timers.
+    poll();
+  });
+  document.addEventListener('pnx-force-poll', () => { poll(); });
+})();
+</script>
+}
+@if (showChatFab)
+{
+    ViewBag.CurrentUserId = currentUserId;
+    ViewBag.CurrentUserName = currentName;
+    ViewBag.ChatWidgetMode = true;
+    <button type="button" id="chatFabBtn" class="chat-fab" title="Open Chat" data-bs-toggle="tooltip" data-bs-title="Chat">
+        <i class="bi bi-chat-dots-fill"></i>
+        <b class="chat-fab-badge" data-chat-badge style="@chatBadgeStyle">@(chatUnreadCount > 99 ? "99+" : chatUnreadCount)</b>
+    </button>
+    <div class="chat-fab-backdrop" id="chatFabBackdrop"></div>
+    <aside class="chat-fab-panel" id="chatFabPanel" aria-hidden="true">
+        <div class="chat-fab-panel-header">
+            <strong><i class="bi bi-chat-dots-fill"></i> Chat</strong>
+            <div class="chat-fab-panel-actions">
+                <a asp-controller="Chat" asp-action="Index" class="chat-fab-expand" title="Open full Chat page"><i class="bi bi-arrows-fullscreen"></i></a>
+                <button type="button" class="chat-fab-close" id="chatFabCloseBtn" title="Close"><i class="bi bi-x-lg"></i></button>
+            </div>
+        </div>
+        <div class="chat-fab-panel-body">
+            @await Html.PartialAsync("~/Views/Chat/_ChatWidget.cshtml")
+        </div>
+    </aside>
+    <script src="~/js/chat-emoji-data.js" asp-append-version="true"></script>
+    <script src="~/js/chat.js" asp-append-version="true"></script>
+}
+@if (canChat)
+{
+<script>
+(function(){
+  const endpoint = '@Url.Action("UnreadCount", "Chat")';
+  const badges = () => document.querySelectorAll('[data-chat-badge]');
+  let lastCount = @chatUnreadCount;
+  function renderChatCount(count){
+    const display = count > 99 ? '99+' : String(count || 0);
+    badges().forEach(badge => { badge.textContent = display; badge.style.display = count > 0 ? '' : 'none'; });
+  }
+  function notifyIfMinimized(count){
+    // Desktop notification when browser/tab is minimized or unfocused and unread count went up.
+    const isBackground = document.hidden || document.visibilityState === 'hidden' || !document.hasFocus();
+    if (count > lastCount && isBackground && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        const title = 'ProfitNx CRM - New Chat Message';
+        const body = count === 1 ? 'You have a new chat message.' : `You have ${count} unread chat messages.`;
+        const targetUrl = '@Url.Action("Index", "Chat")';
+        const tag = 'profitnx-chat';
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION', title, body, icon: '/icons/icon-192.png', tag, url: targetUrl });
+          return;
+        }
+        if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+          navigator.serviceWorker.ready.then((reg) => {
+            if (reg && reg.showNotification) {
+              reg.showNotification(title, { body, icon: '/icons/icon-192.png', tag, renotify: true, requireInteraction: true, data: { url: targetUrl } });
+            }
+          }).catch(() => {});
+          return;
+        }
+        const n = new Notification(title, { body, icon: '/icons/icon-192.png', tag, renotify: true, requireInteraction: true });
+        n.onclick = () => { window.focus(); window.location.href = targetUrl; };
+      } catch {}
+    }
+  }
+  async function refreshChatCount(){
+    try{
+      const response = await fetch(endpoint, { cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if(!response.ok) return;
+      const data = await response.json();
+      const count = Number(data.count || 0);
+      notifyIfMinimized(count);
+      renderChatCount(count);
+      lastCount = count;
+    }catch{}
+  }
+  if ('Notification' in window && Notification.permission === 'default') {
+    // Ask once, quietly, so minimized-tab alerts can work later. No repeated prompting.
+    const requestOnce = function(){
+      Notification.requestPermission();
+      document.removeEventListener('click', requestOnce);
+      document.removeEventListener('touchstart', requestOnce);
+    };
+    document.addEventListener('click', requestOnce, { once: true });
+    document.addEventListener('touchstart', requestOnce, { once: true, passive: true });
+  }
+  window.setTimeout(refreshChatCount, 1200);
+  window.setInterval(refreshChatCount, 8000);
+  document.addEventListener('visibilitychange', () => { refreshChatCount(); });
+  document.addEventListener('pnx-force-poll', () => { refreshChatCount(); });
+})();
+</script>
+}
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+@functions {
+    string GetInquiryMenu(string role) => role.Equals("Support", StringComparison.OrdinalIgnoreCase) ? "My Inquiries" : role.Equals("SupportHead", StringComparison.OrdinalIgnoreCase) ? "Support Status" : role.Equals("Partner", StringComparison.OrdinalIgnoreCase) ? "Forwarded Work" : role.Equals("User", StringComparison.OrdinalIgnoreCase) ? "My Work" : "Inquiries";
+    string GetReportMenu(string role) => role.Equals("Admin", StringComparison.OrdinalIgnoreCase) ? "Reports" : role.Equals("SupportHead", StringComparison.OrdinalIgnoreCase) ? "Team Report" : "My Report";
+    string GetRoleHeader(string role) => role.Equals("Admin", StringComparison.OrdinalIgnoreCase) ? "Admin" : role.Equals("SupportHead", StringComparison.OrdinalIgnoreCase) ? "Support Head" : role;
+}

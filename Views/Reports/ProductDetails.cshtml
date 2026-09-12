@@ -1,0 +1,44 @@
+@model ProductPartyInfoViewModel
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    ViewData["Title"] = "Product Party Wise Details";
+    ViewData["Subtitle"] = "Sold party list for selected product and version.";
+    var canEditInquiry = await PermissionService.HasPermissionAsync(User, "inquiry.edit");
+    var inquiryOpenAction = canEditInquiry ? "Edit" : "Details";
+}
+<div class="dash-panel">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+        <div><h3>@Model.ProductName</h3><p class="mini-muted mb-0">Version: @Model.VersionType</p></div>
+        <div class="d-flex gap-2 flex-wrap"><input id="partyWiseFilter" class="form-control rounded-pill" placeholder="Filter any column" /><a asp-action="Index" class="btn btn-secondary rounded-pill">Back</a></div>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Party</th><th>City</th><th>Product Info</th><th>Partner</th><th>Sold By</th><th>Bill</th><th>License</th><th>Licenses</th><th>Amount</th><th>Sold Date</th><th>History</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Inquiries)
+            {
+                <tr>
+                    <td><strong>@(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)</strong><div class="mini-muted">@item.PersonName · @item.Mobile1</div></td>
+                    <td>@item.City</td>
+                    <td>@item.ProductName<div class="mini-muted">@item.VersionType</div></td>
+                    <td>@(string.IsNullOrWhiteSpace(item.ForwardedToPartnerName) ? "Self" : item.ForwardedToPartnerName)</td>
+                    <td>@(string.IsNullOrWhiteSpace(item.SoldByName) ? item.AssignedUserName : item.SoldByName)<div class="mini-muted">@(string.IsNullOrWhiteSpace(item.SoldByRole) ? item.AttendedByRole : item.SoldByRole)</div></td>
+                    <td>@item.BillNo<div class="mini-muted">@(item.BillDate?.ToString("dd/MM/yyyy") ?? "-")</div></td>
+                    <td>@item.LicenseNumber</td>
+                    <td>@item.LicensesPurchased</td>
+                    <td>@item.AmountWithoutGst.ToString("N2")<div class="mini-muted">With GST: @item.AmountWithGst.ToString("N2")</div></td>
+                    <td>@(item.SoldDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                    <td><a asp-controller="Inquiry" asp-action="@inquiryOpenAction" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">@(canEditInquiry ? "Day 1 History" : "View History")</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts{
+<script>
+const partyFilter=document.getElementById('partyWiseFilter');
+if(partyFilter){partyFilter.addEventListener('input',function(){const q=this.value.toLowerCase();document.querySelectorAll('table tbody tr').forEach(tr=>{tr.style.display=tr.innerText.toLowerCase().includes(q)?'':'none';});});}
+</script>
+}

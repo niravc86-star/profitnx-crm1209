@@ -1,0 +1,122 @@
+@model List<NotificationLog>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    var roleName = ViewBag.RoleName as string ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+    var canSendNotifications = await PermissionService.HasPermissionAsync(User, "notifications.send");
+    var canDeleteNotifications = (bool?)ViewBag.CanDeleteNotifications ?? await PermissionService.HasPermissionAsync(User, "notifications.delete");
+    var canManageAllNotifications = (bool?)ViewBag.CanManageAllNotifications ?? canSendNotifications;
+    var fromDate = ViewBag.FromDate as DateTime?;
+    var toDate = ViewBag.ToDate as DateTime?;
+    var channels = ViewBag.Channels as List<string> ?? new();
+    var recipients = ViewBag.Recipients as List<string> ?? new();
+    var statuses = ViewBag.Statuses as List<string> ?? new();
+    string? selectedChannel = ViewBag.Channel as string;
+    string? selectedRecipient = ViewBag.Recipient as string;
+    string? selectedStatus = ViewBag.Status as string;
+    string? search = ViewBag.Search as string;
+    string? fromTime = ViewBag.FromTime as string;
+    string? toTime = ViewBag.ToTime as string;
+    ViewData["Title"] = canManageAllNotifications ? "Notification Logs" : "My Notifications";
+    string DateVal(DateTime? d) => d.HasValue ? d.Value.ToString("yyyy-MM-dd") : string.Empty;
+    string FirstValue(string? msg, string label){
+        var text = msg ?? string.Empty;
+        var line = text.Replace("\r\n","\n").Split('\n').FirstOrDefault(x => x.TrimStart().StartsWith(label + ":", StringComparison.OrdinalIgnoreCase));
+        return string.IsNullOrWhiteSpace(line) ? "" : line.Substring(line.IndexOf(':')+1).Trim();
+    }
+    string TitleOf(string? msg){
+        var lines=(msg??"").Replace("\r\n","\n").Split('\n').Select(x=>x.Trim()).Where(x=>!string.IsNullOrWhiteSpace(x)).ToList();
+        return lines.FirstOrDefault(x => x.Contains("Inquiry", StringComparison.OrdinalIgnoreCase) && !x.Contains("Profit Nx", StringComparison.OrdinalIgnoreCase)) ?? "Inquiry Notification";
+    }
+    string HighlightMessage(string? msg){
+        var text = System.Net.WebUtility.HtmlEncode(msg ?? string.Empty).Replace("\r\n","\n").Replace("\r","\n");
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"Latest Update:\s*(.*?)(?=\n\n|Inquiry Details:|Regards,|$)", m => "<div class='latest-update-block'><b>Latest Update</b><br/>" + m.Groups[1].Value.Trim().Replace("\n", "<br/>") + "</div>", System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return text.Replace("\n", "<br/>");
+    }
+}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div><h3 class="mb-0">@ViewData["Title"]</h3><div class="text-muted small">Inquiry wise notification tree. Click (+) to see all updates.</div></div>
+    @if (canSendNotifications || (canDeleteNotifications && canManageAllNotifications))
+    {
+        <div class="page-actions">
+            @if (canSendNotifications)
+            {
+                <a asp-action="Create" class="btn btn-brand"><i class="bi bi-plus-circle"></i><span>Queue Notification</span></a>
+            }
+            @if (canDeleteNotifications && canManageAllNotifications)
+            {
+                <form asp-action="ClearAll" method="post" onsubmit="return confirm('Delete all old notification history?');">
+                    <button class="btn btn-outline-danger"><i class="bi bi-trash"></i><span>Delete All Old</span></button>
+                </form>
+            }
+        </div>
+    }
+</div>
+
+<div class="card-soft p-3 mb-4 professional-filter-card">
+    <form method="get" class="professional-filter-grid compact-filter-grid notification-filter-grid">
+        <div class="filter-cell search-cell"><label class="form-label small">Search</label><input name="search" value="@search" class="form-control" placeholder="Customer, mobile, update, recipient..." /></div>
+        <div class="filter-cell date-cell"><label class="form-label small">From Date</label><input type="text" name="fromDate" value="@DateVal(fromDate)" class="form-control crm-date-picker" placeholder="dd/MM/yyyy" autocomplete="off" /></div>
+        <div class="filter-cell date-cell"><label class="form-label small">To Date</label><input type="text" name="toDate" value="@DateVal(toDate)" class="form-control crm-date-picker" placeholder="dd/MM/yyyy" autocomplete="off" /></div>
+        <div class="filter-cell"><label class="form-label small">From Time</label><input type="time" name="fromTime" value="@fromTime" class="form-control" /></div>
+        <div class="filter-cell"><label class="form-label small">To Time</label><input type="time" name="toTime" value="@toTime" class="form-control" /></div>
+        <div class="filter-cell"><label class="form-label small">Channel</label><select name="channel" class="form-select"><option value="">All Channels</option>@foreach (var c in channels){<option value="@c" selected="@(selectedChannel==c)">@c</option>}</select></div>
+        <div class="filter-cell"><label class="form-label small">Recipient</label><input name="recipient" list="recipientList" value="@selectedRecipient" class="form-control" placeholder="Recipient" /><datalist id="recipientList">@foreach(var r in recipients){<option value="@r"></option>}</datalist></div>
+        <div class="filter-cell"><label class="form-label small">Status</label><select name="status" class="form-select"><option value="">All Status</option>@foreach (var s in statuses){<option value="@s" selected="@(selectedStatus==s)">@s</option>}</select></div>
+        <div class="filter-actions"><button class="btn btn-brand w-100">Go</button><a asp-action="Index" class="btn btn-outline-secondary w-100">Clear</a></div>
+    </form>
+</div>
+
+@{
+    var dateGroups = Model.GroupBy(x => x.SentDate.Date).OrderByDescending(g => g.Key).ToList();
+}
+@if (!dateGroups.Any()) { <div class="card-soft p-4 text-center text-muted">No notifications found.</div> }
+<form asp-action="DeleteSelected" method="post" onsubmit="return confirm('Delete selected notification history?');">
+@if(canDeleteNotifications){<div class="mb-2 d-flex justify-content-end align-items-center gap-2"><label class="small mb-0"><input type="checkbox" id="selectAllNotifications" class="form-check-input me-1" /> Select All</label><button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i><span>Delete Selected</span></button></div>}
+<div class="notification-tree-list inquiry-tree-ui">
+@foreach (var dg in dateGroups)
+{
+    <details class="notification-date-group" open>
+        <summary class="date-tree-summary"><span class="tree-plus">+</span><strong>@dg.Key.ToString("dd/MM/yyyy")</strong><span class="badge badge-count border">@dg.Count() update(s)</span></summary>
+        @foreach (var g in dg.GroupBy(x => string.IsNullOrWhiteSpace(x.RelatedEntityId) ? (FirstValue(x.Message,"Customer") + FirstValue(x.Message,"Mobile")) : x.RelatedEntityId).Select(g => new { Latest = g.OrderByDescending(x=>x.SentDate).First(), Items=g.OrderByDescending(x=>x.SentDate).ToList() }).OrderByDescending(x=>x.Latest.SentDate))
+        {
+            var customer = FirstValue(g.Latest.Message, "Customer");
+            var mobile = FirstValue(g.Latest.Message, "Mobile");
+            var product = FirstValue(g.Latest.Message, "Product");
+            var city = FirstValue(g.Latest.Message, "City");
+            <details class="notification-tree-item">
+                <summary>
+                    <span class="tree-plus">+</span>
+                    <div class="tree-summary-main">
+                        <span class="tree-title"><b>@(string.IsNullOrWhiteSpace(customer)?TitleOf(g.Latest.Message):customer)</b><small>@city @(!string.IsNullOrWhiteSpace(mobile)?" · "+mobile:"")</small></span>
+                        <span class="mini-muted">@product</span>
+                        <span class="badge badge-count border">@g.Items.Count update(s)</span>
+                    </div>
+                    <div class="tree-summary-meta"><span>@g.Latest.SentDate.ToString("hh:mm tt")</span><span>@g.Latest.Channel</span><span>@g.Latest.Status</span></div>
+                </summary>
+                <div class="tree-updates">
+                @foreach (var item in g.Items)
+                {
+                    <div class="tree-update-row">
+                        @if(canDeleteNotifications){<input type="checkbox" name="ids" value="@item.Id" class="form-check-input mt-1" />}
+                        <div class="tree-dot"></div>
+                        <div class="tree-update-body">
+                            <div class="d-flex justify-content-between gap-2 flex-wrap"><strong>@TitleOf(item.Message)</strong><span class="mini-muted">@item.SentDate.ToString("dd/MM/yyyy hh:mm tt") · @item.Channel · @item.Status</span></div>
+                            <div class="mini-muted mb-1">To: @item.Recipient</div>
+                            <div class="notification-message compact">@Html.Raw(HighlightMessage(item.Message))</div>
+                            @if(!string.IsNullOrWhiteSpace(item.ActionUrl)){<a href="@item.ActionUrl" target="_blank" class="btn btn-sm btn-outline-success mt-2">Open</a>}
+                        </div>
+                    </div>
+                }
+                </div>
+            </details>
+        }
+    </details>
+}
+</div>
+</form>
+
+@section Scripts{
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>flatpickr('.crm-date-picker', { altInput: true, altFormat: 'd/m/Y', dateFormat: 'Y-m-d', allowInput: true });document.getElementById("selectAllNotifications")?.addEventListener("change",function(){document.querySelectorAll("input[name=ids]").forEach(x=>x.checked=this.checked);});</script>
+}

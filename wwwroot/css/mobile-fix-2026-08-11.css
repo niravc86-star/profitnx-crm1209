@@ -1,0 +1,113 @@
+/* ============================================================
+   Mobile fix pass — 2026-08-11
+   ------------------------------------------------------------
+   The CRM accumulated several overlapping "mobile" attempts across
+   professional-ui.css, premium-2026.css and final-ui-correction-
+   2026-07-30.css (an icon-only horizontal strip, an off-canvas
+   drawer, and a fixed 88px rail all targeting the same elements at
+   slightly different breakpoints). Nothing here is deleted — this
+   file is loaded LAST (see _Layout.cshtml) and simply states the
+   one intended mobile behaviour with enough specificity to win
+   cleanly over the older, conflicting rules:
+
+     1) <= 991px  -> sidebar is an off-canvas drawer (hidden by
+        default, opens via the hamburger button), and the drawer
+        ALWAYS shows full icon + text labels — never icon-only.
+     2) Login screen stacks into a single column and fits the
+        viewport on any phone width, instead of staying pinned to
+        the two-column desktop grid.
+   ============================================================ */
+
+/* ---------- 1. Sidebar: always full labels inside the drawer ---------- */
+@media (max-width: 991.98px) {
+  html body.crm-app-body .app-shell { display: block !important; padding: 0 !important; }
+
+  html body.crm-app-body .side-rail {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: min(300px, 86vw) !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    transform: translateX(-105%) !important;
+    transition: transform .22s ease !important;
+    box-shadow: 24px 0 60px rgba(3,14,29,.35) !important;
+    border-radius: 0 !important;
+    z-index: 1050 !important;
+    overflow-y: auto !important;
+    padding: 16px 12px !important;
+  }
+  html body.crm-nav-open .side-rail { transform: translateX(0) !important; }
+
+  html body.crm-app-body .crm-sidebar-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1045 !important;
+    background: rgba(4,14,28,.5) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity .2s ease !important;
+  }
+  html body.crm-nav-open .crm-sidebar-backdrop { opacity: 1 !important; pointer-events: auto !important; }
+  html body.crm-nav-open { overflow: hidden !important; }
+
+  /* The actual fix for Point 3: every menu row shows its icon AND
+     its text label at full size once the drawer is open — no
+     icon-only collapse on mobile at all. */
+  html body.crm-app-body .brand-block,
+  html body.crm-app-body .sidebar-overline,
+  html body.crm-app-body .menu-group-label { display: flex !important; }
+  html body.crm-app-body .menu-list,
+  html body.crm-app-body .menu-group { display: flex !important; flex-direction: column !important; }
+  html body.crm-app-body .premium-menu-list { overflow-x: visible !important; }
+  html body.crm-app-body .menu-link {
+    width: 100% !important; min-width: 0 !important; height: auto !important;
+    flex: initial !important; flex-direction: row !important;
+    justify-content: flex-start !important; padding: 11px 12px !important;
+  }
+  html body.crm-app-body .menu-link .menu-icon { width: 30px !important; height: 30px !important; flex: 0 0 30px !important; }
+  html body.crm-app-body .menu-link .menu-text {
+    display: block !important; visibility: visible !important;
+    white-space: normal !important; overflow: visible !important;
+    max-width: none !important; font-size: .86rem !important;
+    font-weight: 650 !important; text-align: left !important;
+  }
+  html body.crm-app-body .menu-link .menu-shortcut,
+  html body.crm-app-body .menu-mini-badge { display: inline-flex !important; }
+
+  html body.crm-app-body .mobile-nav-toggle { display: grid !important; place-items: center !important; flex: 0 0 40px !important; }
+  html body.crm-app-body .main-panel { padding: 0 14px 22px !important; }
+  html body.crm-app-body .top-panel { margin: 0 -14px 16px !important; padding: 12px 14px !important; }
+}
+
+@media (min-width: 992px) {
+  html body.crm-app-body .mobile-nav-toggle { display: none !important; }
+  html body.crm-app-body .crm-sidebar-backdrop { display: none !important; }
+}
+
+/* ---------- 2. Login screen: single column, fits any phone ---------- */
+@media (max-width: 900px) {
+  html body.crm-login-page { overflow-y: auto !important; height: auto !important; min-height: 100dvh !important; }
+  html body .crm-login-shell {
+    width: min(520px, calc(100vw - 26px)) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    grid-template-columns: 1fr !important;
+    padding: 22px 0 !important;
+    gap: 18px !important;
+  }
+  html body .crm-login-intro { padding: 0 6px !important; text-align: center !important; }
+  html body .crm-login-brand { justify-content: center !important; margin-bottom: 18px !important; }
+  html body .crm-login-copy { margin: 0 auto !important; }
+  html body .crm-login-copy h1 { font-size: clamp(2.1rem, 9vw, 3rem) !important; }
+  html body .crm-login-features { grid-template-columns: repeat(3, 1fr) !important; margin-top: 16px !important; }
+  html body .crm-login-features article div { display: none !important; }
+  html body .crm-login-intro-footer { display: none !important; }
+  html body .crm-login-panel { padding: 24px 22px 18px !important; width: 100% !important; }
+}
+@media (max-width: 480px) {
+  html body .crm-login-copy p { display: none !important; }
+  html body .crm-login-features { gap: 6px !important; }
+  html body .crm-login-panel { padding: 20px 16px 16px !important; border-radius: 18px !important; }
+}

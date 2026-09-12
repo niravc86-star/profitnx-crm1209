@@ -1,0 +1,352 @@
+/* ============================================================
+   Action column FREEZE + compact icons – final override
+   Must load AFTER all other CSS.
+   ============================================================ */
+
+/* Kill overflow on every ancestor that can break position:sticky */
+html body .crm-app-body .page-surface,
+html body .crm-app-body .main-panel,
+html body .crm-app-body .card-soft,
+html body .crm-app-body .inquiry-card,
+html body .crm-app-body .card,
+html body .crm-app-body .pro-card,
+html body .crm-app-body .compact-table-wrap,
+html body .crm-app-body #inquiryReport,
+html body .page-surface {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
+  contain: none !important;
+}
+
+/* The ONLY horizontal scroll container */
+html body .crm-app-body .table-responsive.inquiry-grid,
+html body .crm-app-body .inquiry-grid.table-responsive,
+html body .crm-app-body .enterprise-table-scroll,
+html body .table-responsive.inquiry-grid {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  position: relative !important;
+  max-width: 100% !important;
+}
+
+/* Table geometry for sticky cells */
+html body table.inquiry-action-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: max-content !important;
+  min-width: 100% !important;
+}
+
+/* Sticky Action column – right edge */
+html body table.inquiry-action-table thead th.col-action,
+html body table.inquiry-action-table tbody td.col-action,
+html body table.inquiry-action-table tbody td.inquiry-action-td,
+html body table.inquiry-action-table thead th:last-child,
+html body table.inquiry-action-table tbody td:last-child {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 60 !important;
+  /* Single canonical width for this column — see the 2026-09-10 v2 note
+     below for why this must not be set anywhere else (JS included). */
+  min-width: 120px !important;
+  max-width: 120px !important;
+  width: 120px !important;
+  padding: 6px 6px !important;
+  vertical-align: middle !important;
+  background-clip: padding-box !important;
+  box-shadow: -10px 0 16px -6px rgba(15, 23, 42, 0.2) !important;
+  border-left: 1px solid rgba(15, 23, 42, 0.12) !important;
+}
+
+html:not([data-app-theme]) body table.inquiry-action-table thead th.col-action,
+html:not([data-app-theme]) body table.inquiry-action-table tbody td.col-action,
+html:not([data-app-theme]) body table.inquiry-action-table tbody td.inquiry-action-td {
+  background: #fff !important;
+}
+html[data-app-theme="midnight"] body table.inquiry-action-table thead th.col-action,
+html[data-app-theme="midnight"] body table.inquiry-action-table tbody td.col-action,
+html[data-app-theme="midnight"] body table.inquiry-action-table tbody td.inquiry-action-td {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-left-color: rgba(148, 163, 184, 0.22) !important;
+}
+html[data-app-theme="premium"] body table.inquiry-action-table thead th.col-action,
+html[data-app-theme="premium"] body table.inquiry-action-table tbody td.col-action,
+html[data-app-theme="premium"] body table.inquiry-action-table tbody td.inquiry-action-td {
+  background: #1a1330 !important;
+  color: #f3ecff !important;
+  border-left-color: rgba(202, 161, 74, 0.28) !important;
+}
+
+/* Compact icon buttons */
+.qs-action-compact {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+.qs-icon-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+.qs-icon-btn:hover { background: #e2e8f0; color: #0f172a; }
+.qs-icon-btn.qs-icon-edit { color: #1d4ed8; background: #eff6ff; border-color: rgba(37,99,235,.25); }
+.qs-icon-btn.qs-icon-delete { color: #b91c1c; background: #fef2f2; border-color: rgba(185,28,28,.25); }
+.qs-icon-btn.qs-icon-status {
+  color: #fff !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%) !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.28);
+}
+
+/* Status modal – full width form, not clipped */
+.qs-status-modal .modal-dialog { max-width: 480px; }
+.qs-status-modal .modal-body.qs-action-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.qs-status-modal .qs-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+.qs-status-modal .qs-control,
+.qs-status-modal .form-select,
+.qs-status-modal .form-control {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.qs-status-modal .qs-save-status-btn { width: 100%; }
+.qs-status-modal .qs-extra-field { flex: 1 1 100%; }
+
+/* Tighter rows */
+table.inquiry-action-table.compact-crm-table > tbody > tr > td {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+}
+
+/* ============================================================
+   2026-09-10 v2 — HARD freeze, no scroll, no bleed-through
+   Point: "action column j freeze, e ma scroll na aave, ane
+   evu fill pan na thaay k freeze thai gayu hoy tevu na lage"
+   ------------------------------------------------------------
+   Root cause of the earlier partial fix: the frozen cell's
+   WIDTH was only bounded (min/max-width) but not clipped, so
+   whenever the inner icon row (.qs-action-cell) had slightly
+   more content than the box (e.g. the plain 3-icon row used
+   for Support/SupportHead, which does not carry the
+   .qs-action-compact wrap class), the buttons visually spilled
+   past the sticky cell's right edge — looking like the "freeze"
+   was broken / being filled over during scroll. Fix: clip with
+   overflow and force the inner row to wrap instead of overflow.
+
+   2026-09-10 v3 — the width itself was ALSO being set from
+   enterprise-ui-2026-09-08.js on every scroll tick (128px,
+   applied as an inline !important, which always wins over this
+   stylesheet's !important). That fought with the 114–124px
+   values that used to be here, so the column's actual on-screen
+   width flip-flopped between the two on every scroll frame —
+   what looked like the freeze "un-freezing" mid-drag in the
+   screen recording. JS no longer sets width at all; this
+   stylesheet is now the ONLY place the Action column's width is
+   set (120px, consistently, everywhere below).
+   ============================================================ */
+
+html body table.inquiry-action-table thead th.col-action,
+html body table.inquiry-action-table tbody td.col-action,
+html body table.inquiry-action-table tbody td.inquiry-action-td,
+html body table.inquiry-action-table thead th:last-child,
+html body table.inquiry-action-table tbody td:last-child {
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Whatever is inside the frozen cell must wrap/shrink, never push
+   past the cell edge (this is what made it look "unfrozen"). */
+.inquiry-action-table td.col-action .qs-action-cell,
+.inquiry-action-table td.col-action .qs-action-compact,
+.inquiry-action-table td:last-child .qs-action-cell,
+.inquiry-action-table td:last-child .qs-action-compact {
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* The scroll container itself must never let the frozen cell be
+   dragged along — belt-and-braces on top of the earlier rule. */
+html body .crm-app-body .table-responsive.inquiry-grid,
+html body .crm-app-body .inquiry-grid.table-responsive {
+  scroll-padding-right: 0 !important;
+}
+
+
+/* ---- More rows: tighter pipeline table ---- */
+html body table.inquiry-action-table.compact-crm-table > tbody > tr > td {
+  padding-top: 0.28rem !important;
+  padding-bottom: 0.28rem !important;
+  font-size: 0.82rem !important;
+  line-height: 1.25 !important;
+}
+html body table.inquiry-action-table.compact-crm-table > thead > tr > th {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+  font-size: 0.78rem !important;
+}
+html body table.inquiry-action-table .mini-muted {
+  font-size: 0.72rem !important;
+  line-height: 1.2 !important;
+  margin-top: 1px !important;
+}
+html body table.inquiry-action-table .badge.status-badge {
+  font-size: 0.7rem !important;
+  padding: 0.2rem 0.45rem !important;
+}
+html body .qs-icon-btn {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 0.85rem !important;
+}
+html body table.inquiry-action-table thead th.col-action,
+html body table.inquiry-action-table tbody td.col-action,
+html body table.inquiry-action-table tbody td.inquiry-action-td {
+  min-width: 120px !important;
+  max-width: 120px !important;
+  width: 120px !important;
+  padding: 4px 4px !important;
+}
+
+/* ============================================================
+   2026-09-10 v3 — long unbroken notes overflowing the timeline
+   card ("...priceAAAAAAAAAAAA..." running past the card edge).
+   .timeline-row / .timeline-panel had no word-break rule, so a
+   note with no spaces had nowhere to wrap. Applies to both the
+   Details-page "Full Status Timeline" panel and the pipeline
+   table's history popup.
+   ============================================================ */
+.timeline-row,
+.timeline-panel .timeline-row,
+.crm-history-modal .timeline-row {
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+.timeline-row p,
+.timeline-row span,
+.timeline-panel .timeline-row p,
+.timeline-panel .timeline-row span,
+.crm-history-modal .timeline-row p,
+.crm-history-modal .timeline-row span {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+}
+
+/* ============================================================
+   2026-09-10 v3 — pipeline toolbar: the search box and the
+   "records per page" selector were wrapping onto their own
+   separate lines (each on its own row) even though there was
+   plenty of horizontal room, which cost the table an extra row
+   of vertical space for no reason. Force them onto one line on
+   any normal desktop width and let only the page-size box keep
+   its natural (auto) width instead of stretching full width.
+   ============================================================ */
+.enterprise-table-toolbar {
+  margin-bottom: 8px !important;
+}
+@media (min-width: 576px) {
+  .enterprise-table-toolbar .toolbar-left {
+    flex-wrap: nowrap !important;
+  }
+}
+.enterprise-table-toolbar .toolbar-left select[data-table-pagesize] {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+.enterprise-table-toolbar .toolbar-left input[data-table-search] {
+  flex: 0 1 280px !important;
+}
+
+
+/* ============================================================
+   Full Status Timeline – scroll when many updates
+   ============================================================ */
+.timeline-list-scroll,
+.timeline-panel .timeline-list,
+.crm-history-modal .timeline-list {
+  max-height: min(60vh, 520px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 6px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+.timeline-list-scroll::-webkit-scrollbar,
+.timeline-panel .timeline-list::-webkit-scrollbar,
+.crm-history-modal .timeline-list::-webkit-scrollbar {
+  width: 8px;
+}
+.timeline-list-scroll::-webkit-scrollbar-thumb,
+.timeline-panel .timeline-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.45);
+  border-radius: 8px;
+}
+
+/* Nuclear sticky helpers – JS sets data-sticky-ready on scrollport */
+.inquiry-grid[data-sticky-ready="1"] {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  position: relative !important;
+}
+
+
+/* Virtual scroll viewport for Inquiry Pipeline */
+.virtual-scroll-port {
+  max-height: min(70vh, calc(100vh - 260px)) !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+tr.virtual-pad > td {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+
+/* Virtual scroll performance */
+.virtual-scroll-port {
+  contain: content;
+  will-change: scroll-position;
+}
+.virtual-scroll-port table.inquiry-action-table > tbody > tr:not(.virtual-pad) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 44px;
+}
+.virtual-scroll-port table.inquiry-action-table > tbody > tr.virtual-pad {
+  content-visibility: visible;
+}

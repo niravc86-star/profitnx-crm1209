@@ -1,0 +1,150 @@
+@model ImplementationFormViewModel
+@using ProfitNx.CRM.Models
+@{
+    var isEdit = !string.IsNullOrWhiteSpace(Model.Id);
+    ViewData["Title"] = isEdit ? "Update Implementation & Training" : "New Implementation / Training";
+    ViewData["Subtitle"] = isEdit ? "Customer details are locked. Update only delivery, ownership and training information." : "Create a new implementation, additional training or paid training record.";
+    var heads = ViewBag.SupportHeads as List<AppUser> ?? new();
+    var members = ViewBag.SupportMembers as List<AppUser> ?? new();
+    var canViewPin = ViewBag.CanViewPin as bool? ?? false;
+    var canAssign = ViewBag.CanAssign as bool? ?? false;
+    var canPaidTraining = ViewBag.CanPaidTraining as bool? ?? false;
+}
+<div class="content-narrow implementation-form-page">
+    <form asp-action="@(isEdit ? "Edit" : "Create")" method="post" class="crm-panel form-panel" id="implementationForm">
+        @Html.AntiForgeryToken()
+        <input asp-for="Id" type="hidden" /><input asp-for="InquiryId" type="hidden" />
+        <div class="panel-heading implementation-heading">
+            <div>
+                <span class="section-label">Implementation & Training</span>
+                <h3>@(isEdit ? "Update Delivery Workflow" : "Create New Record")</h3>
+                <p>@(isEdit ? "Customer and license master details cannot be changed from this module." : "Only License Number, Company Name, Person Name, City and Mobile Number are compulsory. Other details are optional.")</p>
+            </div>
+            @if (isEdit) { <span class="readonly-badge"><i class="bi bi-lock-fill"></i> Customer details locked</span> }
+        </div>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <div class="form-section">
+            <div class="form-section-title"><span>1</span><div><h4>Customer & License</h4><p>@(isEdit ? "Read-only reference information." : "Enter License Number first to fetch an existing customer automatically.")</p></div></div>
+            @if (!isEdit)
+            {
+                <div id="licenseLookupMessage" class="license-lookup-message d-none"></div>
+            }
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="LicenseNumber" class="form-label">License Number <b class="required-mark">*</b></label>
+                    <div class="input-group">
+                        <input asp-for="LicenseNumber" class="form-control" readonly="@isEdit" data-license-lookup="@(!isEdit ? "true" : "false")" />
+                        @if (!isEdit) { <button type="button" class="btn btn-outline-primary" id="lookupLicenseButton"><i class="bi bi-search"></i> Fetch</button> }
+                    </div>
+                    <span asp-validation-for="LicenseNumber" class="text-danger"></span>
+                </div>
+                <div class="col-md-4"><label asp-for="FirmName" class="form-label">Company Name <b class="required-mark">*</b></label><input asp-for="FirmName" class="form-control" readonly="@isEdit" /><span asp-validation-for="FirmName" class="text-danger"></span></div>
+                <div class="col-md-4"><label asp-for="PersonName" class="form-label">Person Name <b class="required-mark">*</b></label><input asp-for="PersonName" class="form-control" readonly="@isEdit" /><span asp-validation-for="PersonName" class="text-danger"></span></div>
+                <div class="col-md-4"><label asp-for="Mobile" class="form-label">Mobile Number <b class="required-mark">*</b></label><input asp-for="Mobile" class="form-control" readonly="@isEdit" /><span asp-validation-for="Mobile" class="text-danger"></span></div>
+                <div class="col-md-4"><label asp-for="City" class="form-label">City <b class="required-mark">*</b></label><input asp-for="City" class="form-control" readonly="@isEdit" /><span asp-validation-for="City" class="text-danger"></span></div>
+                <div class="col-md-4"><label asp-for="Email" class="form-label">Customer Email <b class="required-mark">*</b></label><input asp-for="Email" class="form-control" readonly="@isEdit" /><span asp-validation-for="Email" class="text-danger"></span></div>
+                <div class="col-md-4"><label asp-for="ProductName" class="form-label">Product <span class="optional-label">Optional</span></label><input asp-for="ProductName" class="form-control" readonly="@isEdit" /></div>
+                <div class="col-md-2"><label asp-for="LicenseCount" class="form-label">Licenses</label><input asp-for="LicenseCount" class="form-control" readonly="@isEdit" /></div>
+                <div class="col-md-3">
+                    <label asp-for="PinNumber" class="form-label">PIN Number <span class="optional-label">Optional</span></label>
+                    <div class="input-group pin-input-group">
+                        <input asp-for="PinNumber" id="implementationPin" class="form-control" type="@(canViewPin ? "password" : "password")" readonly="@isEdit" />
+                        @if (canViewPin)
+                        {
+                            <button class="btn btn-outline-secondary" type="button" id="toggleImplementationPin" title="Show PIN"><i class="bi bi-eye"></i></button>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-3"><label asp-for="BillNumber" class="form-label">Bill Number <span class="optional-label">Optional</span></label><input asp-for="BillNumber" class="form-control" readonly="@isEdit" /></div>
+                <div class="col-md-3"><label asp-for="SaleDate" class="form-label">Sale / Training Request Date</label><input asp-for="SaleDate" type="date" class="form-control" readonly="@isEdit" /></div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title"><span>2</span><div><h4>Implementation / Training Type</h4><p>Use this for new implementation, additional training or paid training for an old customer.</p></div></div>
+            <div class="row g-3">
+                <div class="col-md-4"><label asp-for="ServiceType" class="form-label">Record Type</label><select asp-for="ServiceType" class="form-select" id="serviceType"><option>New Implementation</option><option>Implementation + Training</option><option>Additional Training</option>@if (canPaidTraining) { <option>Paid Training</option> }<option>Go-Live Support</option></select></div>
+                <div class="col-md-4"><label asp-for="Priority" class="form-label">Priority</label><select asp-for="Priority" class="form-select"><option>Normal</option><option>High</option><option>Urgent</option></select></div>
+                <div class="col-md-4 d-flex align-items-end"><div class="form-check form-switch workflow-switch"><input asp-for="TrainingRequired" class="form-check-input" /><label asp-for="TrainingRequired" class="form-check-label">Training is required</label></div></div>
+                @if (canPaidTraining)
+                {
+                    <div class="col-md-4 d-flex align-items-end"><div class="form-check form-switch workflow-switch"><input asp-for="IsPaidTraining" class="form-check-input" id="isPaidTraining" /><label asp-for="IsPaidTraining" class="form-check-label">Paid training</label></div></div>
+                    <div class="col-md-4 paid-training-field"><label asp-for="PaidTrainingAmount" class="form-label">Training Amount</label><input asp-for="PaidTrainingAmount" class="form-control" /></div>
+                    <div class="col-md-4 paid-training-field"><label asp-for="PaymentReference" class="form-label">Payment / Receipt Reference</label><input asp-for="PaymentReference" class="form-control" placeholder="Receipt no., UTR or remark" /></div>
+                }
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title"><span>3</span><div><h4>Planning & Ownership</h4><p>These fields can be updated without changing customer master details.</p></div></div>
+            <div class="row g-3">
+                @if (canAssign)
+                {
+                    <div class="col-md-6"><label asp-for="SupportHeadId" class="form-label">Support Head</label><select asp-for="SupportHeadId" class="form-select"><option value="">Select support head</option>@foreach (var user in heads) { <option value="@user.Id">@user.FullName</option> }</select></div>
+                    <div class="col-md-6"><label asp-for="AssignedMemberId" class="form-label">Implementation / Support Member</label><select asp-for="AssignedMemberId" class="form-select"><option value="">Assign later</option>@foreach (var user in members) { <option value="@user.Id">@user.FullName</option> }</select></div>
+                }
+                <div class="col-md-4"><label asp-for="PreferredStartDate" class="form-label">Preferred Start Date</label><input asp-for="PreferredStartDate" type="date" class="form-control" /></div>
+                <div class="col-md-4"><label asp-for="PreferredTime" class="form-label">Preferred Time</label><input asp-for="PreferredTime" type="time" class="form-control" /></div>
+                <div class="col-md-2"><label asp-for="PlannedDays" class="form-label">Planned Days</label><input asp-for="PlannedDays" class="form-control" /></div>
+                <div class="col-md-2 d-flex align-items-end"><div class="form-check form-switch mb-2"><input asp-for="CustomerContacted" class="form-check-input" /><label asp-for="CustomerContacted" class="form-check-label">Contacted</label></div></div>
+                <div class="col-12"><label asp-for="Notes" class="form-label">Implementation / Training Notes</label><textarea asp-for="Notes" rows="3" class="form-control" placeholder="Topics required, availability, old customer paid training details, pending points or special instructions..."></textarea></div>
+            </div>
+        </div>
+
+        <div class="form-actions"><a asp-action="@(isEdit ? "Details" : "Index")" asp-route-id="@Model.Id" class="btn btn-light">Cancel</a><button class="btn btn-primary"><i class="bi bi-check2-circle"></i> @(isEdit ? "Save Workflow Changes" : "Create Record & Notify")</button></div>
+    </form>
+</div>
+<script>
+(function(){
+    const pin=document.getElementById('implementationPin');
+    const toggle=document.getElementById('toggleImplementationPin');
+    if(pin&&toggle){toggle.addEventListener('click',()=>{const show=pin.type==='password';pin.type=show?'text':'password';toggle.innerHTML=show?'<i class="bi bi-eye-slash"></i>':'<i class="bi bi-eye"></i>';toggle.title=show?'Hide PIN':'Show PIN';});}
+
+    const type=document.getElementById('serviceType');
+    const paid=document.getElementById('isPaidTraining');
+    const paidFields=[...document.querySelectorAll('.paid-training-field')];
+    function showHidePaidFields(){const show=(paid&&paid.checked)||(type&&type.value==='Paid Training');paidFields.forEach(x=>x.classList.toggle('d-none',!show));}
+    // FIX (2026-08-18, per request): "Paid Training" must only ever get
+    // selected automatically when the record actually IS paid (Record Type =
+    // "Paid Training"). It must never stay stuck ON for a free record - so
+    // when the Record Type changes AWAY from "Paid Training" we now switch
+    // the toggle back off automatically instead of leaving it hard-set. The
+    // toggle itself stays a plain optional switch the person can still tick
+    // manually for any other record type (e.g. paid Additional Training for
+    // an old customer) - only the Record Type dropdown drives the auto-set.
+    type?.addEventListener('change',function(){
+        if(!paid) { showHidePaidFields(); return; }
+        if(type.value==='Paid Training') paid.checked=true;
+        else paid.checked=false;
+        showHidePaidFields();
+    });
+    paid?.addEventListener('change',showHidePaidFields);
+    showHidePaidFields();
+
+    // A free record (Paid training left OFF) must always be able to save -
+    // nothing here or in required-field-highlight.js treats this switch as
+    // mandatory (see the checkbox fix in required-field-highlight.js).
+
+    const license=document.querySelector('[data-license-lookup="true"]');
+    const lookup=document.getElementById('lookupLicenseButton');
+    const message=document.getElementById('licenseLookupMessage');
+    async function fetchCustomer(){
+        const value=(license?.value||'').trim(); if(!value)return;
+        if(message){message.className='license-lookup-message loading';message.textContent='Checking existing customer details...';}
+        try{
+            const response=await fetch('@Url.Action("CustomerByLicense", "Implementation")?licenseNumber='+encodeURIComponent(value),{headers:{'X-Requested-With':'XMLHttpRequest'}});
+            const data=await response.json();
+            if(!data.found){if(message){message.className='license-lookup-message warning';message.textContent='No existing customer found. Enter the five required details to continue.';}return;}
+            // NOTE: 'implementationPin' is the PIN Number field's element id
+            // (it overrides the default asp-for id) - included here so PIN
+            // Number auto-fills from the fetched customer's existing record
+            // instead of needing to be typed in again.
+            const map={InquiryId:'inquiryId',FirmName:'firmName',PersonName:'personName',Mobile:'mobile',Email:'email',City:'city',ProductName:'productName',LicenseCount:'licenseCount',BillNumber:'billNumber',SaleDate:'saleDate',implementationPin:'pinNumber'};
+            Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el&&data[key]!==undefined&&data[key]!==null)el.value=data[key];});
+            if(message){message.className='license-lookup-message success';message.textContent='Existing customer details fetched successfully. Verify the details and continue.';}
+        }catch{if(message){message.className='license-lookup-message warning';message.textContent='Customer lookup could not be completed. You can continue by entering the required details.';}}
+    }
+    lookup?.addEventListener('click',fetchCustomer); license?.addEventListener('blur',fetchCustomer);
+})();
+</script>

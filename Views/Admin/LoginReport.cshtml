@@ -1,0 +1,136 @@
+@model List<ProfitNx.CRM.Models.LoginLog>
+@{
+    ViewData["Title"] = "Login History Report";
+    ViewData["Subtitle"] = "Live sessions, device footprint and full login timeline";
+    var fromDate = (DateTime?)ViewBag.FromDate ?? DateTime.Today.AddDays(-30);
+    var toDate = (DateTime?)ViewBag.ToDate ?? DateTime.Today;
+    var liveUsers = ViewBag.LiveUsers as List<ProfitNx.CRM.Models.LiveUserInfo> ?? new();
+    var liveCount = (int)(ViewBag.LiveCount ?? 0);
+    var allUsers = ViewBag.AllUsers as List<ProfitNx.CRM.Models.AppUser> ?? new();
+    var filterUserId = ViewBag.UserId as string ?? "";
+    var todayLogins = Model.Count(x => x.LoginAt.Date == DateTime.Today);
+    var uniqueUsers = Model.Select(x => x.UserId).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+    var canDelete = ViewBag.CanDeleteLoginHistory as bool? ?? false;
+}
+<link rel="stylesheet" href="~/css/login-report.css" asp-append-version="true" />
+<div class="lr-page">
+    <div class="lr-hero">
+        <div>
+            <div class="lr-eyebrow"><i class="bi bi-shield-lock-fill"></i> SECURITY &amp; ACCESS</div>
+            <h2 class="lr-title">Login History Report</h2>
+            <p class="lr-sub">Track who signed in, from which PC/device, and who is live right now.</p>
+        </div>
+        <div class="lr-hero-actions">
+            <span class="lr-live-pill"><span class="lr-pulse"></span> @liveCount Live now</span>
+            @if (canDelete)
+            {
+                <form asp-action="DeleteAllLoginHistory" method="post" class="lr-delete-all-form"
+                      onsubmit="return confirm('Delete ALL login history records permanently? This cannot be undone.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="lr-btn danger"><i class="bi bi-trash3-fill"></i> Delete All History</button>
+                </form>
+            }
+        </div>
+    </div>
+    <div class="lr-kpi-row">
+        <div class="lr-kpi teal"><div class="lr-kpi-label">Live Users Now</div><div class="lr-kpi-value">@liveCount</div><div class="lr-kpi-hint">Active in last 15 minutes</div></div>
+        <div class="lr-kpi indigo"><div class="lr-kpi-label">Logins Today</div><div class="lr-kpi-value">@todayLogins</div><div class="lr-kpi-hint">@DateTime.Today.ToString("dd/MM/yyyy")</div></div>
+        <div class="lr-kpi amber"><div class="lr-kpi-label">Rows in Filter</div><div class="lr-kpi-value">@Model.Count</div><div class="lr-kpi-hint">@fromDate.ToString("dd/MM/yyyy") – @toDate.ToString("dd/MM/yyyy")</div></div>
+        <div class="lr-kpi rose"><div class="lr-kpi-label">Unique Users</div><div class="lr-kpi-value">@uniqueUsers</div><div class="lr-kpi-hint">In selected range</div></div>
+    </div>
+    <div class="lr-card lr-live-card">
+        <div class="lr-card-head"><h3>Currently Live</h3><span class="lr-chip">Real-time</span></div>
+        @if (liveUsers.Any())
+        {
+            <div class="lr-live-grid">
+            @foreach (var u in liveUsers)
+            {
+                <div class="lr-live-item">
+                    <div class="lr-avatar">@(string.IsNullOrWhiteSpace(u.FullName) ? "?" : u.FullName.Trim()[0].ToString().ToUpper())</div>
+                    <div class="lr-live-meta">
+                        <div class="lr-live-name">@u.FullName <span class="lr-role">@u.Role</span></div>
+                        <div class="lr-live-detail">@u.DeviceSummary · @u.IpAddress</div>
+                        <div class="lr-live-detail">Last seen @u.LastSeenAt.ToString("dd/MM/yyyy hh:mm tt")</div>
+                    </div>
+                    <span class="lr-dot"></span>
+                </div>
+            }
+            </div>
+        }
+        else { <div class="lr-empty">No active sessions in the last 15 minutes.</div> }
+    </div>
+    <div class="lr-card">
+        <div class="lr-card-head"><h3>Filters</h3></div>
+        <form method="get" class="lr-filters">
+            <div><label>From Date</label><input type="date" name="fromDate" value="@fromDate.ToString("yyyy-MM-dd")" /></div>
+            <div><label>To Date</label><input type="date" name="toDate" value="@toDate.ToString("yyyy-MM-dd")" /></div>
+            <div>
+                <label>User</label>
+                <select name="userId">
+                    <option value="">All Users</option>
+                    @foreach (var u in allUsers.OrderBy(x => x.FullName))
+                    {
+                        if (filterUserId == u.Id) { <option value="@u.Id" selected>@u.FullName (@u.Username)</option> }
+                        else { <option value="@u.Id">@u.FullName (@u.Username)</option> }
+                    }
+                </select>
+            </div>
+            <div class="lr-filter-actions">
+                <button type="submit" class="lr-btn primary"><i class="bi bi-funnel-fill"></i> Apply</button>
+                <a class="lr-btn ghost" href="@Url.Action("LoginReport", "Admin")">Reset</a>
+            </div>
+        </form>
+    </div>
+    <div class="lr-card">
+        <div class="lr-card-head"><h3>Login Timeline</h3><span class="lr-chip">@Model.Count records</span></div>
+        <div class="lr-table-wrap">
+            <table class="lr-table">
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Time (12 hr)</th><th>User</th><th>Role</th>
+                        <th>PC / Device</th><th>IP Address</th><th>Logout</th><th>Status</th>
+                        @if (canDelete) { <th class="lr-col-action">Action</th> }
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+                            <td class="lr-date">@row.LoginAt.ToString("dd/MM/yyyy")</td>
+                            <td class="lr-time">@row.LoginAt.ToString("hh:mm:ss tt")</td>
+                            <td><div class="lr-user"><strong>@row.FullName</strong><span>@row.UserName</span></div></td>
+                            <td><span class="lr-role-badge">@row.Role</span></td>
+                            <td>@row.DeviceSummary</td>
+                            <td><code class="lr-ip">@row.IpAddress</code></td>
+                            <td>@(row.LogoutAt.HasValue ? row.LogoutAt.Value.ToString("dd/MM/yyyy hh:mm tt") : "—")</td>
+                            <td>
+                                @if (row.IsActive) { <span class="lr-status on">Active</span> }
+                                else { <span class="lr-status off">Ended</span> }
+                            </td>
+                            @if (canDelete)
+                            {
+                                <td class="lr-col-action">
+                                    <form asp-action="DeleteLoginHistory" method="post" class="lr-delete-one-form"
+                                          onsubmit="return confirm('Delete this login record for @row.FullName on @row.LoginAt.ToString("dd/MM/yyyy hh:mm tt")?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@row.Id" />
+                                        <input type="hidden" name="fromDate" value="@fromDate.ToString("yyyy-MM-dd")" />
+                                        <input type="hidden" name="toDate" value="@toDate.ToString("yyyy-MM-dd")" />
+                                        <input type="hidden" name="userId" value="@filterUserId" />
+                                        <button type="submit" class="lr-btn danger sm" title="Delete this record">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+                else { <tr><td colspan="@(canDelete ? 9 : 8)" class="lr-empty-cell">No login records for selected filters.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

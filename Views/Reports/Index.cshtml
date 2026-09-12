@@ -1,0 +1,980 @@
+@model ReportsDashboardViewModel
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    var roleName = ViewBag.RoleName as string ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+    var isAdmin = roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+    var isSupport = roleName.Equals("Support", StringComparison.OrdinalIgnoreCase);
+    var isSupportHead = roleName.Equals("SupportHead", StringComparison.OrdinalIgnoreCase);
+    var isPartner = roleName.Equals("Partner", StringComparison.OrdinalIgnoreCase);
+    var canSeeAmount = (bool?)ViewBag.CanSeeAmount ?? isAdmin;
+    var target = (decimal?)ViewBag.TargetAmount ?? 0;
+    var pendingTarget = (decimal?)ViewBag.PendingTarget ?? 0;
+    var visible = ViewBag.VisibleInquiries as List<Inquiry> ?? new();
+    var partnerNames = ViewBag.PartnerNames as List<string> ?? new();
+    var userNames = ViewBag.UserNames as List<string> ?? new();
+    var supportUserNames = ViewBag.SupportUserNames as List<string> ?? new();
+    var products = ViewBag.Products as List<string> ?? new();
+    var versions = ViewBag.Versions as List<string> ?? new();
+    var reportType = (ViewBag.ReportType as string ?? "overview").ToLowerInvariant();
+    var isAiReport = reportType.StartsWith("ai", StringComparison.OrdinalIgnoreCase);
+    var criticalFollowUps = Model.AiPriorityLeads.Count(x => x.Priority == "Critical");
+    var highFollowUps = Model.AiPriorityLeads.Count(x => x.Priority == "High");
+    var hotOpportunities = Model.AiOpportunities.Count(x => x.ConversionScore >= 70);
+    // Show filters when user has explicit report permission OR is admin/supporthead
+    var showPartnerFilter = (await PermissionService.HasPermissionAsync(User, "reports.partner") || isAdmin) && (reportType == "partner" || reportType == "detailed" || reportType == "overview" || isAiReport);
+    var showUserFilter = (await PermissionService.HasPermissionAsync(User, "reports.user") || isAdmin) && (reportType == "user" || reportType == "detailed" || reportType == "overview" || isAiReport);
+    var showSupportFilter = (await PermissionService.HasPermissionAsync(User, "reports.support") || isAdmin || isSupportHead) && (reportType == "support" || reportType == "detailed" || reportType == "overview" || isAiReport);
+    var canReportUser = await PermissionService.HasPermissionAsync(User, "reports.user") || isAdmin;
+    var canReportSupport = await PermissionService.HasPermissionAsync(User, "reports.support") || isAdmin || isSupportHead;
+    var canReportAdmin = await PermissionService.HasPermissionAsync(User, "reports.admin") || isAdmin;
+    var canExport = await PermissionService.HasPermissionAsync(User, "field.reports.export");
+    var showSoldByFilter = reportType == "product" || reportType == "partner" || reportType == "user" || reportType == "admin" || reportType == "detailed";
+    ViewData["Title"] = ViewBag.ReportTitle ?? "Reports";
+    ViewData["Subtitle"] = ViewBag.ReportSubTitle;
+    var conversion = Model.TotalInquiries == 0 ? 0 : (Model.SoldCount * 100 / Model.TotalInquiries);
+    var achievement = target <= 0 ? 0 : Math.Min(100, (int)Math.Round(Model.TotalSalesAmount * 100 / target));
+    string Dt(DateTime d) => d.TimeOfDay.TotalSeconds == 0 ? d.ToString("dd/MM/yyyy") : d.ToString("dd/MM/yyyy HH:mm");
+    string DmyFromIso(string? iso) => DateTime.TryParse(iso, out var dd) ? dd.ToString("dd/MM/yyyy") : string.Empty;
+    string StatusBadgeClass(string status) => status switch
+    {
+        "Sold" => "bg-soft-success",
+        "Close" => "bg-soft-danger",
+        "Follow Up" => "bg-soft-warning",
+        "Demo Scheduled" => "bg-soft-info",
+        "Demo Done" => "bg-soft-info",
+        _ => "bg-soft-primary"
+    };
+}
+
+@if(reportType != "training" && (reportType != "overview" || isSupportHead))
+{
+<div class="card-soft p-3 mb-4 no-print professional-filter-card report-filter-card">
+    <form method="get" class="professional-filter-grid compact-filter-grid report-filter-grid" style="align-items:end">
+        <input type="hidden" name="reportType" value="@reportType" />
+        <div class="filter-cell">
+            <label class="form-label small">From Date</label>
+            <div class="dmy-date-field">
+                <input type="text" inputmode="numeric" autocomplete="off" class="form-control dmy-date-input" placeholder="DD/MM/YYYY" maxlength="10" value="@DmyFromIso(ViewBag.FromDate as string)" data-hidden-target="fromDateHidden" style="min-width:140px" />
+                <i class="bi bi-calendar3"></i>
+            </div>
+            <input type="hidden" name="fromDate" id="fromDateHidden" value="@ViewBag.FromDate" />
+        </div>
+        <div class="filter-cell">
+            <label class="form-label small">To Date</label>
+            <div class="dmy-date-field">
+                <input type="text" inputmode="numeric" autocomplete="off" class="form-control dmy-date-input" placeholder="DD/MM/YYYY" maxlength="10" value="@DmyFromIso(ViewBag.ToDate as string)" data-hidden-target="toDateHidden" style="min-width:140px" />
+                <i class="bi bi-calendar3"></i>
+            </div>
+            <input type="hidden" name="toDate" id="toDateHidden" value="@ViewBag.ToDate" />
+        </div>
+        <div class="filter-cell"><label class="form-label small">Status</label><select name="status" class="form-select"><option value="">All Status</option>@foreach(var s in ProfitNx.CRM.Services.InquiryService.StatusOptions){<option value="@s" selected="@(ViewBag.SelectedStatus==s)">@s</option>}</select></div>
+        <div class="filter-cell"><label class="form-label small">Product</label><select name="product" class="form-select"><option value="">All Products</option>@foreach(var p in products){<option value="@p" selected="@(ViewBag.SelectedProduct==p)">@p</option>}</select></div>
+        <div class="filter-cell"><label class="form-label small">Version</label><select name="version" class="form-select"><option value="">All Versions</option>@foreach(var v in versions){<option value="@v" selected="@(ViewBag.SelectedVersion==v)">@v</option>}</select></div>
+        @if(reportType == "source"){var sourceNames = ViewBag.SourceNames as List<string> ?? new();<div class="filter-cell"><label class="form-label small">Source</label><select name="source" class="form-select"><option value="">All Sources</option>@foreach(var s in sourceNames){<option value="@s" selected="@(ViewBag.SelectedSource as string==s)">@s</option>}</select></div>}
+        @if(showPartnerFilter){<div class="filter-cell"><label class="form-label small">Partner</label><select name="partner" class="form-select"><option value="">All Partners</option>@foreach(var p in partnerNames){<option value="@p" selected="@(ViewBag.SelectedPartner==p)">@p</option>}</select></div>}
+        @if(showUserFilter){<div class="filter-cell"><label class="form-label small">User</label><select name="userName" class="form-select"><option value="">All Users</option>@foreach(var u in userNames){<option value="@u" selected="@(ViewBag.SelectedUserName==u)">@u</option>}</select></div>}
+        @if(showSupportFilter){<div class="filter-cell"><label class="form-label small">Support Member</label><select name="supportUser" class="form-select"><option value="">All Support Members</option>@foreach(var u in supportUserNames){<option value="@u" selected="@(ViewBag.SelectedSupportUser==u)">@u</option>}</select></div>}
+        @if(showSoldByFilter){<div class="filter-cell"><label class="form-label small">Sold By</label><input name="soldBy" value="@ViewBag.SelectedSoldBy" class="form-control" placeholder="Sold by" /></div>}
+        <div class="filter-cell search-cell"><label class="form-label small">Customer / Mobile</label><input name="customer" value="@ViewBag.SelectedCustomer" class="form-control" placeholder="Search customer or mobile" /></div>
+        <div class="filter-actions"><button class="btn btn-brand">Apply Filters</button><a asp-action="Index" asp-route-reportType="@reportType" class="btn btn-outline-secondary">Clear</a></div>
+    </form>
+</div>
+
+}
+
+@{ var isProGridReport = reportType == "source" || reportType == "training"; }
+@if (!isProGridReport)
+{
+<div class="d-flex justify-content-end gap-2 mb-3 no-print flex-wrap">
+    <input id="reportGlobalFilter" class="form-control rounded-pill" style="max-width:360px" placeholder="Quick search in visible report" />
+    @if (canExport && !isAiReport) { <a asp-action="ExportExcel" asp-route-fromDate="@ViewBag.FromDate" asp-route-toDate="@ViewBag.ToDate" asp-route-status="@ViewBag.SelectedStatus" asp-route-product="@ViewBag.SelectedProduct" asp-route-version="@ViewBag.SelectedVersion" asp-route-partner="@ViewBag.SelectedPartner" asp-route-userName="@ViewBag.SelectedUserName" asp-route-supportUser="@ViewBag.SelectedSupportUser" asp-route-soldBy="@ViewBag.SelectedSoldBy" asp-route-customer="@ViewBag.SelectedCustomer" asp-route-reportType="@reportType" class="btn btn-soft"><i class="bi bi-file-earmark-excel"></i> Export Excel</a> }
+    <button onclick="window.print()" class="btn btn-soft"><i class="bi bi-printer"></i> Print / Save PDF</button>
+</div>
+}
+
+@if (isAiReport)
+{
+    <nav class="ai-report-nav no-print" aria-label="AI reports">
+        <a asp-action="Index" asp-route-reportType="ai" class="@(reportType == "ai" ? "active" : "")"><i class="bi bi-stars"></i><span><b>Business Summary</b><small>Overall CRM signals</small></span></a>
+        <a asp-action="Index" asp-route-reportType="ai-followup" class="@(reportType == "ai-followup" ? "active" : "")"><i class="bi bi-alarm-fill"></i><span><b>Follow-up Priority</b><small>What needs action first</small></span></a>
+        <a asp-action="Index" asp-route-reportType="ai-conversion" class="@(reportType == "ai-conversion" ? "active" : "")"><i class="bi bi-funnel-fill"></i><span><b>Conversion Coach</b><small>High-intent opportunities</small></span></a>
+        <a asp-action="Index" asp-route-reportType="ai-focus" class="@(reportType == "ai-focus" ? "active" : "")"><i class="bi bi-bullseye"></i><span><b>Growth Focus</b><small>Product and partner focus</small></span></a>
+    </nav>
+}
+
+@if ((isSupport || isSupportHead) && !isAiReport && reportType != "source" && reportType != "training")
+{
+    <section class="simple-report-card mb-4 report-print-section">
+        <div class="d-flex justify-content-between flex-wrap gap-3 mb-3">
+            <div><h2 class="mb-1">@(isSupportHead ? "Support Member Inquiry Status" : "My Submitted Inquiry Status")</h2><p class="mini-muted mb-0">@(isSupportHead ? "Support member wise status grid with product, handler and sold-by details." : "Customer-wise status report for inquiries submitted by your login.")</p></div>
+            <div class="status-summary-pills"><span>Total <b>@Model.TotalInquiries</b></span><span>Sold <b>@Model.SoldCount</b></span><span>Pending <b>@(Model.TotalInquiries-Model.SoldCount-Model.ClosedCount)</b></span><span>Closed <b>@Model.ClosedCount</b></span></div>
+        </div>
+        <div class="enterprise-table-toolbar no-print">
+            <div class="toolbar-left">
+                <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px"
+                       placeholder="Quick search..." data-table-search="supportStatusGrid" aria-label="Quick search" />
+                <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="supportStatusGrid" aria-label="Rows per page">
+                    <option value="20" selected>20 records</option>
+                    <option value="40">40 records</option>
+                    <option value="100">100 records</option>
+                    <option value="200">200 records</option>
+                </select>
+            </div>
+            <div class="toolbar-right">
+                <div class="dropdown" data-table-chooser="supportStatusGrid">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-layout-three-columns"></i> Columns
+                    </button>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="supportStatusGrid" title="Reset layout">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive support-status-simple enterprise-table-scroll">
+            <table class="table align-middle enterprise-data-table" id="supportStatusGrid" data-table-id="supportStatusGrid">
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Customer</th><th>Product</th><th>Support Member</th><th>Status</th>
+                        <th>Handled By</th><th>Sold By</th><th>License</th><th>Next Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var x in visible.OrderByDescending(x => x.LastUpdated))
+                {
+                    <tr>
+                        <td>@Dt(x.CreatedDate)</td>
+                        <td><strong>@(string.IsNullOrWhiteSpace(x.FirmName) ? x.PersonName : x.FirmName)</strong><div class="mini-muted">@x.City · @x.Mobile1</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(x.ProductName) ? "-" : x.ProductName)<div class="mini-muted">@x.VersionType</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(x.SupportExecutiveName) ? "-" : x.SupportExecutiveName)</td>
+                        <td><span class="status-badge @(x.Status=="Sold"?"bg-soft-success":x.Status=="Close"?"bg-soft-danger":"bg-soft-primary")">@x.Status</span></td>
+                        <td>@(string.IsNullOrWhiteSpace(x.AssignedUserName) ? "-" : x.AssignedUserName)<div class="mini-muted">@x.AttendedByRole</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(x.SoldByName) ? "-" : x.SoldByName)<div class="mini-muted">@x.SoldByRole</div></td>
+                        <td>@(x.Status=="Sold" ? (string.IsNullOrWhiteSpace(x.LicenseNumber) ? "-" : x.LicenseNumber) : "-")<div class="mini-muted">Qty: @x.LicensesPurchased</div></td>
+                        <td>@(x.Status=="Sold" ? $"Bill {x.BillNo}" : x.NextFollowUpDate?.ToString("dd/MM/yyyy") ?? x.StatusReason)</td>
+                    </tr>
+                }
+                @if (!visible.Any())
+                {
+                    <tr class="enterprise-empty-row"><td colspan="9" class="text-center text-muted py-4">No support inquiry data found.</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <div class="enterprise-table-pagination no-print">
+            <div class="mini-muted" data-table-info="supportStatusGrid">Loading…</div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="supportStatusGrid" aria-label="Previous page"><i class="bi bi-chevron-left"></i></button>
+                <span class="small" data-table-page="supportStatusGrid">1 / 1</span>
+                <div class="d-flex align-items-center gap-1 flex-wrap enterprise-page-numbers" data-table-pages="supportStatusGrid"></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="supportStatusGrid" aria-label="Next page"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </div>
+    </section>
+    return;
+}
+
+@if(reportType == "overview")
+{
+<section class="report-hero mb-4 report-print-section">
+    <div><h2>@(isAdmin ? "Executive CRM Dashboard" : "My Sales Focus Dashboard")</h2><p>@(isAdmin ? "Sales, stock, partner, product and conversion overview." : "Your visible inquiry pipeline, sales target and next focus areas.")</p></div>
+    <div class="ai-orb logo-orb"><img src="/img-profit-logo.png" alt="ProfitNx" /></div>
+</section>
+
+<section class="admin-dashboard-grid mb-4 report-print-section">
+    <div class="dash-card accent-purple"><span>Total Inquiries</span><strong>@Model.TotalInquiries</strong><i class="ring-mini"></i></div>
+    <div class="dash-card accent-green"><span>Sold</span><strong>@Model.SoldCount</strong><i class="ring-mini"></i></div>
+    <div class="dash-card accent-coral"><span>Follow Up</span><strong>@Model.FollowUps</strong><i class="ring-mini"></i></div>
+    <div class="dash-card accent-cyan"><span>Conversion</span><strong>@conversion%</strong><i class="ring-mini"></i></div>
+    <div class="dash-panel mini-graph-panel"><h4>Target vs Achievement</h4><div class="big-number">@achievement%</div><div class="progress-track"><div class="progress-fill warm" style="width:@achievement%"></div></div><p class="mini-muted">Target: @(target > 0 ? target.ToString("N2") : "Not set") @if(target>0){<span> · Pending: @pendingTarget.ToString("N2")</span>}</p></div>
+    <div class="dash-panel mini-graph-panel"><h4>License Achievement</h4><div class="big-number">@Model.TotalLicensesSold</div><p class="mini-muted">Visible sold license count.</p></div>
+    <div class="dash-panel mini-graph-panel"><h4>Sales Amount</h4><div class="big-number">@(canSeeAmount ? Model.TotalSalesAmount.ToString("N2") : "Hidden")</div><p class="mini-muted">@(canSeeAmount ? "Sold amount without GST." : "Commercial details are hidden for this role.")</p></div>
+</section>
+}
+
+@if(reportType == "overview")
+{
+<div class="row g-4 mb-4 report-print-section" id="analytics">
+    <div class="col-lg-7"><div class="dash-panel h-100"><h4 class="mb-3">Business Focus Analysis</h4>@foreach (var row in Model.StatusFlow){<div class="mb-3"><div class="metric-row"><span>@row.Status</span><strong>@row.Count · @row.Percent%</strong></div><div class="progress-track"><div class="progress-fill" style="width:@row.Percent%"></div></div></div>}</div></div>
+    <div class="col-lg-5"><div class="dash-panel sales-plan-card h-100"><h4 class="mb-3">Smart Growth Suggestions</h4><div class="insight-list"><div><i class="bi bi-people-fill text-primary"></i><span>Focus partners with pending follow-ups</span><strong>@Model.FollowUps</strong></div><div><i class="bi bi-graph-up-arrow text-success"></i><span>Improve sold conversion</span><strong>@conversion%</strong></div><div><i class="bi bi-bullseye text-danger"></i><span>Target gap</span><strong>@(target > 0 ? pendingTarget.ToString("N0") : "Set target")</strong></div></div><p class="mini-muted mt-3 mb-0">Use the separate report menus for product, partner, user, support, admin and detailed pipeline reports. Each report includes filters, Excel export and print/PDF.</p></div></div>
+</div>
+<div class="row g-4 mb-4 report-print-section">
+    <div class="col-md-4"><div class="dash-panel h-100"><h4>Partner Focus</h4><p class="mini-muted mb-2">Prioritize partners with high inquiry count but low sold conversion.</p>@foreach(var p in Model.PartnerWise.OrderByDescending(x=>x.FollowUps).Take(5)){<div class="metric-row"><span>@p.Name</span><strong>@p.FollowUps follow-ups</strong></div>}</div></div>
+    <div class="col-md-4"><div class="dash-panel h-100"><h4>Product Focus</h4><p class="mini-muted mb-2">Promote products with regular movement and review products with low conversion.</p>@foreach(var p in Model.ProductWise.Take(5)){<div class="metric-row"><span>@p.ProductName</span><strong>@p.TotalLicenses licenses</strong></div>}</div></div>
+    <div class="col-md-4"><div class="dash-panel h-100"><h4>Action Priority</h4><p class="mini-muted">Call overdue follow-ups first, then demo scheduled inquiries, then genuine inquiries without next action date.</p><div class="insight-list"><div><i class="bi bi-telephone-outbound-fill text-warning"></i><span>Follow-up queue</span><strong>@Model.FollowUps</strong></div><div><i class="bi bi-cash-coin text-success"></i><span>Sales amount</span><strong>@(canSeeAmount ? Model.TotalSalesAmount.ToString("N0") : "Hidden")</strong></div></div></div></div>
+</div>
+}
+
+<div class="row g-4 mb-4">
+    @if(reportType == "product")
+    {
+    <div class="@(reportType=="product"?"col-12":"col-xl-6") report-print-section" id="product"><div class="dash-panel h-100"><h4 class="mb-3">Product / Version Wise Sold</h4><div class="table-responsive"><table class="table align-middle report-table"><thead><tr><th>Product</th><th>Version</th><th>Sold</th><th>Licenses</th>@if(canSeeAmount){<th>Amount</th>}<th></th></tr></thead><tbody>@foreach(var row in Model.ProductWise){<tr><td>@row.ProductName</td><td>@row.VersionType</td><td>@row.SoldCount</td><td>@row.TotalLicenses</td>@if(canSeeAmount){<td>@row.TotalAmount.ToString("N2")</td>}<td><a asp-action="ProductDetails" asp-route-productName="@row.ProductName" asp-route-versionType="@row.VersionType" class="btn btn-sm btn-outline-info">Party Wise</a></td></tr>}@if(!Model.ProductWise.Any()){<tr><td colspan="@(canSeeAmount?6:5)" class="text-center text-muted">No sold data yet.</td></tr>}</tbody></table></div></div></div>
+    }
+    @if(reportType == "partner")
+    {
+    <div class="@(reportType=="partner"?"col-12":"col-xl-6") report-print-section"><div class="dash-panel h-100"><h4 class="mb-3">Partner Performance</h4>@await Html.PartialAsync("_PerformanceTable", Model.PartnerWise)</div></div>
+    }
+    @if(canReportUser && (reportType == "user")){<div class="col-12 report-print-section" id="user"><div class="dash-panel h-100"><h4>User Performance</h4>@await Html.PartialAsync("_PerformanceTable", Model.UserWise)</div></div>}
+    @if(canReportSupport && (reportType == "support")){<div class="col-12 report-print-section" id="support"><div class="dash-panel h-100"><h4>Support Team Performance</h4>@await Html.PartialAsync("_PerformanceTable", Model.SupportWise)</div></div>}
+    @if(canReportAdmin && (reportType == "admin")){<div class="col-12 report-print-section" id="admin"><div class="dash-panel h-100"><h4>Admin Performance</h4>@await Html.PartialAsync("_PerformanceTable", Model.AdminWise)</div></div>}
+</div>
+
+@if(reportType == "ai")
+{
+<section class="report-hero mb-4 report-print-section ai-report-hero premium-ai-hero">
+    <div><div class="eyebrow">FREE · LOCAL · NO API KEY</div><h2>AI Business Summary</h2><p>Rule-based intelligence calculated from the CRM records visible to your login. Customer data is not sent to any paid AI service.</p></div>
+    <div class="ai-orb"><i class="bi bi-cpu-fill"></i></div>
+</section>
+<section class="ai-summary-grid mb-4 report-print-section">
+    <article class="ai-summary-card danger"><span>Critical Follow-ups</span><strong>@criticalFollowUps</strong><small>Immediate attention recommended</small><i class="bi bi-exclamation-triangle-fill"></i></article>
+    <article class="ai-summary-card warning"><span>High Priority</span><strong>@highFollowUps</strong><small>Action should be planned today</small><i class="bi bi-alarm-fill"></i></article>
+    <article class="ai-summary-card success"><span>Hot Opportunities</span><strong>@hotOpportunities</strong><small>Conversion score 70 or above</small><i class="bi bi-fire"></i></article>
+    <article class="ai-summary-card info"><span>Active Pipeline</span><strong>@Model.AiOpportunities.Count</strong><small>Genuine or pending-quality active leads</small><i class="bi bi-funnel-fill"></i></article>
+</section>
+<div class="row g-4 report-print-section">
+@foreach (var insight in Model.AiInsights)
+{
+    <div class="col-lg-6">
+        <article class="dash-panel ai-insight-card h-100 severity-@insight.Severity" title="Insight score: @insight.Score">
+            <div class="d-flex align-items-start gap-3"><div class="ai-insight-icon"><i class="bi @insight.Icon"></i></div><div><h4>@insight.Title</h4><p class="mb-3">@insight.Insight</p><div class="ai-action"><strong>Recommended action</strong><span>@insight.RecommendedAction</span></div></div></div>
+        </article>
+    </div>
+}
+</div>
+}
+
+@if(reportType == "ai-followup")
+{
+<section class="report-hero mb-4 report-print-section ai-report-hero premium-ai-hero">
+    <div><div class="eyebrow">FREE PRIORITY ENGINE</div><h2>Follow-up Priority Report</h2><p>Priorities use overdue days, unattended forwarding, lead stage, genuine status and inquiry age.</p></div>
+    <div class="ai-orb"><i class="bi bi-alarm-fill"></i></div>
+</section>
+<div class="dash-panel report-print-section">
+    <div class="ai-section-heading"><div><h4>Recommended Action Queue</h4><p>Start from the highest score. This report does not automatically change CRM records.</p></div><span class="ai-free-chip">FREE LOCAL LOGIC</span></div>
+    <div class="table-responsive"><table class="table align-middle report-table ai-data-table"><thead><tr><th>Priority</th><th>Score</th><th>Customer</th><th>Product / Stage</th><th>Owner</th><th>Next Action</th><th>Why Prioritized</th><th></th></tr></thead><tbody>
+    @foreach(var row in Model.AiPriorityLeads){<tr><td><span class="ai-priority priority-@row.Priority.ToLowerInvariant()">@row.Priority</span></td><td><strong class="ai-score">@row.PriorityScore</strong></td><td><strong>@row.Customer</strong><div class="mini-muted">@row.Mobile · @row.DaysOpen day(s) open</div></td><td>@row.Product<div class="mini-muted">@row.Status</div></td><td>@row.Owner</td><td>@(row.NextActionDate?.ToString("dd/MM/yyyy") ?? "Not set")</td><td class="ai-reason">@row.Reason</td><td><a asp-controller="Inquiry" asp-action="Edit" asp-route-id="@row.InquiryId" class="btn btn-sm btn-outline-primary">Open</a></td></tr>}
+    @if(!Model.AiPriorityLeads.Any()){<tr><td colspan="8" class="text-center text-muted py-5">No active genuine inquiry requires priority attention for the selected filters.</td></tr>}
+    </tbody></table></div>
+</div>
+}
+
+@if(reportType == "ai-conversion")
+{
+<section class="report-hero mb-4 report-print-section ai-report-hero premium-ai-hero">
+    <div><div class="eyebrow">FREE CONVERSION COACH</div><h2>Conversion Opportunity Report</h2><p>Ranks active inquiries by stage, quality, product completeness and next-action discipline.</p></div>
+    <div class="ai-orb"><i class="bi bi-funnel-fill"></i></div>
+</section>
+<div class="dash-panel report-print-section">
+    <div class="ai-section-heading"><div><h4>Highest Conversion Potential</h4><p>Scores are practical CRM guidance, not a guarantee of sale.</p></div><span class="ai-free-chip">0–100 SCORE</span></div>
+    <div class="table-responsive"><table class="table align-middle report-table ai-data-table"><thead><tr><th>Potential</th><th>Customer</th><th>Product</th><th>Stage</th><th>Quality</th><th>Owner</th><th>Recommended Next Step</th><th>Updated</th><th></th></tr></thead><tbody>
+    @foreach(var row in Model.AiOpportunities){<tr><td><div class="ai-score-meter"><strong>@row.ConversionScore</strong><span><i style="width:@row.ConversionScore%"></i></span></div></td><td><strong>@row.Customer</strong></td><td>@row.Product</td><td><span class="status-badge bg-soft-primary">@row.Stage</span></td><td>@row.Quality</td><td>@row.Owner</td><td class="ai-reason">@row.RecommendedAction</td><td>@row.LastUpdated.ToString("dd/MM/yyyy")</td><td><a asp-controller="Inquiry" asp-action="Edit" asp-route-id="@row.InquiryId" class="btn btn-sm btn-outline-primary">Open</a></td></tr>}
+    @if(!Model.AiOpportunities.Any()){<tr><td colspan="9" class="text-center text-muted py-5">No active conversion opportunities are available for the selected filters.</td></tr>}
+    </tbody></table></div>
+</div>
+}
+
+@if(reportType == "ai-focus")
+{
+<section class="report-hero mb-4 report-print-section ai-report-hero premium-ai-hero">
+    <div><div class="eyebrow">FREE GROWTH ANALYSIS</div><h2>Product & Partner Growth Focus</h2><p>Highlights active volume, conversion, overdue work and genuine high-intent opportunities.</p></div>
+    <div class="ai-orb"><i class="bi bi-bullseye"></i></div>
+</section>
+<div class="row g-4 report-print-section">
+    <div class="col-xl-6"><div class="dash-panel h-100"><div class="ai-section-heading"><div><h4>Product Focus</h4><p>Where product-wise attention can improve conversion.</p></div><i class="bi bi-box-seam"></i></div><div class="table-responsive"><table class="table align-middle ai-focus-table"><thead><tr><th>Product</th><th>Active</th><th>Sold</th><th>Conversion</th><th>Focus</th></tr></thead><tbody>@foreach(var row in Model.AiProductFocus){<tr><td><strong>@row.Name</strong><div class="mini-muted">@row.RecommendedAction</div></td><td>@row.Active</td><td>@row.Sold</td><td>@row.ConversionPercent%</td><td><span class="ai-focus-score">@row.OpportunityScore</span></td></tr>}@if(!Model.AiProductFocus.Any()){<tr><td colspan="5" class="text-center text-muted py-4">No product data available.</td></tr>}</tbody></table></div></div></div>
+    <div class="col-xl-6"><div class="dash-panel h-100"><div class="ai-section-heading"><div><h4>Partner Focus</h4><p>Where partner follow-up can create the best return.</p></div><i class="bi bi-building"></i></div><div class="table-responsive"><table class="table align-middle ai-focus-table"><thead><tr><th>Partner</th><th>Active</th><th>Overdue</th><th>Conversion</th><th>Focus</th></tr></thead><tbody>@foreach(var row in Model.AiPartnerFocus){<tr><td><strong>@row.Name</strong><div class="mini-muted">@row.RecommendedAction</div></td><td>@row.Active</td><td>@row.Overdue</td><td>@row.ConversionPercent%</td><td><span class="ai-focus-score">@row.OpportunityScore</span></td></tr>}@if(!Model.AiPartnerFocus.Any()){<tr><td colspan="5" class="text-center text-muted py-4">No partner-forwarded data available.</td></tr>}</tbody></table></div></div></div>
+</div>
+}
+
+@if(reportType == "detailed")
+{
+<div class="dash-panel report-print-section" id="details">
+    <h4 class="mb-3">Detailed Sold / Pipeline Grid</h4>
+    <div class="enterprise-table-toolbar no-print">
+        <div class="toolbar-left">
+            <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="detailedGrid" aria-label="Quick search" />
+            <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="detailedGrid" aria-label="Rows per page">
+                <option value="20">20 records</option>
+                <option value="40" selected>40 records</option>
+                <option value="100">100 records</option>
+                <option value="200">200 records</option>
+            </select>
+        </div>
+        <div class="toolbar-right">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="detailedGrid"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+        </div>
+    </div>
+    <div class="table-responsive enterprise-table-scroll">
+        <table class="table align-middle report-table enterprise-data-table" id="detailedGrid" data-table-id="detailedGrid">
+            <thead><tr><th>Date</th><th>Customer</th><th>Status</th><th>Partner</th><th>User</th><th>Support Member</th><th>Sold By</th><th>Product</th><th>License</th>@if(canSeeAmount){<th>Amount</th>}</tr></thead>
+            <tbody>
+            @foreach(var x in visible.OrderByDescending(x=>x.LastUpdated).Take(500))
+            {
+                <tr>
+                    <td>@Dt(x.CreatedDate)</td>
+                    <td><strong>@(string.IsNullOrWhiteSpace(x.FirmName)?x.PersonName:x.FirmName)</strong><div class="mini-muted">@x.City · @x.Mobile1</div></td>
+                    <td><span class="status-badge bg-soft-primary">@x.Status</span></td>
+                    <td>@(string.IsNullOrWhiteSpace(x.ForwardedToPartnerName)?"-":x.ForwardedToPartnerName)</td>
+                    <td>@(string.IsNullOrWhiteSpace(x.AssignedUserName)?"-":x.AssignedUserName)</td>
+                    <td>@(string.IsNullOrWhiteSpace(x.SupportExecutiveName)?"-":x.SupportExecutiveName)</td>
+                    <td>@(string.IsNullOrWhiteSpace(x.SoldByName)?"-":x.SoldByName)<div class="mini-muted">@x.SoldByRole</div></td>
+                    <td>@x.ProductName<div class="mini-muted">@x.VersionType</div></td>
+                    <td>@x.LicenseNumber<div class="mini-muted">@x.BillNo</div></td>
+                    @if(canSeeAmount){<td>@x.AmountWithoutGst.ToString("N2")</td>}
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="enterprise-table-pagination no-print">
+        <div class="mini-muted" data-table-info="detailedGrid">Loading…</div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="detailedGrid"><i class="bi bi-chevron-left"></i></button>
+            <span class="small" data-table-page="detailedGrid">1 / 1</span>
+            <div class="d-flex align-items-center gap-1 flex-wrap enterprise-page-numbers" data-table-pages="detailedGrid"></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="detailedGrid"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </div>
+</div>
+}
+
+@if(reportType == "source")
+{
+    var srcRows = visible.OrderByDescending(x => x.CreatedDate).ToList();
+    var srcSold = srcRows.Count(x => x.Status.Equals("Sold", StringComparison.OrdinalIgnoreCase));
+    var srcFollowUp = srcRows.Count(x => x.Status.Equals("Follow Up", StringComparison.OrdinalIgnoreCase));
+    var srcPending = srcRows.Count(x => !x.Status.Equals("Sold", StringComparison.OrdinalIgnoreCase) && !x.Status.Equals("Close", StringComparison.OrdinalIgnoreCase));
+    var srcAmount = canSeeAmount ? srcRows.Where(x => x.Status.Equals("Sold", StringComparison.OrdinalIgnoreCase)).Sum(x => x.AmountWithoutGst) : 0;
+    var srcDistinctSources = srcRows.Select(x => x.InquirySource).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+    var srcStatusesPresent = srcRows.Select(x => x.Status).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+    string AssignedTo(Inquiry x) => !string.IsNullOrWhiteSpace(x.ForwardedToPartnerName) ? x.ForwardedToPartnerName : (!string.IsNullOrWhiteSpace(x.AssignedUserName) ? x.AssignedUserName : (!string.IsNullOrWhiteSpace(x.SupportExecutiveName) ? x.SupportExecutiveName : "Unassigned"));
+    string AssignedRole(Inquiry x) => !string.IsNullOrWhiteSpace(x.ForwardedToPartnerName) ? "Partner" : (!string.IsNullOrWhiteSpace(x.AssignedUserName) ? "User" : (!string.IsNullOrWhiteSpace(x.SupportExecutiveName) ? "Support" : x.AttendedByRole));
+<section class="report-hero mb-4 report-print-section">
+    <div><div class="eyebrow">SOURCE PERFORMANCE REPORT</div><h2>Total Inquiry List — Source Wise</h2><p>Every inquiry, one row at a time — who it came from, current stage, who's handling it and what to do next.</p></div>
+    <div class="ai-orb logo-orb"><img src="/img-profit-logo.png" alt="ProfitNx" /></div>
+</section>
+
+<div class="pg-panel report-print-section" id="sourceReport">
+    <div class="pg-toolbar no-print">
+        <div class="pg-toolbar-left">
+            <h4 class="mb-0">Total Inquiry List</h4>
+            <span class="pg-count-chip">@srcRows.Count records</span>
+        </div>
+        <div class="pg-toolbar-right">
+            <div class="pg-search-box"><i class="bi bi-search"></i><input id="sourceGridQuickSearch" placeholder="Search this grid..." /></div>
+            <div class="dropdown">
+                <button class="btn btn-brand btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-download"></i> Export</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    @if(canExport)
+                    {
+                        <li><a class="dropdown-item" asp-action="ExportExcel" asp-route-fromDate="@ViewBag.FromDate" asp-route-toDate="@ViewBag.ToDate" asp-route-status="@ViewBag.SelectedStatus" asp-route-product="@ViewBag.SelectedProduct" asp-route-version="@ViewBag.SelectedVersion" asp-route-partner="@ViewBag.SelectedPartner" asp-route-userName="@ViewBag.SelectedUserName" asp-route-supportUser="@ViewBag.SelectedSupportUser" asp-route-soldBy="@ViewBag.SelectedSoldBy" asp-route-customer="@ViewBag.SelectedCustomer" asp-route-source="@(ViewBag.SelectedSource as string)" asp-route-reportType="source"><i class="bi bi-filetype-csv"></i> Export CSV</a></li>
+                    }
+                    <li><a class="dropdown-item" href="#" onclick="exportProGridExcel('sourceReportTable','profitnx-total-inquiry-list');return false;"><i class="bi bi-file-earmark-excel"></i> Export Excel (.xls)</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportProGridExcel('sourceReportTable','profitnx-total-inquiry-list',true);return false;"><i class="bi bi-filetype-csv"></i> Export CSV (visible rows)</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="window.print();return false;"><i class="bi bi-file-earmark-pdf"></i> Export / Print PDF</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <p class="pg-hint no-print">Click a column heading to sort &middot; use the <i class="bi bi-filter"></i> icon to filter that column &middot; click anywhere on a row to open its full details.</p>
+
+    <div class="table-responsive pg-table-wrap">
+        <table class="table align-middle pg-table enterprise-data-table" id="sourceReportTable" data-table-id="sourceReportTable">
+            <thead>
+                <tr>
+                    <th class="no-sort pg-col-narrow">#</th>
+                    <th data-type="num"><div class="pg-th"><span>Date</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Date"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="1" placeholder="Filter date" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Customer</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Customer"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="2" placeholder="Filter customer" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Source</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Source"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="3" placeholder="Filter source" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Product</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Product"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="4" placeholder="Filter product" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Assigned / Forwarded To</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="5" placeholder="Filter" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Status</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Status"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><select class="form-select form-select-sm col-filter" data-col="6"><option value="">All Status</option>@foreach(var st in srcStatusesPresent){<option value="@st">@st</option>}</select></div></th>
+                    <th data-type="num"><div class="pg-th"><span>Next Follow-up</span><i class="bi bi-arrow-down-up sort-caret"></i></div></th>
+                    <th data-type="num"><div class="pg-th"><span>Amount</span><i class="bi bi-arrow-down-up sort-caret"></i></div></th>
+                    <th class="no-sort text-end">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var srcRank = 0; }
+                @foreach(var x in srcRows)
+                {
+                    srcRank++;
+                    var displayName = string.IsNullOrWhiteSpace(x.FirmName) ? x.PersonName : x.FirmName;
+                    <tr class="clickable-row" data-id="@x.Id" onclick="openInquiryDetail('@x.Id')">
+                        <td>@srcRank</td>
+                        <td data-sort="@x.CreatedDate.Ticks">@x.CreatedDate.ToString("dd/MM/yyyy")<div class="mini-muted">@x.CreatedDate.ToString("HH:mm")</div></td>
+                        <td>
+                            <strong>@(string.IsNullOrWhiteSpace(displayName) ? "-" : displayName)</strong>
+                            <div class="mini-muted">@x.City · @x.Mobile1</div>
+                        </td>
+                        <td>
+                            <div class="source-name-cell">
+                                <span class="pg-avatar">@(string.IsNullOrWhiteSpace(x.InquirySource) ? "?" : x.InquirySource.Substring(0,1).ToUpper())</span>
+                                <span>@(string.IsNullOrWhiteSpace(x.InquirySource) ? "Not Specified" : x.InquirySource)</span>
+                            </div>
+                        </td>
+                        <td>@(string.IsNullOrWhiteSpace(x.ProductName) ? "-" : x.ProductName)<div class="mini-muted">@x.VersionType</div></td>
+                        <td>@AssignedTo(x)<div class="mini-muted">@AssignedRole(x)</div></td>
+                        <td><span class="pg-pill @StatusBadgeClass(x.Status)">@x.Status</span></td>
+                        <td data-sort="@(x.NextFollowUpDate?.Ticks ?? 0)">@(x.NextFollowUpDate.HasValue ? x.NextFollowUpDate.Value.ToString("dd/MM/yyyy") : "-")</td>
+                        <td data-sort="@(canSeeAmount ? x.AmountWithoutGst : 0)">@(canSeeAmount ? x.AmountWithoutGst.ToString("N2") : "—")</td>
+                        <td class="text-end no-print"><button type="button" class="btn btn-sm btn-outline-primary row-view-btn" onclick="event.stopPropagation();openInquiryDetail('@x.Id')" title="View complete details"><i class="bi bi-eye"></i></button></td>
+                    </tr>
+                }
+                @if(!srcRows.Any())
+                {
+                    <tr><td colspan="10"><div class="pg-empty-state"><i class="bi bi-inboxes"></i><span>No inquiry data found for the selected filters.</span></div></td></tr>
+                }
+            </tbody>
+            @if(srcRows.Any())
+            {
+                <tfoot>
+                    <tr>
+                        <td colspan="2">Total <b>@srcRows.Count</b> inquiries</td>
+                        <td></td>
+                        <td>Sources <b>@srcDistinctSources</b></td>
+                        <td></td>
+                        <td></td>
+                        <td class="pg-status-summary"><div>Sold <b>@srcSold</b></div><div>Follow-up <b>@srcFollowUp</b></div><div>Pending <b>@srcPending</b></div></td>
+                        <td></td>
+                        <td>@(canSeeAmount ? srcAmount.ToString("N2") : "—")</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+</div>
+
+<script type="application/json" id="sourceInquiryDataJson">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(srcRows.Select(x => new {
+    id = x.Id,
+    date = Dt(x.CreatedDate),
+    firm = x.FirmName,
+    person = x.PersonName,
+    city = x.City,
+    mobile1 = x.Mobile1,
+    mobile2 = x.Mobile2,
+    email1 = x.Email1,
+    email2 = x.Email2,
+    source = string.IsNullOrWhiteSpace(x.InquirySource) ? "Not Specified" : x.InquirySource,
+    product = x.ProductName,
+    version = x.VersionType,
+    status = x.Status,
+    statusReason = x.StatusReason,
+    quality = x.InquiryQuality,
+    assignedTo = AssignedTo(x),
+    assignedRole = AssignedRole(x),
+    attendedByRole = x.AttendedByRole,
+    forwardedBy = x.ForwardedByName,
+    forwardedDate = x.ForwardedDate.HasValue ? x.ForwardedDate.Value.ToString("dd/MM/yyyy") : "-",
+    nextFollowUp = x.NextFollowUpDate.HasValue ? x.NextFollowUpDate.Value.ToString("dd/MM/yyyy") : "-",
+    demoScheduled = x.DemoScheduledDate.HasValue ? x.DemoScheduledDate.Value.ToString("dd/MM/yyyy") : "-",
+    demoDone = x.DemoDoneDate.HasValue ? x.DemoDoneDate.Value.ToString("dd/MM/yyyy") : "-",
+    soldBy = x.SoldByName,
+    soldByRole = x.SoldByRole,
+    soldDate = x.SoldDate.HasValue ? x.SoldDate.Value.ToString("dd/MM/yyyy") : "-",
+    licenses = x.LicensesPurchased,
+    licenseNumber = x.LicenseNumber,
+    billNo = x.BillNo,
+    billDate = x.BillDate.HasValue ? x.BillDate.Value.ToString("dd/MM/yyyy") : "-",
+    amount = canSeeAmount ? x.AmountWithoutGst.ToString("N2") : null,
+    amountGst = canSeeAmount ? x.AmountWithGst.ToString("N2") : null,
+    remarks = x.Remarks,
+    dealerName = x.DealerName,
+    detailsUrl = Url.Action("Details", "Inquiry", new { id = x.Id })
+})))</script>
+
+<div class="modal fade inquiry-detail-modal" id="inquiryDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-0" id="inqModalCustomer">Inquiry Details</h5>
+                    <span class="mini-muted" id="inqModalMeta"></span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="inq-detail-status-row">
+                    <span class="status-badge" id="inqModalStatus">-</span>
+                    <span class="source-name-cell" id="inqModalSourceChip"></span>
+                </div>
+                <div class="inq-detail-grid" id="inqModalGrid"></div>
+                <div id="inqModalRemarksWrap" class="inq-detail-remarks">
+                    <strong>Remarks</strong>
+                    <p id="inqModalRemarks" class="mini-muted mb-0">-</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="inqModalOpenFull" target="_blank" class="btn btn-brand"><i class="bi bi-box-arrow-up-right"></i> Open Full Record</a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@if(reportType == "training")
+{
+    var s = Model.ImplementationSummary;
+    var implStatusOptions = ViewBag.ImplStatusOptions as List<string> ?? new();
+    var implProductOptions = ViewBag.ImplProductOptions as List<string> ?? new();
+    var implExecutiveOptions = ViewBag.ImplExecutiveOptions as List<string> ?? new();
+    var trainingFilter = ViewBag.TrainingFilter as string ?? string.Empty;
+    string TfUrl(string v) => Url.Action("Index", "Reports", new { reportType = "training", implFromDate = ViewBag.ImplFromDate, implToDate = ViewBag.ImplToDate, implStatus = ViewBag.ImplStatus, implProduct = ViewBag.ImplProduct, implExecutive = ViewBag.ImplExecutive, trainingFilter = v })!;
+<section class="report-hero mb-4 report-print-section">
+    <div><div class="eyebrow">TRAINING PERFORMANCE REPORT</div><h2>Implementation / Training Report</h2><p>How many trainings are complete, paused, reopened, paid and the overall total.</p></div>
+    <div class="ai-orb logo-orb"><img src="/img-profit-logo.png" alt="ProfitNx" /></div>
+</section>
+
+<div class="card-soft p-3 mb-4 no-print professional-filter-card report-filter-card">
+    <form method="get" class="professional-filter-grid compact-filter-grid report-filter-grid" style="align-items:end">
+        <input type="hidden" name="reportType" value="training" />
+        <div class="filter-cell">
+            <label class="form-label small">From Date</label>
+            <div class="dmy-date-field">
+                <input type="text" inputmode="numeric" autocomplete="off" class="form-control dmy-date-input" placeholder="DD/MM/YYYY" maxlength="10" value="@DmyFromIso(ViewBag.ImplFromDate as string)" data-hidden-target="implFromDateHidden" style="min-width:140px" />
+                <i class="bi bi-calendar3"></i>
+            </div>
+            <input type="hidden" name="implFromDate" id="implFromDateHidden" value="@ViewBag.ImplFromDate" />
+        </div>
+        <div class="filter-cell">
+            <label class="form-label small">To Date</label>
+            <div class="dmy-date-field">
+                <input type="text" inputmode="numeric" autocomplete="off" class="form-control dmy-date-input" placeholder="DD/MM/YYYY" maxlength="10" value="@DmyFromIso(ViewBag.ImplToDate as string)" data-hidden-target="implToDateHidden" style="min-width:140px" />
+                <i class="bi bi-calendar3"></i>
+            </div>
+            <input type="hidden" name="implToDate" id="implToDateHidden" value="@ViewBag.ImplToDate" />
+        </div>
+        <div class="filter-cell"><label class="form-label small">Status</label><select name="implStatus" class="form-select"><option value="">All Status</option>@foreach(var v in implStatusOptions){<option value="@v" selected="@(ViewBag.ImplStatus as string==v)">@v</option>}</select></div>
+        <div class="filter-cell"><label class="form-label small">Executive</label><select name="implExecutive" class="form-select"><option value="">All Executives</option>@foreach(var v in implExecutiveOptions){<option value="@v" selected="@(ViewBag.ImplExecutive as string==v)">@v</option>}</select></div>
+        <div class="filter-cell"><label class="form-label small">Product</label><select name="implProduct" class="form-select"><option value="">All Products</option>@foreach(var v in implProductOptions){<option value="@v" selected="@(ViewBag.ImplProduct as string==v)">@v</option>}</select></div>
+        <input type="hidden" name="trainingFilter" value="@trainingFilter" />
+        <div class="filter-actions"><button class="btn btn-brand">Apply Filters</button><a asp-action="Index" asp-route-reportType="training" class="btn btn-outline-secondary">Clear</a></div>
+    </form>
+</div>
+
+<section class="admin-dashboard-grid mb-4 report-print-section" id="trainingReportCards">
+    <a href="@TfUrl("")" class="dash-card accent-purple text-decoration-none @(string.IsNullOrEmpty(trainingFilter)?"active-metric-card":"")"><span>Total</span><strong>@s.Total</strong><i class="ring-mini"></i></a>
+    <a href="@TfUrl("completed")" class="dash-card accent-green text-decoration-none @(trainingFilter=="completed"?"active-metric-card":"")"><span>Training Complete</span><strong>@s.Completed</strong><i class="ring-mini"></i></a>
+    <a href="@TfUrl("paused")" class="dash-card accent-coral text-decoration-none @(trainingFilter=="paused"?"active-metric-card":"")"><span>Paused</span><strong>@s.Paused</strong><i class="ring-mini"></i></a>
+    <a href="@TfUrl("reopened")" class="dash-card accent-dark text-decoration-none @(trainingFilter=="reopened"?"active-metric-card":"")"><span>Reopened</span><strong>@s.Reopened</strong><i class="ring-mini"></i></a>
+    <a href="@TfUrl("paid")" class="dash-card accent-blue text-decoration-none @(trainingFilter=="paid"?"active-metric-card":"")"><span>Paid Training</span><strong>@s.PaidTraining</strong><i class="ring-mini"></i></a>
+    <a href="@TfUrl("pending")" class="dash-card accent-cyan text-decoration-none @(trainingFilter=="pending"?"active-metric-card":"")"><span>Pending / In Progress</span><strong>@s.Pending</strong><i class="ring-mini"></i></a>
+</section>
+
+<div class="pg-panel report-print-section" id="trainingReport">
+    <div class="pg-toolbar no-print">
+        <div class="pg-toolbar-left">
+            <h4 class="mb-0">Implementation & Training Records</h4>
+            <span class="pg-count-chip">@Model.ImplementationCases.Count records</span>
+        </div>
+        <div class="pg-toolbar-right">
+            <div class="pg-search-box"><i class="bi bi-search"></i><input id="trainingGridQuickSearch" placeholder="Search this grid..." /></div>
+            <div class="dropdown">
+                <button class="btn btn-brand btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-download"></i> Export</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    @if(canExport)
+                    {
+                        <li><a class="dropdown-item" asp-action="ExportExcel" asp-route-fromDate="@ViewBag.ImplFromDate" asp-route-toDate="@ViewBag.ImplToDate" asp-route-status="@ViewBag.ImplStatus" asp-route-product="@ViewBag.ImplProduct" asp-route-executive="@ViewBag.ImplExecutive" asp-route-reportType="training"><i class="bi bi-filetype-csv"></i> Export CSV</a></li>
+                    }
+                    <li><a class="dropdown-item" href="#" onclick="exportProGridExcel('trainingReportTable','profitnx-implementation-training');return false;"><i class="bi bi-file-earmark-excel"></i> Export Excel (.xls)</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportProGridExcel('trainingReportTable','profitnx-implementation-training',true);return false;"><i class="bi bi-filetype-csv"></i> Export CSV (visible rows)</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="window.print();return false;"><i class="bi bi-file-earmark-pdf"></i> Export / Print PDF</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <p class="pg-hint no-print">Click a column heading to sort &middot; use the <i class="bi bi-filter"></i> icon to filter that column &middot; click anywhere on a row to open its full details.</p>
+
+    <div class="table-responsive pg-table-wrap">
+        <table class="table align-middle pg-table enterprise-data-table" id="trainingReportTable" data-table-id="trainingReportTable">
+            <thead>
+                <tr>
+                    <th data-type="text"><div class="pg-th"><span>Sale Date</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="0" placeholder="Filter" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Customer</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Customer"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="1" placeholder="Filter customer" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Product</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Product"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="2" placeholder="Filter product" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Assigned Member</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Member"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="3" placeholder="Filter member" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Status</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Status"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="4" placeholder="Filter status" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Stage</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter Stage"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><input type="text" class="form-control form-control-sm col-filter" data-col="5" placeholder="Filter stage" /></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Training Completed</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><select class="form-select form-select-sm col-filter" data-col="6"><option value="">All</option><option value="Yes">Yes</option><option value="No">No</option></select></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Paused</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><select class="form-select form-select-sm col-filter" data-col="7"><option value="">All</option><option value="Yes">Yes</option><option value="No">No</option></select></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Reopened</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><select class="form-select form-select-sm col-filter" data-col="8"><option value="">All</option><option value="Yes">Yes</option><option value="No">No</option></select></div></th>
+                    <th data-type="text"><div class="pg-th"><span>Paid Training</span><i class="bi bi-arrow-down-up sort-caret"></i><button type="button" class="pg-filter-btn" title="Filter"><i class="bi bi-filter"></i></button></div><div class="pg-filter-pop"><select class="form-select form-select-sm col-filter" data-col="9"><option value="">All</option><option value="Yes">Yes</option><option value="No">No</option></select></div></th>
+                    <th class="no-sort text-end">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var item in Model.ImplementationCases)
+                {
+                    <tr class="clickable-row" data-id="@item.Id" onclick="openTrainingDetail('@item.Id')">
+                        <td>@item.SaleDate.ToString("dd/MM/yyyy")</td>
+                        <td><strong>@(string.IsNullOrWhiteSpace(item.FirmName)?item.PersonName:item.FirmName)</strong><div class="mini-muted">@item.City · @item.Mobile</div></td>
+                        <td>@item.ProductName<div class="mini-muted">Lic: @item.LicenseNumber</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(item.AssignedMemberName)?"Unassigned":item.AssignedMemberName)</td>
+                        <td><span class="pg-pill bg-soft-primary">@item.Status</span></td>
+                        <td>@item.Stage</td>
+                        <td>@(item.IsTrainingCompleted ? "Yes" : "No")</td>
+                        <td>@(item.IsPaused ? "Yes" : "No")</td>
+                        <td>@(item.ReopenedCount > 0 ? "Yes" : "No")<div class="mini-muted">@(item.ReopenedCount>0? $"x{item.ReopenedCount}" : "")</div></td>
+                        <td>@(item.IsPaidTraining ? "Yes" : "No")<div class="mini-muted">@(item.IsPaidTraining && item.PaidTrainingAmount>0 ? item.PaidTrainingAmount.ToString("N0") : "")</div></td>
+                        <td class="text-end no-print"><button type="button" class="btn btn-sm btn-outline-primary row-view-btn" onclick="event.stopPropagation();openTrainingDetail('@item.Id')" title="View complete details"><i class="bi bi-eye"></i></button></td>
+                    </tr>
+                }
+                @if(!Model.ImplementationCases.Any())
+                {
+                    <tr><td colspan="11"><div class="pg-empty-state"><i class="bi bi-inboxes"></i><span>No implementation / training records found for the selected filters.</span></div></td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="application/json" id="trainingCaseDataJson">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ImplementationCases.Select(item => new {
+    id = item.Id,
+    saleDate = item.SaleDate.ToString("dd/MM/yyyy"),
+    firm = item.FirmName,
+    person = item.PersonName,
+    city = item.City,
+    mobile = item.Mobile,
+    email = item.Email,
+    product = item.ProductName,
+    licenseCount = item.LicenseCount,
+    licenseNumber = item.LicenseNumber,
+    pinNumber = item.PinNumber,
+    billNumber = item.BillNumber,
+    soldBy = item.SoldByName,
+    soldByRole = item.SoldByRole,
+    supportHead = item.SupportHeadName,
+    assignedMember = string.IsNullOrWhiteSpace(item.AssignedMemberName) ? "Unassigned" : item.AssignedMemberName,
+    status = item.Status,
+    stage = item.Stage,
+    priority = item.Priority,
+    progressPercent = item.ProgressPercent,
+    preferredStartDate = item.PreferredStartDate.HasValue ? item.PreferredStartDate.Value.ToString("dd/MM/yyyy") : "-",
+    preferredTime = item.PreferredTime,
+    actualStartDate = item.ActualStartDate.HasValue ? item.ActualStartDate.Value.ToString("dd/MM/yyyy") : "-",
+    completionDate = item.CompletionDate.HasValue ? item.CompletionDate.Value.ToString("dd/MM/yyyy") : "-",
+    isTrainingCompleted = item.IsTrainingCompleted ? "Yes" : "No",
+    isPaused = item.IsPaused ? "Yes" : "No",
+    pauseReason = item.PauseReason,
+    reopenedCount = item.ReopenedCount,
+    lastReopenedDate = item.LastReopenedDate.HasValue ? item.LastReopenedDate.Value.ToString("dd/MM/yyyy") : "-",
+    isPaidTraining = item.IsPaidTraining ? "Yes" : "No",
+    paidTrainingAmount = item.IsPaidTraining && item.PaidTrainingAmount > 0 ? item.PaidTrainingAmount.ToString("N0") : "-",
+    manualProvided = item.ManualProvided ? "Yes" : "No",
+    trainingTopics = item.TrainingTopicsSummary,
+    lastProgressNote = item.LastProgressNote,
+    feedbackRating = item.FeedbackRating > 0 ? item.FeedbackRating.ToString() : "-",
+    feedbackRemarks = item.FeedbackRemarks,
+    detailsUrl = Url.Action("Details", "Implementation", new { id = item.Id })
+})))</script>
+
+<div class="modal fade inquiry-detail-modal" id="trainingDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-0" id="trnModalCustomer">Implementation Details</h5>
+                    <span class="mini-muted" id="trnModalMeta"></span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="inq-detail-status-row">
+                    <span class="status-badge bg-soft-primary" id="trnModalStatus">-</span>
+                </div>
+                <div class="inq-detail-grid" id="trnModalGrid"></div>
+                <div id="trnModalNoteWrap" class="inq-detail-remarks">
+                    <strong>Last Progress Note</strong>
+                    <p id="trnModalNote" class="mini-muted mb-0">-</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="trnModalOpenFull" target="_blank" class="btn btn-brand"><i class="bi bi-box-arrow-up-right"></i> Open Full Record</a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@section Scripts{
+<script>
+const reportFilter=document.getElementById('reportGlobalFilter');
+if(reportFilter){reportFilter.addEventListener('input',function(){const q=this.value.toLowerCase();document.querySelectorAll('table tbody tr').forEach(tr=>{tr.style.display=tr.innerText.toLowerCase().includes(q)?'':'none';});});}
+(function(){
+    // DD/MM/YYYY masked date inputs used across report filter bars.
+    function syncHidden(inp){
+        var target = document.getElementById(inp.getAttribute('data-hidden-target'));
+        if(!target) return;
+        var m = inp.value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if(m){ target.value = m[3] + '-' + m[2] + '-' + m[1]; }
+        else if(inp.value.trim() === ''){ target.value = ''; }
+    }
+    document.querySelectorAll('.dmy-date-input').forEach(function(inp){
+        inp.addEventListener('input', function(){
+            var digits = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+            var out = digits;
+            if(digits.length > 4) out = digits.slice(0,2) + '/' + digits.slice(2,4) + '/' + digits.slice(4);
+            else if(digits.length > 2) out = digits.slice(0,2) + '/' + digits.slice(2);
+            this.value = out;
+            syncHidden(this);
+        });
+        inp.addEventListener('blur', function(){ syncHidden(this); });
+    });
+})();
+(function(){
+    // Quick search boxes for the Pro Grid reports (Total Inquiry List & Implementation/Training).
+    function wireQuickSearch(searchId, tableId){
+        var quick = document.getElementById(searchId);
+        var table = document.getElementById(tableId);
+        if(!quick || !table) return;
+        quick.addEventListener('input', function(){
+            var q = this.value.trim().toLowerCase();
+            table.querySelectorAll('tbody tr').forEach(function(tr){
+                if(tr.children.length < 2){ return; }
+                tr.style.display = tr.innerText.toLowerCase().includes(q) ? '' : 'none';
+            });
+        });
+    }
+    wireQuickSearch('sourceGridQuickSearch', 'sourceReportTable');
+    wireQuickSearch('trainingGridQuickSearch', 'trainingReportTable');
+})();
+(function(){
+    // Row-click detail popup for the Total Inquiry List grid.
+    var el = document.getElementById('sourceInquiryDataJson');
+    if(!el) return;
+    var inquiryData = {};
+    try{
+        JSON.parse(el.textContent).forEach(function(x){ inquiryData[x.id] = x; });
+    }catch(e){ return; }
+    window.openInquiryDetail = function(id){
+        var d = inquiryData[id];
+        if(!d) return;
+        var name = d.firm && d.firm.trim() ? d.firm : (d.person || 'Inquiry');
+        document.getElementById('inqModalCustomer').textContent = name;
+        document.getElementById('inqModalMeta').textContent = (d.person && d.firm ? d.person + ' · ' : '') + [d.city, d.mobile1].filter(Boolean).join(' · ');
+        var statusEl = document.getElementById('inqModalStatus');
+        statusEl.textContent = d.status || '-';
+        statusEl.className = 'status-badge ' + (d.status === 'Sold' ? 'bg-soft-success' : d.status === 'Close' ? 'bg-soft-danger' : (d.status === 'Follow Up' ? 'bg-soft-warning' : 'bg-soft-primary'));
+        document.getElementById('inqModalSourceChip').innerHTML = '<span class="source-avatar" style="width:26px;height:26px;font-size:.72rem">' + (d.source ? d.source.charAt(0).toUpperCase() : '?') + '</span><span>' + (d.source || '-') + '</span>';
+        var fields = [
+            ['Inquiry Date', d.date], ['Mobile', [d.mobile1, d.mobile2].filter(Boolean).join(', ') || '-'],
+            ['Email', [d.email1, d.email2].filter(Boolean).join(', ') || '-'], ['City', d.city || '-'],
+            ['Product', [d.product, d.version].filter(Boolean).join(' · ') || '-'], ['Inquiry Quality', d.quality || '-'],
+            ['Assigned / Forwarded To', d.assignedTo || '-'], ['Handled By', d.assignedRole || '-'],
+            ['Forwarded By', d.forwardedBy || '-'], ['Forwarded Date', d.forwardedDate || '-'],
+            ['Next Follow-up', d.nextFollowUp || '-'], ['Demo Scheduled', d.demoScheduled || '-'],
+            ['Demo Done', d.demoDone || '-'], ['Status Reason', d.statusReason || '-'],
+            ['Sold By', [d.soldBy, d.soldByRole].filter(Boolean).join(' · ') || '-'], ['Sold Date', d.soldDate || '-'],
+            ['Licenses', d.licenses != null ? d.licenses : '-'], ['License No.', d.licenseNumber || '-'],
+            ['Bill No.', d.billNo || '-'], ['Bill Date', d.billDate || '-'],
+            ['Amount (w/o GST)', d.amount != null ? d.amount : 'Hidden'], ['Amount (with GST)', d.amountGst != null ? d.amountGst : 'Hidden'],
+            ['Dealer', d.dealerName || '-']
+        ];
+        document.getElementById('inqModalGrid').innerHTML = fields.map(function(f){
+            return '<div class="inq-detail-item"><span>' + f[0] + '</span><strong>' + (f[1] === '' || f[1] === null || f[1] === undefined ? '-' : f[1]) + '</strong></div>';
+        }).join('');
+        var remarksWrap = document.getElementById('inqModalRemarksWrap');
+        if(d.remarks && d.remarks.trim()){ remarksWrap.style.display = ''; document.getElementById('inqModalRemarks').textContent = d.remarks; }
+        else { remarksWrap.style.display = 'none'; }
+        var openFull = document.getElementById('inqModalOpenFull');
+        if(d.detailsUrl){ openFull.href = d.detailsUrl; openFull.style.display = ''; } else { openFull.style.display = 'none'; }
+        var modalEl = document.getElementById('inquiryDetailModal');
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    };
+})();
+(function(){
+    // Row-click detail popup for the Implementation / Training Report grid.
+    var el = document.getElementById('trainingCaseDataJson');
+    if(!el) return;
+    var caseData = {};
+    try{
+        JSON.parse(el.textContent).forEach(function(x){ caseData[x.id] = x; });
+    }catch(e){ return; }
+    window.openTrainingDetail = function(id){
+        var d = caseData[id];
+        if(!d) return;
+        var name = d.firm && d.firm.trim() ? d.firm : (d.person || 'Implementation Case');
+        document.getElementById('trnModalCustomer').textContent = name;
+        document.getElementById('trnModalMeta').textContent = (d.person && d.firm ? d.person + ' · ' : '') + [d.city, d.mobile].filter(Boolean).join(' · ');
+        var statusEl = document.getElementById('trnModalStatus');
+        statusEl.textContent = (d.status || '-') + (d.stage ? ' · ' + d.stage : '');
+        var fields = [
+            ['Sale Date', d.saleDate], ['Mobile', d.mobile || '-'], ['Email', d.email || '-'], ['City', d.city || '-'],
+            ['Product', d.product || '-'], ['License No.', d.licenseNumber || '-'], ['License Count', d.licenseCount != null ? d.licenseCount : '-'],
+            ['PIN Number', d.pinNumber || '-'], ['Bill Number', d.billNumber || '-'],
+            ['Sold By', [d.soldBy, d.soldByRole].filter(Boolean).join(' · ') || '-'], ['Support Head', d.supportHead || '-'],
+            ['Assigned Member', d.assignedMember || '-'], ['Priority', d.priority || '-'], ['Progress', (d.progressPercent != null ? d.progressPercent : '-') + '%'],
+            ['Preferred Start', d.preferredStartDate], ['Preferred Time', d.preferredTime || '-'],
+            ['Actual Start', d.actualStartDate], ['Completion Date', d.completionDate],
+            ['Training Completed', d.isTrainingCompleted], ['Paused', d.isPaused + (d.pauseReason ? ' (' + d.pauseReason + ')' : '')],
+            ['Reopened', d.reopenedCount > 0 ? 'Yes x' + d.reopenedCount : 'No'], ['Last Reopened', d.lastReopenedDate],
+            ['Paid Training', d.isPaidTraining], ['Paid Amount', d.paidTrainingAmount],
+            ['Manual Provided', d.manualProvided], ['Training Topics', d.trainingTopics || '-'],
+            ['Feedback Rating', d.feedbackRating], ['Feedback Remarks', d.feedbackRemarks || '-']
+        ];
+        document.getElementById('trnModalGrid').innerHTML = fields.map(function(f){
+            return '<div class="inq-detail-item"><span>' + f[0] + '</span><strong>' + (f[1] === '' || f[1] === null || f[1] === undefined ? '-' : f[1]) + '</strong></div>';
+        }).join('');
+        var noteWrap = document.getElementById('trnModalNoteWrap');
+        if(d.lastProgressNote && d.lastProgressNote.trim()){ noteWrap.style.display = ''; document.getElementById('trnModalNote').textContent = d.lastProgressNote; }
+        else { noteWrap.style.display = 'none'; }
+        var openFull = document.getElementById('trnModalOpenFull');
+        if(d.detailsUrl){ openFull.href = d.detailsUrl; openFull.style.display = ''; } else { openFull.style.display = 'none'; }
+        var modalEl = document.getElementById('trainingDetailModal');
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    };
+})();
+function cleanProGridClone(table){
+    var clone = table.cloneNode(true);
+    clone.querySelectorAll('.pg-filter-pop').forEach(function(p){ p.remove(); });
+    clone.querySelectorAll('.pg-filter-btn').forEach(function(b){ b.remove(); });
+    clone.querySelectorAll('.sort-caret').forEach(function(s){ s.remove(); });
+    clone.querySelectorAll('thead th:last-child, tfoot td:last-child').forEach(function(c){ c.remove(); });
+    Array.from(clone.querySelectorAll('tbody tr')).forEach(function(tr){
+        var live = table.querySelector('tr[data-id="' + tr.getAttribute('data-id') + '"]');
+        if(live && live.style.display === 'none'){ tr.remove(); return; }
+        var cells = tr.children;
+        if(cells.length) cells[cells.length - 1].remove();
+    });
+    return clone;
+}
+function exportProGridExcel(tableId, filenamePrefix, asCsv){
+    var table = document.getElementById(tableId);
+    if(!table) return;
+    var clone = cleanProGridClone(table);
+    var stamp = new Date().toISOString().slice(0,10);
+    if(asCsv){
+        var rows = [];
+        clone.querySelectorAll('thead tr:first-child th').forEach(function(th, i){
+            rows[0] = rows[0] || [];
+            rows[0][i] = th.textContent.trim().replace(/\s+/g,' ');
+        });
+        clone.querySelectorAll('tbody tr').forEach(function(tr){
+            var r = [];
+            tr.querySelectorAll('td').forEach(function(td){ r.push('"' + td.textContent.trim().replace(/\s+/g,' ').replace(/"/g,'""') + '"'); });
+            rows.push(r);
+        });
+        var csv = rows.map(function(r){ return r.map(function(c){ return typeof c === 'string' && c.charAt(0) !== '"' ? '"' + c.replace(/"/g,'""') + '"' : c; }).join(','); }).join('\r\n');
+        var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filenamePrefix + '-' + stamp + '.csv';
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        return;
+    }
+    var html = '<html><head><meta charset="utf-8"></head><body>' + clone.outerHTML + '</body></html>';
+    var blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filenamePrefix + '-' + stamp + '.xls';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+(function(){
+    document.querySelectorAll('table').forEach(function(table){
+        var filters = table.querySelectorAll('.col-filter');
+        if(!filters.length) return;
+        var rows = table.querySelectorAll('tbody tr');
+        function applyFilters(){
+            var values = {};
+            filters.forEach(function(f){ values[f.getAttribute('data-col')] = f.value.trim().toLowerCase(); });
+            rows.forEach(function(row){
+                var visible = true;
+                Object.keys(values).forEach(function(col){
+                    var val = values[col];
+                    if (!val) return;
+                    var cell = row.children[parseInt(col, 10)];
+                    var text = cell ? cell.textContent.trim().toLowerCase() : '';
+                    var input = table.querySelector('.col-filter[data-col="'+col+'"]');
+                    if (input && input.tagName === 'SELECT') { if (text.indexOf(val) === -1) visible = false; }
+                    else if (text.indexOf(val) === -1) { visible = false; }
+                });
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+        filters.forEach(function(f){ f.addEventListener('input', applyFilters); f.addEventListener('change', applyFilters); });
+    });
+})();
+(function(){
+    // Column-header click-to-sort, generalized to every Pro Grid table on the page.
+    document.querySelectorAll('table.pg-table').forEach(function(table){
+        var tbody = table.querySelector('tbody');
+        var headers = table.querySelectorAll('thead tr:first-child th');
+        var state = { col: -1, dir: 1 };
+        function cellSortValue(row, idx, type){
+            var cell = row.children[idx];
+            if(!cell) return type === 'num' ? -Infinity : '';
+            if(cell.hasAttribute('data-sort')){
+                var raw = cell.getAttribute('data-sort');
+                if(type === 'num'){ var nv = parseFloat(raw); return isNaN(nv) ? -Infinity : nv; }
+                return raw.toLowerCase();
+            }
+            var text = cell.textContent.trim();
+            if(type === 'num'){
+                var n = parseFloat(text.replace(/[^0-9.\-]/g, ''));
+                return isNaN(n) ? -Infinity : n;
+            }
+            return text.toLowerCase();
+        }
+        headers.forEach(function(th, idx){
+            if(th.classList.contains('no-sort')) return;
+            th.addEventListener('click', function(e){
+                if(e.target.closest('.pg-filter-btn') || e.target.closest('.pg-filter-pop')) return;
+                var type = th.getAttribute('data-type') || 'text';
+                var dir = (state.col === idx) ? -state.dir : 1;
+                state = { col: idx, dir: dir };
+                headers.forEach(function(h){ h.classList.remove('sort-asc','sort-desc'); });
+                th.classList.add(dir === 1 ? 'sort-asc' : 'sort-desc');
+                var rows = Array.from(tbody.querySelectorAll('tr')).filter(function(r){ return r.children.length > 1; });
+                rows.sort(function(a, b){
+                    var av = cellSortValue(a, idx, type), bv = cellSortValue(b, idx, type);
+                    if(av < bv) return -1 * dir;
+                    if(av > bv) return 1 * dir;
+                    return 0;
+                });
+                rows.forEach(function(r){ tbody.appendChild(r); });
+            });
+        });
+    });
+})();
+(function(){
+    // Per-column filter popovers (the funnel icon next to each header) for every Pro Grid table.
+    document.querySelectorAll('table.pg-table').forEach(function(table){
+        table.querySelectorAll('.pg-filter-btn').forEach(function(btn){
+            btn.addEventListener('click', function(e){
+                e.stopPropagation();
+                var th = btn.closest('th');
+                var pop = th.querySelector('.pg-filter-pop');
+                if(!pop) return;
+                var wasOpen = pop.classList.contains('show');
+                document.querySelectorAll('.pg-filter-pop.show').forEach(function(p){ p.classList.remove('show'); });
+                if(!wasOpen){
+                    pop.classList.add('show');
+                    var inp = pop.querySelector('input,select');
+                    if(inp) inp.focus();
+                }
+            });
+        });
+        table.querySelectorAll('.pg-filter-pop').forEach(function(pop){
+            pop.addEventListener('click', function(e){ e.stopPropagation(); });
+            var inp = pop.querySelector('.col-filter');
+            var btn = pop.closest('th') ? pop.closest('th').querySelector('.pg-filter-btn') : null;
+            if(inp && btn){
+                var syncActive = function(){ btn.classList.toggle('pg-filter-active', !!inp.value); };
+                inp.addEventListener('input', syncActive);
+                inp.addEventListener('change', syncActive);
+            }
+        });
+    });
+    document.addEventListener('click', function(e){
+        if(e.target.closest('.pg-filter-pop') || e.target.closest('.pg-filter-btn')) return;
+        document.querySelectorAll('.pg-filter-pop.show').forEach(function(p){ p.classList.remove('show'); });
+    });
+})();
+</script>
+}

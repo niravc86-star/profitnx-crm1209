@@ -1,0 +1,231 @@
+/* ==========================================================================
+   Theme parity — Implementation & Training (and Settings) module.
+   Loaded LAST (after app-theme-switcher.css) so it can safely extend theme
+   coverage without touching any other file.
+
+   WHY THIS FILE EXISTS
+   The Implementation & Training workspace (and the Settings page) use their
+   own component classes — .module-hero, .crm-panel, .metric-card,
+   .professional-table, .status-pill, .risk-badge, .implementation-steps,
+   .performance-card, .schedule-list-item, .data-grid, .timeline-*,
+   .training-topic-*, .ai-guidance-panel, etc. — which the theme switcher
+   never targeted. Every OTHER screen uses .pro-card / .dash-panel /
+   .card-soft / .crm-card / .kpi-card / .dash-card, which app-theme-switcher
+   .css already re-colours per theme, so switching the theme visibly changed
+   those pages but left Implementation & Training / Settings looking like
+   the Classic theme no matter what was selected. This file adds the same
+   per-theme treatment to the missing component classes, and also fixes a
+   few places where hard-coded dark text stayed dark on the dark themes'
+   dark backgrounds (numbers/labels effectively invisible on Midnight /
+   Premium Elite).
+
+   Nothing here changes the Classic (no data-app-theme attribute) look.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------
+   Buttons — "New Implementation / Training", "Apply" filter button etc.
+   use .btn-primary, which every other theme rule leaves alone (it is
+   pinned to a static blue by an earlier file). Give it real theme
+   colours with a selector specific enough to always win.
+   -------------------------------------------------------------------- */
+html[data-app-theme="dompet"] body.crm-app-body .btn-primary{background:linear-gradient(135deg,#2f6fed,#22c07d)!important;border-color:#2f6fed!important;color:#fff!important;box-shadow:0 14px 28px rgba(47,111,237,.22)!important}
+html[data-app-theme="dompet"] body.crm-app-body .btn-primary:hover{filter:brightness(.97)}
+html[data-app-theme="dompet"] body.crm-app-body .btn-outline-primary{color:#2f6fed!important;border-color:#b9d0ff!important}
+
+html[data-app-theme="midnight"] body.crm-app-body .btn-primary{background:linear-gradient(135deg,#7c4dff,#2f6fed)!important;border-color:transparent!important;color:#fff!important}
+html[data-app-theme="midnight"] body.crm-app-body .btn-outline-primary{color:#c8d3f0!important;border-color:rgba(255,255,255,.22)!important}
+html[data-app-theme="midnight"] body.crm-app-body .btn-light{background:#1b2140!important;border-color:rgba(255,255,255,.1)!important;color:#dbe3f5!important}
+
+html[data-app-theme="emerald"] body.crm-app-body .btn-primary{background:linear-gradient(135deg,#0fae7e,#38d6b4)!important;border-color:#0fae7e!important;color:#fff!important;box-shadow:0 14px 28px rgba(15,174,126,.22)!important}
+html[data-app-theme="emerald"] body.crm-app-body .btn-outline-primary{color:#0b8f68!important;border-color:#bfe9da!important}
+
+html[data-app-theme="rosegold"] body.crm-app-body .btn-primary{background:linear-gradient(135deg,#be185d,#ec4899)!important;border-color:#be185d!important;color:#fff!important;box-shadow:0 14px 28px rgba(190,24,93,.22)!important}
+html[data-app-theme="rosegold"] body.crm-app-body .btn-outline-primary{color:#be185d!important;border-color:#f4c6dc!important}
+
+html[data-app-theme="premium"] body.crm-app-body .btn-primary{background:linear-gradient(135deg,#caa14a,#f1d385)!important;border-color:transparent!important;color:#1a1330!important;font-weight:800!important}
+html[data-app-theme="premium"] body.crm-app-body .btn-outline-primary{color:#e9d9a8!important;border-color:rgba(202,161,74,.45)!important}
+html[data-app-theme="premium"] body.crm-app-body .btn-light{background:rgba(202,161,74,.1)!important;border-color:rgba(202,161,74,.22)!important;color:#e9e6f5!important}
+
+html[data-app-theme="saas"] body.crm-app-body .btn-primary{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;border-color:transparent!important;color:#fff!important;font-weight:800!important}
+html[data-app-theme="saas"] body.crm-app-body .btn-outline-primary{color:#4f46e5!important;border-color:#d9d7f5!important}
+
+/* --------------------------------------------------------------------
+   Panels — .crm-panel and .metric-card join the same "card" treatment
+   already given to .pro-card/.dash-panel/.card-soft/.crm-card/.kpi-card
+   on the themes that reskin cards (Dompet, Midnight, Premium Elite,
+   Professional SaaS). Emerald / Rosegold intentionally leave dashboard
+   cards at their default look too, so .crm-panel / .metric-card stay
+   consistent with that on those two themes.
+   -------------------------------------------------------------------- */
+html[data-app-theme="dompet"] .crm-panel,html[data-app-theme="dompet"] .metric-card{background:#ffffff!important;border:1px solid #eef1f8!important;box-shadow:0 14px 40px rgba(30,60,110,.07)!important;border-radius:20px!important}
+html[data-app-theme="dompet"] .panel-heading h3{color:#1c2b45!important}
+html[data-app-theme="dompet"] .panel-heading p,html[data-app-theme="dompet"] .metric-card span,html[data-app-theme="dompet"] .metric-card small{color:#5b6b8c!important}
+html[data-app-theme="dompet"] .metric-card strong{color:#1c2b45!important}
+
+html[data-app-theme="saas"] .crm-panel,html[data-app-theme="saas"] .metric-card{background:#ffffff!important;border:1px solid #ececf5!important;box-shadow:0 4px 18px rgba(30,33,51,.05)!important;border-radius:16px!important}
+html[data-app-theme="saas"] .panel-heading h3{color:#1e2133!important;font-weight:800!important}
+html[data-app-theme="saas"] .panel-heading p,html[data-app-theme="saas"] .metric-card span,html[data-app-theme="saas"] .metric-card small{color:#7a7d94!important}
+html[data-app-theme="saas"] .metric-card strong{color:#1e2133!important}
+
+html[data-app-theme="midnight"] .crm-panel,html[data-app-theme="midnight"] .metric-card{background:#141a34!important;border:1px solid rgba(255,255,255,.06)!important;color:#dbe3f5!important}
+html[data-app-theme="midnight"] .panel-heading h3{color:#f2f5ff!important}
+html[data-app-theme="midnight"] .panel-heading p,html[data-app-theme="midnight"] .metric-card span,html[data-app-theme="midnight"] .metric-card small{color:#8b96b8!important}
+html[data-app-theme="midnight"] .metric-card strong{color:#f2f5ff!important}
+
+html[data-app-theme="premium"] .crm-panel,html[data-app-theme="premium"] .metric-card{background:rgba(24,18,53,.72)!important;border:1px solid rgba(202,161,74,.2)!important;box-shadow:0 20px 55px rgba(0,0,0,.35)!important;backdrop-filter:blur(14px);border-radius:20px!important}
+html[data-app-theme="premium"] .panel-heading h3{color:#f7f2ff!important}
+html[data-app-theme="premium"] .panel-heading p,html[data-app-theme="premium"] .metric-card span,html[data-app-theme="premium"] .metric-card small{color:#a79fcf!important}
+html[data-app-theme="premium"] .metric-card strong{color:#f7f2ff!important}
+
+/* --------------------------------------------------------------------
+   Module hero — "Implementation & Training Workspace" banner. Reuse the
+   same gradients already established for each theme's dashboard hero
+   so the whole app feels consistent; Emerald / Rosegold get a hero that
+   matches their sidebar gradient since those themes don't reskin a hero
+   panel elsewhere.
+   -------------------------------------------------------------------- */
+html[data-app-theme="dompet"] .module-hero{background:linear-gradient(135deg,#1a2b57,#20396e 55%,#123a56)!important;border:0!important}
+html[data-app-theme="midnight"] .module-hero{background:linear-gradient(180deg,#141a34,#1b2140)!important;border:1px solid rgba(255,255,255,.06)!important}
+html[data-app-theme="emerald"] .module-hero{background:linear-gradient(135deg,#0fae7e,#0b7d5c)!important;border:0!important}
+html[data-app-theme="rosegold"] .module-hero{background:linear-gradient(135deg,#be185d,#831843)!important;border:0!important}
+html[data-app-theme="premium"] .module-hero{background:linear-gradient(135deg,#181235,#241a52 55%,#3a2c6d)!important;border:1px solid rgba(202,161,74,.22)!important}
+html[data-app-theme="saas"] .module-hero{background:linear-gradient(135deg,#1e1b4b,#312e81 55%,#4f46e5)!important;border:0!important}
+
+html[data-app-theme="dompet"] .module-hero h2,html[data-app-theme="midnight"] .module-hero h2,html[data-app-theme="emerald"] .module-hero h2,
+html[data-app-theme="rosegold"] .module-hero h2,html[data-app-theme="premium"] .module-hero h2,html[data-app-theme="saas"] .module-hero h2{color:#ffffff!important}
+html[data-app-theme="dompet"] .module-hero p,html[data-app-theme="midnight"] .module-hero p,html[data-app-theme="emerald"] .module-hero p,
+html[data-app-theme="rosegold"] .module-hero p,html[data-app-theme="saas"] .module-hero p{color:#cbd7f0!important}
+html[data-app-theme="premium"] .module-hero p{color:#c6bfe6!important}
+html[data-app-theme="dompet"] .module-hero .module-kicker{color:#8fc0ff!important}
+html[data-app-theme="midnight"] .module-hero .module-kicker{color:#93c5fd!important}
+html[data-app-theme="emerald"] .module-hero .module-kicker{color:#d3f5ea!important}
+html[data-app-theme="rosegold"] .module-hero .module-kicker{color:#fbd3e6!important}
+html[data-app-theme="premium"] .module-hero .module-kicker{color:#e0c479!important}
+html[data-app-theme="saas"] .module-hero .module-kicker{color:#c7d2fe!important}
+html[data-app-theme="dompet"] .module-hero .btn-primary,html[data-app-theme="midnight"] .module-hero .btn-primary,
+html[data-app-theme="emerald"] .module-hero .btn-primary,html[data-app-theme="rosegold"] .module-hero .btn-primary,
+html[data-app-theme="saas"] .module-hero .btn-primary{background:#fff!important;border-color:#fff!important;color:#17243b!important;box-shadow:none!important}
+html[data-app-theme="premium"] .module-hero .btn-primary{background:linear-gradient(135deg,#caa14a,#f1d385)!important;border-color:transparent!important;color:#1a1330!important}
+
+/* --------------------------------------------------------------------
+   Implementation workflow steps strip (1 Create/Fetch … 5 Feedback).
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .implementation-steps{background:#141a34!important;border-color:rgba(255,255,255,.06)!important}
+html[data-app-theme="midnight"] .implementation-steps>div{background:#1b2140!important;border-color:rgba(255,255,255,.06)!important}
+html[data-app-theme="midnight"] .implementation-steps>div strong{color:#f2f5ff!important}
+html[data-app-theme="midnight"] .implementation-steps>div small{color:#8b96b8!important}
+html[data-app-theme="midnight"] .implementation-steps>i{color:#5c6a92!important}
+html[data-app-theme="premium"] .implementation-steps{background:rgba(24,18,53,.72)!important;border-color:rgba(202,161,74,.2)!important}
+html[data-app-theme="premium"] .implementation-steps>div{background:rgba(202,161,74,.08)!important;border-color:rgba(202,161,74,.16)!important}
+html[data-app-theme="premium"] .implementation-steps>div>b{background:linear-gradient(135deg,#caa14a,#f1d385)!important;color:#1a1330!important}
+html[data-app-theme="premium"] .implementation-steps>div strong{color:#f7f2ff!important}
+html[data-app-theme="premium"] .implementation-steps>div small{color:#a79fcf!important}
+html[data-app-theme="premium"] .implementation-steps>i{color:#6d5f99!important}
+
+/* --------------------------------------------------------------------
+   Table / list text — on the two dark themes, several labels inside
+   .professional-table rows (.primary-cell, .owner-cell, .guidance-text,
+   .mini-muted, .record-type-line, .progress-copy) were styled with a
+   fixed dark colour that stayed dark once the row background turned
+   dark too, making them unreadable. Force light, legible text there.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .professional-table td,html[data-app-theme="midnight"] .primary-cell strong,
+html[data-app-theme="midnight"] .owner-cell strong,html[data-app-theme="midnight"] .progress-copy strong,
+html[data-app-theme="midnight"] .data-grid strong,html[data-app-theme="midnight"] .ownership-stack strong,
+html[data-app-theme="midnight"] .timeline-head h4,html[data-app-theme="midnight"] .topic-block p,
+html[data-app-theme="midnight"] .training-topic-option strong,html[data-app-theme="midnight"] .schedule-list-item strong,
+html[data-app-theme="midnight"] .performance-card strong{color:#e6ebfa!important}
+html[data-app-theme="midnight"] .primary-cell span,html[data-app-theme="midnight"] .primary-cell small,
+html[data-app-theme="midnight"] .guidance-text,html[data-app-theme="midnight"] .mini-muted,
+html[data-app-theme="midnight"] .record-type-line,html[data-app-theme="midnight"] .owner-cell small,
+html[data-app-theme="midnight"] .progress-copy small,html[data-app-theme="midnight"] .data-grid span,
+html[data-app-theme="midnight"] .ownership-stack span,html[data-app-theme="midnight"] .ownership-stack small,
+html[data-app-theme="midnight"] .timeline-head p,html[data-app-theme="midnight"] .topic-block span,
+html[data-app-theme="midnight"] .training-topic-option small,html[data-app-theme="midnight"] .schedule-list-item span,
+html[data-app-theme="midnight"] .schedule-list-item small,html[data-app-theme="midnight"] .performance-card small,
+html[data-app-theme="midnight"] .schedule-date span,html[data-app-theme="midnight"] .form-text{color:#8b96b8!important}
+html[data-app-theme="midnight"] .professional-table tbody tr:hover{background:rgba(255,255,255,.03)!important}
+html[data-app-theme="midnight"] .data-grid,html[data-app-theme="midnight"] .ownership-stack{border-color:rgba(255,255,255,.08)!important}
+html[data-app-theme="midnight"] .data-grid>div,html[data-app-theme="midnight"] .ownership-stack>div,
+html[data-app-theme="midnight"] .timeline-marker,html[data-app-theme="midnight"] .topic-block,
+html[data-app-theme="midnight"] .training-topic-option,html[data-app-theme="midnight"] .other-points-box,
+html[data-app-theme="midnight"] .completion-customer-strip>div,html[data-app-theme="midnight"] .ai-guidance-panel,
+html[data-app-theme="midnight"] .performance-card,html[data-app-theme="midnight"] .form-inline-card,
+html[data-app-theme="midnight"] .schedule-date{background:#1b2140!important;border-color:rgba(255,255,255,.07)!important}
+html[data-app-theme="midnight"] .data-grid,html[data-app-theme="midnight"] .ownership-stack,
+html[data-app-theme="midnight"] .timeline-day{border-color:rgba(255,255,255,.08)!important}
+html[data-app-theme="midnight"] .avatar-xs,html[data-app-theme="midnight"] .performance-avatar{background:rgba(124,77,255,.16)!important;color:#b9a6ff!important}
+html[data-app-theme="midnight"] .ai-mark,html[data-app-theme="midnight"] .implementation-steps>div>b{background:linear-gradient(135deg,#7c4dff,#2f6fed)!important;color:#fff!important}
+html[data-app-theme="midnight"] .status-pill{background:rgba(124,77,255,.16)!important;color:#c3b1ff!important;border:1px solid rgba(124,77,255,.24)!important}
+html[data-app-theme="midnight"] .status-pill[data-stage="Completed"]{background:rgba(47,191,148,.16)!important;color:#5fe0bb!important;border-color:rgba(47,191,148,.24)!important}
+html[data-app-theme="midnight"] .risk-low{background:rgba(47,191,148,.16)!important;color:#5fe0bb!important}
+html[data-app-theme="midnight"] .risk-medium{background:rgba(240,138,43,.16)!important;color:#f6b673!important}
+html[data-app-theme="midnight"] .risk-high,html[data-app-theme="midnight"] .risk-critical{background:rgba(217,74,74,.16)!important;color:#ff9d9d!important}
+html[data-app-theme="midnight"] .progress{background:rgba(255,255,255,.08)!important}
+html[data-app-theme="midnight"] .otp-input,html[data-app-theme="midnight"] .secure-action-card{background:#1b2140!important;border-color:rgba(255,255,255,.08)!important;color:#e6ebfa!important}
+
+html[data-app-theme="premium"] .professional-table td,html[data-app-theme="premium"] .primary-cell strong,
+html[data-app-theme="premium"] .owner-cell strong,html[data-app-theme="premium"] .progress-copy strong,
+html[data-app-theme="premium"] .data-grid strong,html[data-app-theme="premium"] .ownership-stack strong,
+html[data-app-theme="premium"] .timeline-head h4,html[data-app-theme="premium"] .topic-block p,
+html[data-app-theme="premium"] .training-topic-option strong,html[data-app-theme="premium"] .schedule-list-item strong,
+html[data-app-theme="premium"] .performance-card strong{color:#f3ecff!important}
+html[data-app-theme="premium"] .primary-cell span,html[data-app-theme="premium"] .primary-cell small,
+html[data-app-theme="premium"] .guidance-text,html[data-app-theme="premium"] .mini-muted,
+html[data-app-theme="premium"] .record-type-line,html[data-app-theme="premium"] .owner-cell small,
+html[data-app-theme="premium"] .progress-copy small,html[data-app-theme="premium"] .data-grid span,
+html[data-app-theme="premium"] .ownership-stack span,html[data-app-theme="premium"] .ownership-stack small,
+html[data-app-theme="premium"] .timeline-head p,html[data-app-theme="premium"] .topic-block span,
+html[data-app-theme="premium"] .training-topic-option small,html[data-app-theme="premium"] .schedule-list-item span,
+html[data-app-theme="premium"] .schedule-list-item small,html[data-app-theme="premium"] .performance-card small,
+html[data-app-theme="premium"] .schedule-date span,html[data-app-theme="premium"] .form-text{color:#a79fcf!important}
+html[data-app-theme="premium"] .professional-table tbody tr:hover{background:rgba(202,161,74,.06)!important}
+html[data-app-theme="premium"] .data-grid,html[data-app-theme="premium"] .ownership-stack{border-color:rgba(202,161,74,.2)!important}
+html[data-app-theme="premium"] .data-grid>div,html[data-app-theme="premium"] .ownership-stack>div,
+html[data-app-theme="premium"] .timeline-marker,html[data-app-theme="premium"] .topic-block,
+html[data-app-theme="premium"] .training-topic-option,html[data-app-theme="premium"] .other-points-box,
+html[data-app-theme="premium"] .completion-customer-strip>div,html[data-app-theme="premium"] .ai-guidance-panel,
+html[data-app-theme="premium"] .performance-card,html[data-app-theme="premium"] .form-inline-card,
+html[data-app-theme="premium"] .schedule-date{background:rgba(202,161,74,.08)!important;border-color:rgba(202,161,74,.18)!important}
+html[data-app-theme="premium"] .data-grid,html[data-app-theme="premium"] .ownership-stack,
+html[data-app-theme="premium"] .timeline-day{border-color:rgba(202,161,74,.2)!important}
+html[data-app-theme="premium"] .avatar-xs,html[data-app-theme="premium"] .performance-avatar{background:rgba(202,161,74,.16)!important;color:#e9d9a8!important}
+html[data-app-theme="premium"] .ai-mark{background:linear-gradient(135deg,#caa14a,#7c4dff)!important;color:#181235!important}
+html[data-app-theme="premium"] .status-pill{background:rgba(124,77,255,.18)!important;color:#c3b1ff!important;border:1px solid rgba(124,77,255,.26)!important}
+html[data-app-theme="premium"] .status-pill[data-stage="Completed"]{background:rgba(47,191,148,.16)!important;color:#5fe0bb!important;border-color:rgba(47,191,148,.24)!important}
+html[data-app-theme="premium"] .risk-low{background:rgba(47,191,148,.16)!important;color:#5fe0bb!important}
+html[data-app-theme="premium"] .risk-medium{background:rgba(202,161,74,.18)!important;color:#e9d9a8!important}
+html[data-app-theme="premium"] .risk-high,html[data-app-theme="premium"] .risk-critical{background:rgba(255,110,110,.16)!important;color:#ff9d9d!important}
+html[data-app-theme="premium"] .progress{background:rgba(202,161,74,.14)!important}
+html[data-app-theme="premium"] .otp-input,html[data-app-theme="premium"] .secure-action-card{background:rgba(202,161,74,.08)!important;border-color:rgba(202,161,74,.2)!important;color:#f3ecff!important}
+
+/* --------------------------------------------------------------------
+   Font style / font size preferences already re-map --crm-font-body /
+   --crm-font-heading and the root font-size, but the selector lists in
+   app-theme-switcher.css never included this module's headings/numbers.
+   Extend both so "Font style" and "Font size" also apply here.
+   -------------------------------------------------------------------- */
+html[data-app-font-style="modern"] .module-hero h2,html[data-app-font-style="modern"] .panel-heading h3,
+html[data-app-font-style="modern"] .metric-card strong,html[data-app-font-style="modern"] .timeline-head h4,
+html[data-app-font-style="elegant"] .module-hero h2,html[data-app-font-style="elegant"] .panel-heading h3,
+html[data-app-font-style="elegant"] .metric-card strong,html[data-app-font-style="elegant"] .timeline-head h4,
+html[data-app-font-style="rounded"] .module-hero h2,html[data-app-font-style="rounded"] .panel-heading h3,
+html[data-app-font-style="rounded"] .metric-card strong,html[data-app-font-style="rounded"] .timeline-head h4{font-family:var(--crm-font-heading)!important}
+html[data-app-font-style="modern"] .professional-table,html[data-app-font-style="modern"] .status-pill,html[data-app-font-style="modern"] .risk-badge,
+html[data-app-font-style="elegant"] .professional-table,html[data-app-font-style="elegant"] .status-pill,html[data-app-font-style="elegant"] .risk-badge,
+html[data-app-font-style="rounded"] .professional-table,html[data-app-font-style="rounded"] .status-pill,html[data-app-font-style="rounded"] .risk-badge{font-family:var(--crm-font-body)!important}
+
+/* --------------------------------------------------------------------
+   Number / label overflow guard — with the "lg" font size preset, or on
+   partners/products with long names, the big numbers on .metric-card
+   and the name/city text in .primary-cell could get clipped or overlap
+   because the card had a fixed min-height and no wrapping rules. Let
+   the card grow instead of clipping and wrap long words cleanly.
+   -------------------------------------------------------------------- */
+.metric-card{height:auto!important}
+.metric-card strong{white-space:normal!important;word-break:break-word!important}
+.primary-cell strong,.primary-cell span,.owner-cell strong,.guidance-text{overflow-wrap:break-word!important;word-break:break-word!important}
+.module-hero{flex-wrap:wrap!important}
+.module-hero h2{overflow-wrap:break-word!important}
+html[data-app-font-scale="lg"] .metric-card{min-height:112px!important}
+html[data-app-font-scale="lg"] .status-pill,html[data-app-font-scale="lg"] .risk-badge{white-space:normal!important;line-height:1.3!important}

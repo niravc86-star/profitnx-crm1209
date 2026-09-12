@@ -1,0 +1,163 @@
+/* ==========================================================================
+   PREMIUM ELITE — Heading / page-hero standardization (Issue 4, Head1 ref)
+   ==========================================================================
+   Reference: Head1.png = the ".report-hero" banner already used on
+   Views/Reports/Index.cshtml ("Total Inquiry List — Source Wise") and
+   already fully styled for Premium Elite by
+   theme-report-hero-contrast-fix-2026-08-24.css. That file is the source
+   of truth for the exact tokens (colors, radius, shadow, type scale) —
+   this file does not redefine them, it *reuses* them (via the variables
+   below, which mirror those literal values) and applies the same
+   typography/color/shape language to every other heading-style component
+   found in the codebase, so the whole CRM reads as one design system
+   under Premium Elite:
+
+     - .report-hero            (Reports)                — already correct
+     - .pro-hero-panel/.polished-hero (Dashboard)
+     - .module-hero/.onboarding-hero  (Implementation & Training)
+     - .page-heading-row title        (Partner Master and similar simple
+                                        title+action rows)
+     - .pg-toolbar-left h4            (the compact grid/report toolbars —
+                                        Total Inquiry List, Implementation
+                                        & Training Records, etc.)
+     - .panel-heading .section-label/h3 (Settings section panels)
+
+   Scope discipline: every selector below is gated on
+   html[data-app-theme="premium"] ONLY. Midnight (Dark) and the light
+   themes (Classic/SaaS/Dompet/Emerald/Rose Gold) are untouched — matches
+   the brief ("Apply only within the Premium Elite Theme. Do not affect
+   other themes").
+
+   This intentionally standardizes TYPOGRAPHY, COLOR, BORDER and SHADOW
+   language rather than rebuilding each component's internal layout
+   (e.g. Dashboard's KPI-metrics hero and Reports' logo-orb hero have
+   different internal structure by design/functionality) — that keeps the
+   change additive and low-risk on a codebase that can't be visually
+   regression-tested in this environment, while still delivering one
+   consistent "Premium Elite" heading identity everywhere a heading lives.
+   ========================================================================== */
+
+html[data-app-theme="premium"] {
+  --pnx-hero-bg: rgba(24, 18, 53, 0.78);
+  --pnx-hero-border: rgba(202, 161, 74, 0.22);
+  --pnx-hero-shadow: 0 20px 55px rgba(0, 0, 0, 0.35);
+  --pnx-hero-radius: 28px;
+  --pnx-hero-eyebrow: #e0c479;   /* == --dm-accent, restated for readability */
+  --pnx-hero-heading: #f7f2ff;
+  --pnx-hero-desc: #a79fcf;
+  --pnx-hero-kicker-bg: rgba(224, 196, 121, 0.14);
+}
+
+/* ---- Dashboard: .pro-hero-panel / .polished-hero ------------------------ */
+html[data-app-theme="premium"] body.crm-app-body .pro-hero-panel,
+html[data-app-theme="premium"] body.crm-app-body .polished-hero {
+  background: linear-gradient(135deg, #181233, #241c47 58%, #2c2154) !important;
+  border: 1px solid var(--pnx-hero-border) !important;
+  border-radius: var(--pnx-hero-radius) !important;
+  box-shadow: var(--pnx-hero-shadow) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pro-hero-panel .pro-eyebrow {
+  background: var(--pnx-hero-kicker-bg) !important;
+  color: var(--pnx-hero-eyebrow) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pro-hero-panel h2 {
+  color: var(--pnx-hero-heading) !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pro-hero-panel p {
+  color: var(--pnx-hero-desc) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pro-hero-panel .pro-hero-metrics div {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--pnx-hero-border) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pro-hero-panel .pro-hero-metrics span {
+  color: var(--pnx-hero-desc) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pro-hero-panel .pro-hero-metrics strong {
+  color: var(--pnx-hero-heading) !important;
+}
+
+/* ---- Implementation & Training: .module-hero / .onboarding-hero -------- */
+html[data-app-theme="premium"] body.crm-app-body .module-hero,
+html[data-app-theme="premium"] body.crm-app-body .onboarding-hero {
+  background: var(--pnx-hero-bg) !important;
+  border: 1px solid var(--pnx-hero-border) !important;
+  border-radius: var(--pnx-hero-radius) !important;
+  box-shadow: var(--pnx-hero-shadow) !important;
+  color: var(--pnx-hero-desc) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .module-hero .module-kicker {
+  color: var(--pnx-hero-eyebrow) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  font-size: 0.72rem !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .module-hero h2 {
+  color: var(--pnx-hero-heading) !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .module-hero p {
+  color: var(--pnx-hero-desc) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .module-hero .btn-primary {
+  background: var(--pnx-hero-eyebrow) !important;
+  border-color: var(--pnx-hero-eyebrow) !important;
+  color: #1a1230 !important;
+}
+
+/* ---- Simple title+action rows: .page-heading-row (Partner Master, etc.) */
+html[data-app-theme="premium"] body.crm-app-body .page-heading-row h1,
+html[data-app-theme="premium"] body.crm-app-body .page-heading-row h2,
+html[data-app-theme="premium"] body.crm-app-body .page-heading-row h3,
+html[data-app-theme="premium"] body.crm-app-body .page-heading-row h4 {
+  color: var(--pnx-hero-heading) !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+  position: relative !important;
+  padding-left: 14px !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .page-heading-row h1::before,
+html[data-app-theme="premium"] body.crm-app-body .page-heading-row h2::before,
+html[data-app-theme="premium"] body.crm-app-body .page-heading-row h3::before,
+html[data-app-theme="premium"] body.crm-app-body .page-heading-row h4::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 4px !important;
+  bottom: 4px !important;
+  width: 4px !important;
+  border-radius: 999px !important;
+  background: var(--pnx-hero-eyebrow) !important;
+}
+
+/* ---- Compact grid/report toolbar titles: .pg-toolbar-left h4 ----------- */
+/* Covers "Total Inquiry List" and "Implementation & Training Records"
+   toolbar titles directly above the Details/eye-icon grids from Img1/Img2,
+   and any other .pg-panel report grid, so the same accent + weight used on
+   the big report-hero heading carries down into its own grid toolbar. */
+html[data-app-theme="premium"] body.crm-app-body .pg-toolbar-left h4 {
+  color: var(--pnx-hero-heading) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ---- Settings section panels: .panel-heading .section-label / h3 ------- */
+html[data-app-theme="premium"] body.crm-app-body .panel-heading .section-label {
+  color: var(--pnx-hero-eyebrow) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .panel-heading h3 {
+  color: var(--pnx-hero-heading) !important;
+  font-weight: 900 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .panel-heading p {
+  color: var(--pnx-hero-desc) !important;
+}

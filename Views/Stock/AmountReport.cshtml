@@ -1,0 +1,75 @@
+@model List<StockItem>
+@{
+    var partners = ViewBag.PartnerMasters as List<Dealer> ?? new();
+    var selectedPartnerId = ViewBag.SelectedPartnerId as string;
+    var selectedBillNo = ViewBag.SelectedBillNo as string;
+    var selectedLicenseNo = ViewBag.SelectedLicenseNo as string;
+    DateTime? selectedFromDate = ViewBag.SelectedFromDate as DateTime?;
+    DateTime? selectedToDate = ViewBag.SelectedToDate as DateTime?;
+    int? selectedPurchaseYear = ViewBag.SelectedPurchaseYear as int?;
+    var roleName = ViewBag.RoleName as string ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+    var isPartner = roleName.Equals("Partner", StringComparison.OrdinalIgnoreCase);
+    List<string> Licenses(StockItem item) => (item.LicenseNumbers ?? string.Empty).Split(new[] {'\r','\n',',',';'}, StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(x=>!string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    var partnerRows = Model.GroupBy(x => string.IsNullOrWhiteSpace(x.PartnerName) ? "Unassigned" : x.PartnerName).Select(g => new { Partner = g.Key, Qty = g.Sum(x => x.AvailableStock), Purchased = g.Sum(x=>x.TotalPurchased), Sold = g.Sum(x=>x.TotalSold), Amount = g.Sum(x => x.ApproxValueWithoutGst), Rows = g.ToList(), Id = g.Key.GetHashCode().ToString().Replace("-","N") }).OrderBy(x=>x.Partner).ToList();
+}
+<div class="card-soft p-3 mb-4 professional-filter-card">
+    <form method="get" class="professional-filter-grid compact-filter-grid">
+        @if(!isPartner){<div class="filter-cell"><label class="form-label small">Partner</label><select name="partnerId" class="form-select"><option value="">All Partners</option>@foreach(var p in partners){<option value="@p.Id" selected="@(selectedPartnerId==p.Id)">@p.DealerName</option>}</select></div>}
+        <div class="filter-cell"><label class="form-label small">Bill No</label><input name="billNo" value="@selectedBillNo" class="form-control" placeholder="Bill No" /></div>
+        <div class="filter-cell"><label class="form-label small">License No</label><input name="licenseNo" value="@selectedLicenseNo" class="form-control" placeholder="Search license" /></div>
+        <div class="filter-cell"><label class="form-label small">From Date</label><input name="fromDate" value="@(selectedFromDate?.ToString("yyyy-MM-dd"))" type="date" class="form-control" /></div>
+        <div class="filter-cell"><label class="form-label small">To Date</label><input name="toDate" value="@(selectedToDate?.ToString("yyyy-MM-dd"))" type="date" class="form-control" /></div>
+        <div class="filter-cell"><label class="form-label small">Purchase Year</label><input name="purchaseYear" value="@selectedPurchaseYear" type="number" min="2000" max="2100" class="form-control" placeholder="e.g. 2026" /></div>
+        <div class="filter-actions"><button class="btn btn-brand w-100">Go</button><a asp-action="AmountReport" class="btn btn-outline-secondary w-100">Clear</a></div>
+    </form>
+</div>
+
+<div class="dash-panel mb-4 report-print-section">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3 no-print">
+        <div>
+            <h4 class="mb-1">Partner Stock Amount Report</h4>
+            <div class="mini-muted">Partner-wise total quantity and stock amount. Use Zoom for product/version breakdown and click quantity to view license numbers.</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap"><button type="button" class="btn btn-soft" onclick="exportStockReportCsv()"><i class="bi bi-file-earmark-excel"></i> Export Excel</button><button type="button" class="btn btn-soft" onclick="window.print()"><i class="bi bi-printer"></i> Print / Save PDF</button><a asp-action="Index" class="btn btn-outline-secondary">Back to Stock</a></div>
+    </div>
+    <div class="d-none d-print-block mb-3"><h4>Partner Stock Amount Report</h4><p>Partner-wise total quantity and stock amount.</p></div>
+    <div class="enterprise-table-toolbar no-print">
+    <div class="toolbar-left">
+        <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="amountReportTable" />
+        <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="amountReportTable">
+            <option value="20" selected>20 records</option>
+            <option value="40">40 records</option>
+            <option value="100">100 records</option>
+        </select>
+    </div>
+</div>
+<div class="table-responsive enterprise-table-scroll"><table class="table align-middle enterprise-data-table" id="amountReportTable" data-table-id="amountReportTable"><thead><tr><th>Partner</th><th>Purchased</th><th>Sold</th><th>Total Qty</th><th>Amount W/O GST</th><th>Details</th></tr></thead><tbody>
+    @foreach(var r in partnerRows){
+        <tr><td><strong>@r.Partner</strong></td><td>@r.Purchased</td><td>@r.Sold</td><td><button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#amount_@r.Id">@r.Qty Zoom</button></td><td>@r.Amount.ToString("N2")</td><td><button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#amount_@r.Id">Zoom</button></td></tr>
+    }
+    @if(!Model.Any()){<tr><td colspan="6" class="text-center text-muted py-4">No stock data found.</td></tr>}
+    </tbody></table></div>
+</div>
+
+@foreach(var r in partnerRows){
+<div class="modal fade stock-license-modal" id="amount_@r.Id" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">@r.Partner - Product-wise stock</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+<div class="table-responsive"><table class="table"><thead><tr><th>Product</th><th>Version</th><th>Purchased</th><th>Sold</th><th>Available</th><th>Amount W/O GST</th></tr></thead><tbody>
+@foreach(var x in r.Rows.GroupBy(y => new { y.ProductName, y.Version }).Select(y => new { y.Key.ProductName, y.Key.Version, Purchased = y.Sum(z=>z.TotalPurchased), Sold = y.Sum(z=>z.TotalSold), Available = y.Sum(z=>z.AvailableStock), Amount = y.Sum(z=>z.ApproxValueWithoutGst), Rows = y.ToList(), Id = (r.Id + y.Key.ProductName + y.Key.Version).GetHashCode().ToString().Replace("-","N") })){
+<tr><td>@x.ProductName</td><td>@x.Version</td><td>@x.Purchased</td><td>@x.Sold</td><td><button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse" data-bs-target="#lic_@x.Id">@x.Available Licenses</button></td><td>@x.Amount.ToString("N2")</td></tr>
+<tr class="collapse" id="lic_@x.Id"><td colspan="6"><div class="p-2 bg-light rounded-3"><strong>License Numbers</strong><div class="table-responsive mt-2"><table class="table table-sm mb-0"><thead><tr><th>License No</th><th>Bill No</th><th>Bill Date</th><th>Product</th><th>Version</th></tr></thead><tbody>
+@foreach(var stock in x.Rows){ var licenses = Licenses(stock); if(!licenses.Any()){<tr><td>-</td><td>@stock.BillNo</td><td>@(stock.LastPurchaseDate?.ToString("dd/MM/yyyy") ?? "-")</td><td>@stock.ProductName</td><td>@stock.Version</td></tr>} else { foreach(var lic in licenses){<tr><td>@lic</td><td>@stock.BillNo</td><td>@(stock.LastPurchaseDate?.ToString("dd/MM/yyyy") ?? "-")</td><td>@stock.ProductName</td><td>@stock.Version</td></tr>} } }
+</tbody></table></div></div></td></tr>
+}
+</tbody></table></div>
+</div></div></div></div>
+}
+
+@section Scripts{
+<script>
+function exportStockReportCsv(){
+  const rows=[...document.querySelectorAll('.report-print-section table:first-of-type tr')].map(tr=>[...tr.children].map(td=>'"'+td.innerText.replaceAll('"','""').replace(/\s+/g,' ').trim()+'"').join(','));
+  const blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='partner-stock-amount-report.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+</script>
+}

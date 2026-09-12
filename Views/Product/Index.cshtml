@@ -1,0 +1,55 @@
+@model List<ProfitNx.CRM.Models.Product>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    ViewData["Title"] = "Product Master";
+    ViewData["Subtitle"] = "Direct-customer and partner pricing are maintained separately.";
+    var canManageProducts = await PermissionService.HasPermissionAsync(User, "product.manage");
+    var canDirectPrice = ViewBag.CanDirectPrice as bool? ?? false;
+    var canPartnerPrice = ViewBag.CanPartnerPrice as bool? ?? false;
+}
+<div class="row g-4 mb-4">
+    <div class="col-md-4"><div class="kpi-card"><div class="kpi-label">Total Products</div><p class="kpi-value">@Model.Count</p></div></div>
+    <div class="col-md-4"><div class="kpi-card"><div class="kpi-label">Active Products</div><p class="kpi-value">@Model.Count(x => x.IsActive)</p></div></div>
+    @if (canPartnerPrice) { <div class="col-md-4"><div class="kpi-card"><div class="kpi-label">Partner Price Configured</div><p class="kpi-value">@Model.Count(x => x.PartnerPriceWithoutGst > 0)</p></div></div> }
+</div>
+@if (canManageProducts){<div class="page-actions mb-4"><a asp-action="Create" class="btn btn-brand" data-bs-toggle="tooltip" data-bs-title="Add a new product (Alt+N)"><i class="bi bi-plus-circle"></i><span>Add Product</span></a></div>}
+<div class="card card-soft border-0">
+    <div class="enterprise-table-toolbar no-print px-2 px-md-4 pt-3">
+        <div class="toolbar-left">
+            <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="productsTable" />
+            <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="productsTable">
+                <option value="20" selected>20 records</option>
+                <option value="40">40 records</option>
+                <option value="100">100 records</option>
+            </select>
+        </div>
+        <div class="toolbar-right">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="productsTable"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+        </div>
+    </div>
+    <div class="table-responsive px-2 px-md-4 py-4 enterprise-table-scroll">
+        <table class="table table-hover align-middle mb-0 js-paginated keyboard-table enterprise-data-table" id="productsTable" data-table-id="productsTable">
+            <thead><tr><th>Code</th><th>Category</th><th>Product</th><th>Version</th>@if(canDirectPrice){<th>Direct Price</th>}@if(canPartnerPrice){<th>Partner Base Price</th>}<th>GST</th><th>Status</th>@if(canManageProducts){<th class="text-end col-action">Actions</th>}</tr></thead>
+            <tbody>
+            @foreach(var item in Model){
+                <tr tabindex="0">
+                    <td>@item.Code</td><td>@item.Category</td><td><div class="fw-semibold">@item.Name</div><div class="small text-muted">@item.Notes</div></td><td>@item.Version</td>
+                    @if(canDirectPrice){<td><strong>@item.PriceWithoutGst.ToString("N2")</strong><div class="mini-muted">With GST: @item.PriceWithGst.ToString("N2")</div></td>}
+                    @if(canPartnerPrice){<td><strong>@item.PartnerPriceWithoutGst.ToString("N2")</strong><div class="mini-muted">With GST: @item.PartnerPriceWithGst.ToString("N2")</div></td>}
+                    <td>@item.GstPercent.ToString("N2")%</td><td><span class="stat-pill @(item.IsActive?"bg-soft-success":"bg-soft-danger")">@(item.IsActive?"Active":"Inactive")</span></td>
+                    @if(canManageProducts){<td class="text-end col-action"><div class="table-actions"><a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" data-primary-action data-bs-toggle="tooltip" data-bs-title="Edit product"><i class="bi bi-pencil"></i></a><form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Delete this product?');"><input type="hidden" name="id" value="@item.Id"/><button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" data-bs-title="Delete product"><i class="bi bi-trash"></i></button></form></div></td>}
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="enterprise-table-pagination no-print px-2 px-md-4 pb-3">
+        <div class="mini-muted" data-table-info="productsTable"></div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="productsTable"><i class="bi bi-chevron-left"></i></button>
+            <span class="small" data-table-page="productsTable">1 / 1</span>
+            <div class="d-flex align-items-center gap-1 flex-wrap enterprise-page-numbers" data-table-pages="productsTable"></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="productsTable"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </div>
+</div>

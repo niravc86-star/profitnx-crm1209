@@ -1,0 +1,190 @@
+/* ==========================================================================
+   Dark theme text readability safety-net — 2026-08-17
+   ==========================================================================
+   Reported: "Chat" page heading invisible under Midnight (Dark) / Premium
+   Elite / Dark Mode (On) (screenshot: Chat page header).
+
+   Root cause: Midnight and Premium Elite were patched (see
+   app-theme-switcher.css and theme-implementation-parity-2026-08-12.css)
+   by re-colouring specific KNOWN containers as each one was reported —
+   .panel-heading h3, .dash-panel h4/h5, .kpi-value, .form-label, etc. Any
+   heading/text that lives OUTSIDE one of those already-patched containers
+   was never covered, and just inherits body's colour, which is only
+   correct if nothing else on the page overrides it first. The "Chat"
+   heading is one such case — a plain <h3> sitting directly in a page
+   header row, not inside .panel-heading — and the same bare pattern
+   repeats on several other pages (Notifications, Chat/AllConversations,
+   Dealer, Inquiry/Create), which is why the same "text disappears" report
+   keeps coming back on different screens rather than staying fixed once.
+
+   Fix: instead of patching one more container every time this is
+   reported, this file adds one broad, high-specificity, LAST-LOADED rule
+   set covering every plain text-bearing element (headings, paragraphs,
+   labels, muted text) for both dark themes. It intentionally does NOT
+   touch already-themed components with their own deliberate colours
+   (badges, buttons, status pills, KPI cards, tables, form controls,
+   modals) — those already read correctly today and are left alone so
+   this file can't accidentally wash out an intentional colour.
+
+   Specificity note: every selector below carries
+   `html[data-app-theme="..."] body.crm-app-body` (2 elements + 1 class +
+   1 attribute) ahead of the target, which out-ranks every existing
+   generic (non-theme-scoped) text-colour rule in this codebase, so this
+   safely wins regardless of stylesheet load order — same technique
+   already used throughout app-theme-switcher.css.
+   ========================================================================== */
+
+/* ---- Midnight (Dark) ---- */
+html[data-app-theme="midnight"] body.crm-app-body h1,
+html[data-app-theme="midnight"] body.crm-app-body h2,
+html[data-app-theme="midnight"] body.crm-app-body h3,
+html[data-app-theme="midnight"] body.crm-app-body h4,
+html[data-app-theme="midnight"] body.crm-app-body h5,
+html[data-app-theme="midnight"] body.crm-app-body h6 {
+  color: #f2f5ff !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body p,
+html[data-app-theme="midnight"] body.crm-app-body span,
+html[data-app-theme="midnight"] body.crm-app-body li,
+html[data-app-theme="midnight"] body.crm-app-body strong,
+html[data-app-theme="midnight"] body.crm-app-body b {
+  color: #dbe3f5;
+}
+html[data-app-theme="midnight"] body.crm-app-body .text-muted,
+html[data-app-theme="midnight"] body.crm-app-body small,
+html[data-app-theme="midnight"] body.crm-app-body .mini-muted,
+html[data-app-theme="midnight"] body.crm-app-body .text-secondary {
+  color: #8b96b8 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body a:not(.btn):not(.menu-link):not(.theme-switch-option) {
+  color: #9fb4ff;
+}
+
+/* ---- Premium Elite ---- */
+html[data-app-theme="premium"] body.crm-app-body h1,
+html[data-app-theme="premium"] body.crm-app-body h2,
+html[data-app-theme="premium"] body.crm-app-body h3,
+html[data-app-theme="premium"] body.crm-app-body h4,
+html[data-app-theme="premium"] body.crm-app-body h5,
+html[data-app-theme="premium"] body.crm-app-body h6 {
+  color: #f7f2ff !important;
+}
+html[data-app-theme="premium"] body.crm-app-body p,
+html[data-app-theme="premium"] body.crm-app-body span,
+html[data-app-theme="premium"] body.crm-app-body li,
+html[data-app-theme="premium"] body.crm-app-body strong,
+html[data-app-theme="premium"] body.crm-app-body b {
+  color: #e9e6f5;
+}
+html[data-app-theme="premium"] body.crm-app-body .text-muted,
+html[data-app-theme="premium"] body.crm-app-body small,
+html[data-app-theme="premium"] body.crm-app-body .mini-muted,
+html[data-app-theme="premium"] body.crm-app-body .text-secondary {
+  color: #a79fcf !important;
+}
+html[data-app-theme="premium"] body.crm-app-body a:not(.btn):not(.menu-link):not(.theme-switch-option) {
+  color: #c9b6ff;
+}
+
+/* ---- Elements that intentionally keep their own colour on every theme ----
+   (badges/status pills, buttons, KPI values, table cells, form controls,
+   .panel-heading h3, .dash-panel h4/h5, modal content) already have their
+   own more-specific rules elsewhere and take precedence over the generic
+   p/span/li/strong colour above since a class selector combined with the
+   theme attribute is more specific than these element-only selectors. No
+   extra exclusion list is needed here for those. */
+
+/* ==========================================================================
+   Round 2 — 2026-08-17: "Login Alert" popup + Logout button unreadable
+   ==========================================================================
+   Reported: under Midnight (Dark) / Premium Elite (= "Dark Mode (On)"), the
+   floating "Login Alert(s)" card text can't be read, and the top-bar Logout
+   button doesn't display properly.
+
+   Root cause 1 (alert popup): .task-flash-card and its children
+   (quickfix-task-flash-2026-08-05.css) were built with a hardcoded WHITE
+   card (#fff / #fff7ed / #f8fafc) and dark text (#1f2937 etc.) and were
+   never given a dark-theme variant. The generic guard rule above (h1-h6,
+   p/span/li/strong/b) then repaints that text light-coloured for dark
+   themes because it doesn't know this card's background is still white -
+   so you get light text on a white card. Fixed here by giving the card
+   itself a proper dark surface + matching text for both dark themes,
+   scoped narrowly to .task-flash-card so nothing else is touched.
+
+   Root cause 2 (logout button): .top-logout-button has a hardcoded white
+   background with !important in three older stylesheets (professional-ui.css,
+   premium-2026.css, crm-reference-ui.css) and, unlike its neighbours
+   .top-alert/.top-action-button, was never added to the midnight/premium
+   dark-bg override list in app-theme-switcher.css - so it stays a stray
+   white box while its icon/text colour gets overridden light by the "a"
+   rule above, leaving low/no contrast either way. Fixed here by giving it
+   the same dark, high-contrast treatment as .top-alert/.top-action-button.
+   ========================================================================== */
+
+/* ---- Login/Logout alert popup ---- */
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-card {
+  background: #141a34 !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, .45), 0 2px 8px rgba(0, 0, 0, .3);
+}
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-head {
+  background: #1b2140 !important;
+  color: #f2c94c !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-close { color: #c8d3f0 !important; }
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-item {
+  border-top-color: rgba(255, 255, 255, .08) !important;
+  color: #dbe3f5 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-item:hover { background: #1b2140 !important; }
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-item-msg { color: #f2f5ff !important; }
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-item-meta { color: #8b96b8 !important; }
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-footer {
+  background: #1b2140 !important;
+  color: #9fb4ff !important;
+  border-top-color: rgba(255, 255, 255, .08) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .task-flash-footer:hover { background: #232a52 !important; }
+
+html[data-app-theme="premium"] body.crm-app-body .task-flash-card {
+  background: #181235 !important;
+  border: 1px solid rgba(202, 161, 74, .22) !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, .45), 0 2px 8px rgba(0, 0, 0, .3);
+}
+html[data-app-theme="premium"] body.crm-app-body .task-flash-head {
+  background: rgba(202, 161, 74, .14) !important;
+  color: #e9d9a8 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .task-flash-close { color: #e9d9a8 !important; }
+html[data-app-theme="premium"] body.crm-app-body .task-flash-item {
+  border-top-color: rgba(202, 161, 74, .18) !important;
+  color: #e9e6f5 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .task-flash-item:hover { background: rgba(202, 161, 74, .09) !important; }
+html[data-app-theme="premium"] body.crm-app-body .task-flash-item-msg { color: #f7f2ff !important; }
+html[data-app-theme="premium"] body.crm-app-body .task-flash-item-meta { color: #a79fcf !important; }
+html[data-app-theme="premium"] body.crm-app-body .task-flash-footer {
+  background: rgba(202, 161, 74, .1) !important;
+  color: #e0c479 !important;
+  border-top-color: rgba(202, 161, 74, .18) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .task-flash-footer:hover { background: rgba(202, 161, 74, .18) !important; }
+
+/* ---- Logout button ---- */
+html[data-app-theme="midnight"] body.crm-app-body .top-logout-button {
+  background: #1b2140 !important;
+  color: #ff9f9f !important;
+  border: 1px solid rgba(255, 255, 255, .08) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .top-logout-button:hover {
+  background: #232a52 !important;
+  color: #ffb8b8 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .top-logout-button {
+  background: rgba(202, 161, 74, .14) !important;
+  color: #f2a5ad !important;
+  border: 1px solid rgba(202, 161, 74, .22) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .top-logout-button:hover {
+  background: rgba(202, 161, 74, .22) !important;
+  color: #ffc2c9 !important;
+}

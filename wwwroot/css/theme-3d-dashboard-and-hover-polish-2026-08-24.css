@@ -1,0 +1,263 @@
+/* ==========================================================================
+   Additive polish pass — 2026-08-24
+   ==========================================================================
+   Two independent, additive jobs. Nothing here removes or restructures any
+   earlier rule, markup, route or business logic — visual polish only.
+   Loaded LAST in _Layout.cshtml (after theme-global-dark-fix-FINAL) so the
+   dark-theme contrast fixes it already contains still win, and this file
+   only adds depth/motion on top of colors that file already resolved.
+
+   PART A — Live Dashboard: subtle 3D / glass depth for KPI cards + panels
+   PART B — Defensive catch-all: any card/table wrapper class the FINAL
+            dark-theme fix list doesn't already name gets the same treatment,
+            so a future new page doesn't reintroduce the invisible-text bug.
+   ========================================================================== */
+
+/* -------------------------------------------------------------------------
+   PART A — 3D / glass depth for the Live Dashboard
+   Theme-agnostic: uses box-shadow + transform + backdrop-filter only, so it
+   layers correctly on top of whatever background color each of the app's
+   themes (Classic, Midnight, Premium Elite, Dompet, Emerald, Rose Gold,
+   SaaS) already gives these elements. No colors are hard-coded here except
+   soft neutral shadow/glow tones that read correctly on both light and dark
+   surfaces.
+   ------------------------------------------------------------------------- */
+
+.ld-kpi,
+.ld-card {
+  position: relative;
+  transform: translateZ(0);
+  transition: transform .22s cubic-bezier(.2,.8,.2,1),
+              box-shadow .22s cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 1px 2px rgba(10,14,30,.06),
+              0 14px 34px -12px rgba(10,14,30,.16);
+  will-change: transform;
+}
+
+/* Floating layered look: a soft top highlight + bottom depth shadow */
+.ld-kpi::before,
+.ld-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 40%);
+  opacity: .6;
+  mix-blend-mode: overlay;
+}
+
+.ld-kpi:hover,
+.ld-card:hover {
+  transform: translateY(-4px) translateZ(0);
+  box-shadow: 0 2px 4px rgba(10,14,30,.08),
+              0 26px 54px -18px rgba(10,14,30,.28);
+}
+
+/* Dark themes get an extra soft accent glow instead of a plain shadow,
+   since a neutral shadow barely reads on a dark surface. */
+html[data-app-theme="midnight"] .ld-kpi,
+html[data-app-theme="premium"] .ld-kpi {
+  box-shadow: 0 1px 2px rgba(0,0,0,.3),
+              0 16px 38px -14px rgba(0,0,0,.55),
+              inset 0 1px 0 rgba(255,255,255,.05);
+}
+html[data-app-theme="midnight"] .ld-kpi:hover,
+html[data-app-theme="premium"] .ld-kpi:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,.35),
+              0 26px 60px -16px rgba(0,0,0,.6),
+              0 0 0 1px rgba(124,77,255,.18),
+              inset 0 1px 0 rgba(255,255,255,.07);
+}
+html[data-app-theme="midnight"] .ld-card,
+html[data-app-theme="premium"] .ld-card {
+  box-shadow: 0 1px 2px rgba(0,0,0,.28),
+              0 18px 44px -16px rgba(0,0,0,.5),
+              inset 0 1px 0 rgba(255,255,255,.04);
+}
+html[data-app-theme="midnight"] .ld-card:hover,
+html[data-app-theme="premium"] .ld-card:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,.32),
+              0 28px 58px -18px rgba(0,0,0,.55),
+              inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* KPI icon: give it a raised, lit "chip" feel rather than a flat circle */
+.ld-kpi-icon {
+  box-shadow: 0 6px 16px -4px rgba(10,14,30,.35),
+              inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform .22s ease;
+}
+.ld-kpi:hover .ld-kpi-icon {
+  transform: scale(1.06) translateY(-1px);
+}
+
+/* Sales ring + sparkline containers: light glass panel feel */
+.ld-ring-wrap,
+.ld-sales-chart {
+  border-radius: 18px;
+}
+
+/* KPI row: let cards breathe with a touch of perspective on wide screens */
+@media (min-width: 992px) {
+  .ld-kpi-row {
+    perspective: 1400px;
+  }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .ld-kpi, .ld-card, .ld-kpi-icon {
+    transition: none !important;
+  }
+  .ld-kpi:hover, .ld-card:hover {
+    transform: none !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   PART B — Defensive catch-all for dark-theme hover/contrast
+   Same variables theme-global-dark-fix-FINAL-2026-08-24.css already defines
+   (--dm-text-primary / --dm-text-secondary / --dm-bg-hover / --dm-border-*).
+   This block simply widens the selector list so any container class that
+   file's authors didn't happen to enumerate (custom report panels, one-off
+   page wrappers, etc.) still resolves to readable text on a dark surface,
+   and any table-hover row anywhere still keeps its text visible.
+   ------------------------------------------------------------------------- */
+
+html[data-app-theme="midnight"] :where(.simple-card, .content-card, .panel, .box-card, .report-card, .list-card, .white-card),
+html[data-app-theme="premium"] :where(.simple-card, .content-card, .panel, .box-card, .report-card, .list-card, .white-card) {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* Belt-and-braces: no table row, anywhere, on hover, should ever end up
+   with text color equal to (or lighter than) its own hover background. */
+html[data-app-theme="midnight"] table tbody tr:hover td,
+html[data-app-theme="midnight"] table tbody tr:hover td *,
+html[data-app-theme="premium"] table tbody tr:hover td,
+html[data-app-theme="premium"] table tbody tr:hover td * {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  opacity: 1 !important;
+}
+
+/* Icon-only buttons that aren't wrapped in a .btn-outline-* variant
+   (plain icon actions) — keep them visible on hover in dark themes. */
+html[data-app-theme="midnight"] .btn-icon:hover,
+html[data-app-theme="midnight"] .icon-btn:hover,
+html[data-app-theme="premium"] .btn-icon:hover,
+html[data-app-theme="premium"] .icon-btn:hover {
+  background: var(--dm-bg-hover, rgba(255,255,255,.08)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* Disabled controls should look inactive, not invisible */
+html[data-app-theme="midnight"] .btn:disabled,
+html[data-app-theme="midnight"] .form-control:disabled,
+html[data-app-theme="midnight"] .form-select:disabled,
+html[data-app-theme="premium"] .btn:disabled,
+html[data-app-theme="premium"] .form-control:disabled,
+html[data-app-theme="premium"] .form-select:disabled {
+  opacity: .55 !important;
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+}
+
+/* -------------------------------------------------------------------------
+   PART C — Focus / active parity for outline buttons in dark themes
+   theme-global-dark-fix-FINAL only restates :hover for .btn-outline-* — the
+   :focus-visible and :active moments (keyboard tab, mouse-down/click) were
+   left to fall back to Bootstrap's own outline-button defaults, which is
+   usually fine, but pairs badly with the dark accent palette in a couple of
+   spots (outline-warning in particular). Mirror the same hover colors onto
+   :focus-visible and :active so every interaction state matches exactly.
+   ------------------------------------------------------------------------- */
+/* Dark-theme focus/active: keep dark surface + light icon (no white/light fill) */
+html[data-app-theme="midnight"] .btn-outline-primary:focus-visible, html[data-app-theme="midnight"] .btn-outline-primary:active,
+html[data-app-theme="premium"]  .btn-outline-primary:focus-visible, html[data-app-theme="premium"]  .btn-outline-primary:active,
+html[data-app-theme="midnight"] .row-view-btn:focus-visible, html[data-app-theme="midnight"] .row-view-btn:active,
+html[data-app-theme="premium"]  .row-view-btn:focus-visible, html[data-app-theme="premium"]  .row-view-btn:active {
+  background: #3b4f8a !important;
+  background-color: #3b4f8a !important;
+  color: #ffffff !important;
+  border-color: #9db4ff !important;
+}
+
+html[data-app-theme="midnight"] .btn-outline-secondary:focus-visible, html[data-app-theme="midnight"] .btn-outline-secondary:active,
+html[data-app-theme="premium"]  .btn-outline-secondary:focus-visible, html[data-app-theme="premium"]  .btn-outline-secondary:active {
+  background: #2a3558 !important;
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,.25) !important;
+}
+
+html[data-app-theme="midnight"] .btn-outline-info:focus-visible, html[data-app-theme="midnight"] .btn-outline-info:active,
+html[data-app-theme="premium"]  .btn-outline-info:focus-visible, html[data-app-theme="premium"]  .btn-outline-info:active {
+  background: #1e4a5c !important;
+  color: #7fe0ff !important;
+  border-color: #7fe0ff !important;
+}
+
+html[data-app-theme="midnight"] .btn-outline-success:focus-visible, html[data-app-theme="midnight"] .btn-outline-success:active,
+html[data-app-theme="premium"]  .btn-outline-success:focus-visible, html[data-app-theme="premium"]  .btn-outline-success:active {
+  background: #1a4a38 !important;
+  color: #6ee7a8 !important;
+  border-color: #6ee7a8 !important;
+}
+
+html[data-app-theme="midnight"] .btn-outline-warning:focus-visible, html[data-app-theme="midnight"] .btn-outline-warning:active,
+html[data-app-theme="premium"]  .btn-outline-warning:focus-visible, html[data-app-theme="premium"]  .btn-outline-warning:active {
+  background: #4a3a18 !important;
+  color: var(--dm-accent, #e0c479) !important;
+  border-color: var(--dm-accent, #e0c479) !important;
+}
+
+html[data-app-theme="midnight"] .btn-outline-danger:focus-visible, html[data-app-theme="midnight"] .btn-outline-danger:active,
+html[data-app-theme="premium"]  .btn-outline-danger:focus-visible, html[data-app-theme="premium"]  .btn-outline-danger:active {
+  background: #4a1e28 !important;
+  color: #ff9baa !important;
+  border-color: #ff9baa !important;
+}
+
+/* Icon + label inside these buttons must always inherit the button's own
+   resolved color — never a leftover white/near-white from a parent rule. */
+html[data-app-theme="midnight"] .table-actions .btn i, html[data-app-theme="midnight"] .table-actions .btn span,
+html[data-app-theme="premium"]  .table-actions .btn i, html[data-app-theme="premium"]  .table-actions .btn span {
+  color: inherit !important;
+}
+
+/* -------------------------------------------------------------------------
+   PART D — Semantic token aliases (works in EVERY theme, not only dark)
+   Additive layer only: maps the generic names requested for the design
+   system onto whichever tokens are already active for the current theme
+   (the app's existing --crm-*/--pn-*/--dm-* variables, or sensible
+   defaults for the light themes, which never defined a --dm-* set).
+   Nothing in the app is switched over to read these yet, so this cannot
+   change any existing look — it just makes the names available.
+   ------------------------------------------------------------------------- */
+:root{
+  --surface-hover: rgba(0,0,0,.035);
+  --surface-active: rgba(0,0,0,.06);
+  --text-on-primary: #fff;
+  --text-on-danger: #fff;
+  --text-on-success: #fff;
+  --focus-ring: rgba(53,120,229,.55);
+}
+html[data-app-theme="midnight"], html[data-app-theme="premium"]{
+  --surface-hover: var(--dm-bg-hover);
+  --surface-active: rgba(255,255,255,.10);
+  --text-primary: var(--dm-text-primary);
+  --text-secondary: var(--dm-text-secondary);
+  --text-muted: var(--dm-text-muted);
+  --text-on-primary: #0b1024;
+  --text-on-danger: #0b1024;
+  --text-on-success: #0b1024;
+  --focus-ring: var(--dm-accent);
+}
+
+/* Global, non-layout-shifting focus-visible ring, on top of whatever
+   focus style a component already has — keyboard navigation only, so
+   mouse clicks never see an outline that wasn't there before. */
+:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring, rgba(53,120,229,.55));
+}

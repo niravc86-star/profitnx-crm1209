@@ -1,0 +1,2688 @@
+/* ==========================================================================
+   GLOBAL Premium Elite / Midnight (Dark Mode) contrast fix — FINAL, root cause
+   ==========================================================================
+   WHY THIS FILE EXISTS
+   Every earlier "contrast fix" in this folder (2026-08-17, 08-18, 08-22,
+   08-24 x2) patched a specific list of pages/containers instead of the
+   shared root cause, so every new screen (Role, User Login Master, Partner
+   Master, Product list, Performance tables, "Who's Contributing", etc.)
+   kept reproducing the same bug. Root cause, confirmed in this codebase:
+
+     1) `--crm-text` (the color almost every `.table`, heading and label
+        reads from) gets redefined to a LIGHT colour for the dark themes,
+        globally, regardless of what it is sitting on.
+     2) At the same time, dozens of surfaces that visually sit *inside* a
+        dark card — `.table-responsive`, `.table`, `.card-header.bg-white`,
+        `.modal-content`, `.bg-soft-*` / `.stat-pill` / `.badge` chips,
+        `.form-control` / `.form-select`, dropdown/offcanvas panels — keep
+        their LIGHT/white background from the base (light-mode) stylesheets,
+        because nothing ever gave them a dark-theme background of their own.
+     3) Light text (#1) drawn on a surface nobody ever made dark (#2) =
+        the "almost invisible text" in every screenshot.
+
+   FIX STRATEGY (global, not page-by-page)
+   Rather than keep enumerating "which card wrapper is this table inside"
+   (the approach every previous patch took, and why it kept missing new
+   screens), this file removes the *light* surface itself wherever it can
+   appear, generically, for the two dark app themes:
+
+       html[data-app-theme="midnight"]   (Midnight (Dark))
+       html[data-app-theme="premium"]    (Premium Elite)
+
+   so that surface + text are always resolved together and every current
+   and future screen inherits the fix automatically — no container allow-
+   list to maintain. Loaded LAST in _Layout.cshtml so it reliably wins the
+   cascade over all earlier partial patches (it does not delete or fight
+   them; it just finishes the job with a generic rule instead of a list).
+
+   Nothing here touches layout, structure, spacing, routing, or behaviour —
+   colour, background, border and opacity only. Light Mode and every other
+   theme (Classic, Professional SaaS, Dompet Blue, Emerald, Rose Gold) are
+   completely untouched: every rule below is scoped under the two dark
+   theme attribute selectors above.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------
+   1) CENTRAL DARK-THEME TOKEN SYSTEM
+   Both dark themes keep their own existing accent hues (Midnight = slate
+   blue, Premium Elite = purple/gold) via --dm-accent / --dm-accent-2;
+   everything else (surfaces, text hierarchy, borders, status colours) is
+   one shared, accessible token set so it can never drift out of contrast
+   again on any given screen.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"],
+html[data-app-theme="premium"] {
+  --dm-bg-primary: #0b1024;
+  --dm-bg-secondary: #131a34;
+  --dm-bg-card: #151c3a;
+  --dm-bg-input: #1b2344;
+  --dm-bg-hover: rgba(255, 255, 255, .06);
+
+  --dm-text-primary: #f5f7ff;
+  --dm-text-secondary: #b9c2e0;
+  --dm-text-muted: #8b94b8;
+  --dm-text-placeholder: #7a83a8;
+
+  --dm-border-primary: rgba(255, 255, 255, .14);
+  --dm-border-secondary: rgba(255, 255, 255, .08);
+
+  --dm-success-bg: #0f3d2a;
+  --dm-success-text: #6ee7a8;
+  --dm-warning-bg: #4a3308;
+  --dm-warning-text: #ffcf6b;
+  --dm-danger-bg: #4a1420;
+  --dm-danger-text: #ff9baa;
+  --dm-info-bg: #0c3a4a;
+  --dm-info-text: #7fe0ff;
+  --dm-primary-bg: #232c56;
+  --dm-primary-text: #b9c6ff;
+  --dm-secondary-bg: #2a2f45;
+  --dm-secondary-text: #cfd4e8;
+
+  /* re-point the variables the rest of the codebase already reads from,
+     so every component that was already wired to these tokens self-heals */
+  --crm-text: var(--dm-text-primary) !important;
+  --crm-text-soft: var(--dm-text-secondary) !important;
+  --pn-text: var(--dm-text-primary) !important;
+  --pn-muted: var(--dm-text-secondary) !important;
+  --pn-border: var(--dm-border-primary) !important;
+  --ink: var(--dm-text-primary) !important;
+  --muted: var(--dm-text-secondary) !important;
+}
+
+html[data-app-theme="midnight"] { --dm-accent: #64748b; --dm-accent-2: #94a3b8; }
+html[data-app-theme="premium"]  { --dm-accent: #caa14a; --dm-accent-2: #8a4dff; }
+
+/* --------------------------------------------------------------------
+   2) SURFACES — kill every "light strip inside a dark card" at the root.
+   `.table-responsive` (and the plain `table` it wraps) is the single
+   biggest source of the bug in the screenshots: it is never explicitly
+   themed anywhere in the codebase, so it silently keeps its light/white
+   default background under a dark card header. Making it transparent
+   here — everywhere, not per container — lets the already-dark card
+   behind it show through automatically, on every present and future page.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .table-responsive,
+html[data-app-theme="premium"] .table-responsive,
+html[data-app-theme="midnight"] .table,
+html[data-app-theme="premium"] .table,
+html[data-app-theme="midnight"] table,
+html[data-app-theme="premium"] table {
+  background: transparent !important;
+  --bs-table-bg: transparent !important;
+  --bs-table-color: var(--dm-text-primary) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+html[data-app-theme="midnight"] .table > :not(caption) > * > *,
+html[data-app-theme="premium"] .table > :not(caption) > * > * {
+  background-color: transparent !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-secondary) !important;
+}
+
+html[data-app-theme="midnight"] .table thead th,
+html[data-app-theme="premium"] .table thead th {
+  color: var(--dm-text-secondary) !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--dm-border-primary) !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme="midnight"] .table tbody td,
+html[data-app-theme="premium"] .table tbody td,
+html[data-app-theme="midnight"] .table tbody th,
+html[data-app-theme="premium"] .table tbody th {
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-secondary) !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme="midnight"] .table tbody td *,
+html[data-app-theme="premium"] .table tbody td *,
+html[data-app-theme="midnight"] .table tbody th *,
+html[data-app-theme="premium"] .table tbody th * {
+  color: inherit;
+  opacity: 1 !important;
+}
+
+/* secondary/sub-line text inside a cell (e.g. "Rajkot · 9429979163" under a
+   customer name) should read as secondary, not vanish */
+html[data-app-theme="midnight"] .table .mini-muted,
+html[data-app-theme="premium"] .table .mini-muted,
+html[data-app-theme="midnight"] .table small,
+html[data-app-theme="premium"] .table small,
+html[data-app-theme="midnight"] .table .text-muted,
+html[data-app-theme="premium"] .table .text-muted {
+  color: var(--dm-text-secondary) !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme="midnight"] .table-hover > tbody > tr:hover > *,
+html[data-app-theme="premium"] .table-hover > tbody > tr:hover > * {
+  background-color: var(--dm-bg-hover) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+/* empty-state rows: "No data yet.", "No sold data yet." */
+html[data-app-theme="midnight"] .table td.text-center.text-muted,
+html[data-app-theme="premium"] .table td.text-center.text-muted {
+  color: var(--dm-text-secondary) !important;
+}
+
+/* card headers hard-coded to bg-white (e.g. "User Login Master" header) */
+html[data-app-theme="midnight"] .card-header.bg-white,
+html[data-app-theme="premium"] .card-header.bg-white,
+html[data-app-theme="midnight"] .card-header,
+html[data-app-theme="premium"] .card-header {
+  background: transparent !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-primary) !important;
+}
+html[data-app-theme="midnight"] .card-header strong,
+html[data-app-theme="premium"] .card-header strong,
+html[data-app-theme="midnight"] .card-header .text-muted,
+html[data-app-theme="premium"] .card-header .text-muted {
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .card-header .small,
+html[data-app-theme="premium"] .card-header .small {
+  color: var(--dm-text-secondary) !important;
+}
+
+/* generic "light card / panel" wrappers used across the app */
+html[data-app-theme="midnight"] .card,
+html[data-app-theme="premium"] .card,
+html[data-app-theme="midnight"] .card-soft,
+html[data-app-theme="premium"] .card-soft,
+html[data-app-theme="midnight"] .dash-panel,
+html[data-app-theme="premium"] .dash-panel,
+html[data-app-theme="midnight"] .pg-panel,
+html[data-app-theme="premium"] .pg-panel,
+html[data-app-theme="midnight"] .kpi-card,
+html[data-app-theme="premium"] .kpi-card,
+html[data-app-theme="midnight"] .bg-light,
+html[data-app-theme="premium"] .bg-light,
+html[data-app-theme="midnight"] .p-2.bg-light.rounded-3,
+html[data-app-theme="premium"] .p-2.bg-light.rounded-3 {
+  background: var(--dm-bg-card) !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-primary) !important;
+}
+
+/* page heading / description text sitting directly on the dark page bg */
+html[data-app-theme="midnight"] h1, html[data-app-theme="premium"] h1,
+html[data-app-theme="midnight"] h2, html[data-app-theme="premium"] h2,
+html[data-app-theme="midnight"] h3, html[data-app-theme="premium"] h3,
+html[data-app-theme="midnight"] h4, html[data-app-theme="premium"] h4,
+html[data-app-theme="midnight"] h5, html[data-app-theme="premium"] h5,
+html[data-app-theme="midnight"] h6, html[data-app-theme="premium"] h6,
+html[data-app-theme="midnight"] .card-title, html[data-app-theme="premium"] .card-title {
+  color: var(--dm-text-primary) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .page-subtitle,
+html[data-app-theme="premium"] .page-subtitle,
+html[data-app-theme="midnight"] .mini-muted,
+html[data-app-theme="premium"] .mini-muted,
+html[data-app-theme="midnight"] .text-muted,
+html[data-app-theme="premium"] .text-muted,
+html[data-app-theme="midnight"] .kpi-label,
+html[data-app-theme="premium"] .kpi-label,
+html[data-app-theme="midnight"] .profile-meta small,
+html[data-app-theme="premium"] .profile-meta small {
+  color: var(--dm-text-secondary) !important;
+  opacity: 1 !important;
+}
+
+/* --------------------------------------------------------------------
+   3) MODALS — hard-coded white "by design" in site.css; keep the app
+   consistently dark instead so Zoom / detail modals stay readable too.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .modal-content,
+html[data-app-theme="premium"] .modal-content {
+  background: var(--dm-bg-card) !important;
+  color: var(--dm-text-primary) !important;
+  border: 1px solid var(--dm-border-primary) !important;
+}
+html[data-app-theme="midnight"] .modal-content *,
+html[data-app-theme="premium"] .modal-content * {
+  color: inherit;
+}
+html[data-app-theme="midnight"] .modal-header,
+html[data-app-theme="premium"] .modal-header,
+html[data-app-theme="midnight"] .modal-footer,
+html[data-app-theme="premium"] .modal-footer {
+  border-color: var(--dm-border-primary) !important;
+}
+html[data-app-theme="midnight"] .modal-title,
+html[data-app-theme="premium"] .modal-title {
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .modal-content .table td,
+html[data-app-theme="premium"] .modal-content .table td,
+html[data-app-theme="midnight"] .modal-content .table th,
+html[data-app-theme="premium"] .modal-content .table th {
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-secondary) !important;
+}
+html[data-app-theme="midnight"] .btn-close,
+html[data-app-theme="premium"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(1.6);
+}
+
+/* --------------------------------------------------------------------
+   4) BADGES / STATUS PILLS — role & status chips (Admin, Partner, Active,
+   Inactive, New Inquiry, Sold, PSS/API, product Active/status, etc.)
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .badge,
+html[data-app-theme="premium"] .badge,
+html[data-app-theme="midnight"] .stat-pill,
+html[data-app-theme="premium"] .stat-pill,
+html[data-app-theme="midnight"] .status-badge,
+html[data-app-theme="premium"] .status-badge,
+html[data-app-theme="midnight"] .target-chip,
+html[data-app-theme="premium"] .target-chip {
+  opacity: 1 !important;
+  border: 1px solid transparent !important;
+}
+
+html[data-app-theme="midnight"] .bg-soft-primary, html[data-app-theme="premium"] .bg-soft-primary,
+html[data-app-theme="midnight"] .badge.bg-primary, html[data-app-theme="premium"] .badge.bg-primary {
+  background: var(--dm-primary-bg) !important; color: var(--dm-primary-text) !important;
+}
+html[data-app-theme="midnight"] .bg-soft-success, html[data-app-theme="premium"] .bg-soft-success,
+html[data-app-theme="midnight"] .badge.bg-success, html[data-app-theme="premium"] .badge.bg-success,
+html[data-app-theme="midnight"] .status-badge, html[data-app-theme="premium"] .status-badge {
+  background: var(--dm-success-bg) !important; color: var(--dm-success-text) !important;
+}
+html[data-app-theme="midnight"] .bg-soft-danger, html[data-app-theme="premium"] .bg-soft-danger,
+html[data-app-theme="midnight"] .badge.bg-danger, html[data-app-theme="premium"] .badge.bg-danger {
+  background: var(--dm-danger-bg) !important; color: var(--dm-danger-text) !important;
+}
+html[data-app-theme="midnight"] .bg-soft-warning, html[data-app-theme="premium"] .bg-soft-warning,
+html[data-app-theme="midnight"] .badge.bg-warning, html[data-app-theme="premium"] .badge.bg-warning {
+  background: var(--dm-warning-bg) !important; color: var(--dm-warning-text) !important;
+}
+html[data-app-theme="midnight"] .bg-soft-info, html[data-app-theme="premium"] .bg-soft-info,
+html[data-app-theme="midnight"] .badge.bg-info, html[data-app-theme="premium"] .badge.bg-info {
+  background: var(--dm-info-bg) !important; color: var(--dm-info-text) !important;
+}
+html[data-app-theme="midnight"] .bg-soft-secondary, html[data-app-theme="premium"] .bg-soft-secondary,
+html[data-app-theme="midnight"] .badge.bg-secondary, html[data-app-theme="premium"] .badge.bg-secondary {
+  background: var(--dm-secondary-bg) !important; color: var(--dm-secondary-text) !important;
+}
+
+/* generic Bootstrap "soft" utility combo: bg-*-opacity-* + text-* */
+html[data-app-theme="midnight"] [class*="bg-opacity-"],
+html[data-app-theme="premium"] [class*="bg-opacity-"] {
+  --bs-bg-opacity: .22 !important;
+}
+
+/* --------------------------------------------------------------------
+   5) BUTTONS — Edit / Deactivate / Activate / Delete / Save / Cancel /
+   Add / View / Submit / Search / Filter / Export / Import / Close / Back
+   / Next and any other .btn. Outline buttons must have a clearly visible
+   border + text + icon at rest, a solid readable fill on hover, and only
+   *actually* disabled controls may look faded.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .btn,
+html[data-app-theme="premium"] .btn {
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .btn i,
+html[data-app-theme="premium"] .btn i,
+html[data-app-theme="midnight"] .btn svg,
+html[data-app-theme="premium"] .btn svg {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme="midnight"] .btn-outline-primary, html[data-app-theme="premium"] .btn-outline-primary { color: #9db4ff !important; border-color: #9db4ff !important; }
+html[data-app-theme="midnight"] .btn-outline-secondary, html[data-app-theme="premium"] .btn-outline-secondary { color: var(--dm-text-secondary) !important; border-color: var(--dm-border-primary) !important; }
+html[data-app-theme="midnight"] .btn-outline-info, html[data-app-theme="premium"] .btn-outline-info { color: #7fe0ff !important; border-color: #7fe0ff !important; }
+html[data-app-theme="midnight"] .btn-outline-success, html[data-app-theme="premium"] .btn-outline-success { color: #6ee7a8 !important; border-color: #6ee7a8 !important; }
+html[data-app-theme="midnight"] .btn-outline-warning, html[data-app-theme="premium"] .btn-outline-warning { color: var(--dm-accent) !important; border-color: var(--dm-accent) !important; }
+html[data-app-theme="midnight"] .btn-outline-danger, html[data-app-theme="premium"] .btn-outline-danger { color: #ff9baa !important; border-color: #ff9baa !important; }
+
+/* Dark-compatible hover: no white/light fill — keep dark surface + light text/icon */
+html[data-app-theme="midnight"] .btn-outline-primary:hover, html[data-app-theme="premium"] .btn-outline-primary:hover { background: #3b4f8a !important; color: #ffffff !important; border-color: #9db4ff !important; }
+html[data-app-theme="midnight"] .btn-outline-secondary:hover, html[data-app-theme="premium"] .btn-outline-secondary:hover { background: #2a3558 !important; color: #ffffff !important; }
+html[data-app-theme="midnight"] .btn-outline-info:hover, html[data-app-theme="premium"] .btn-outline-info:hover { background: #1e4a5c !important; color: #7fe0ff !important; border-color: #7fe0ff !important; }
+html[data-app-theme="midnight"] .btn-outline-success:hover, html[data-app-theme="premium"] .btn-outline-success:hover { background: #1a4a38 !important; color: #6ee7a8 !important; border-color: #6ee7a8 !important; }
+html[data-app-theme="midnight"] .btn-outline-warning:hover, html[data-app-theme="premium"] .btn-outline-warning:hover { background: #4a3a18 !important; color: var(--dm-accent) !important; border-color: var(--dm-accent) !important; }
+html[data-app-theme="midnight"] .btn-outline-danger:hover, html[data-app-theme="premium"] .btn-outline-danger:hover { background: #4a1e28 !important; color: #ff9baa !important; border-color: #ff9baa !important; }
+
+/* only genuinely disabled controls fade */
+html[data-app-theme="midnight"] .btn:disabled, html[data-app-theme="premium"] .btn:disabled,
+html[data-app-theme="midnight"] .btn.disabled, html[data-app-theme="premium"] .btn.disabled {
+  opacity: .45 !important;
+}
+
+/* --------------------------------------------------------------------
+   6) FORMS — inputs, selects, textareas, filters, placeholders.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .form-control,
+html[data-app-theme="premium"] .form-control,
+html[data-app-theme="midnight"] .form-select,
+html[data-app-theme="premium"] .form-select,
+html[data-app-theme="midnight"] textarea,
+html[data-app-theme="premium"] textarea,
+html[data-app-theme="midnight"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-app-theme="premium"] input:not([type="checkbox"]):not([type="radio"]) {
+  background: var(--dm-bg-input) !important;
+  color: var(--dm-text-primary) !important;
+  border: 1px solid var(--dm-border-primary) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .form-control::placeholder,
+html[data-app-theme="premium"] .form-control::placeholder,
+html[data-app-theme="midnight"] .form-select,
+html[data-app-theme="premium"] .form-select,
+html[data-app-theme="midnight"] textarea::placeholder,
+html[data-app-theme="premium"] textarea::placeholder,
+html[data-app-theme="midnight"] input::placeholder,
+html[data-app-theme="premium"] input::placeholder {
+  color: var(--dm-text-placeholder) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .form-label,
+html[data-app-theme="premium"] .form-label {
+  color: var(--dm-text-secondary) !important;
+}
+html[data-app-theme="midnight"] .form-control:focus,
+html[data-app-theme="premium"] .form-control:focus,
+html[data-app-theme="midnight"] .form-select:focus,
+html[data-app-theme="premium"] .form-select:focus {
+  border-color: var(--dm-accent) !important;
+  box-shadow: 0 0 0 .2rem rgba(255, 255, 255, .08) !important;
+}
+
+/* --------------------------------------------------------------------
+   7) DROPDOWNS / OFFCANVAS / TOOLTIPS / POPOVERS / TOASTS
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .dropdown-menu,
+html[data-app-theme="premium"] .dropdown-menu,
+html[data-app-theme="midnight"] .offcanvas,
+html[data-app-theme="premium"] .offcanvas,
+html[data-app-theme="midnight"] .popover,
+html[data-app-theme="premium"] .popover,
+html[data-app-theme="midnight"] .toast {
+  background: var(--dm-bg-card) !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-primary) !important;
+}
+html[data-app-theme="midnight"] .dropdown-item,
+html[data-app-theme="premium"] .dropdown-item {
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .dropdown-item:hover,
+html[data-app-theme="premium"] .dropdown-item:hover {
+  background: var(--dm-bg-hover) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .tooltip .tooltip-inner,
+html[data-app-theme="premium"] .tooltip .tooltip-inner {
+  background: var(--dm-bg-card) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+/* --------------------------------------------------------------------
+   8) PAGINATION, TABS, CHECKBOXES/RADIOS, ALERTS
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .page-link,
+html[data-app-theme="premium"] .page-link {
+  background: var(--dm-bg-card) !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-primary) !important;
+}
+html[data-app-theme="midnight"] .page-item.disabled .page-link,
+html[data-app-theme="premium"] .page-item.disabled .page-link {
+  color: var(--dm-text-muted) !important;
+  opacity: .5 !important;
+}
+html[data-app-theme="midnight"] .nav-tabs .nav-link,
+html[data-app-theme="premium"] .nav-tabs .nav-link {
+  color: var(--dm-text-secondary) !important;
+}
+html[data-app-theme="midnight"] .nav-tabs .nav-link.active,
+html[data-app-theme="premium"] .nav-tabs .nav-link.active {
+  color: var(--dm-text-primary) !important;
+  background: var(--dm-bg-card) !important;
+  border-color: var(--dm-border-primary) !important;
+}
+html[data-app-theme="midnight"] .form-check-label,
+html[data-app-theme="premium"] .form-check-label {
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .alert,
+html[data-app-theme="premium"] .alert {
+  border: 1px solid var(--dm-border-primary) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .alert-success, html[data-app-theme="premium"] .alert-success { background: var(--dm-success-bg) !important; color: var(--dm-success-text) !important; }
+html[data-app-theme="midnight"] .alert-danger, html[data-app-theme="premium"] .alert-danger { background: var(--dm-danger-bg) !important; color: var(--dm-danger-text) !important; }
+html[data-app-theme="midnight"] .alert-warning, html[data-app-theme="premium"] .alert-warning { background: var(--dm-warning-bg) !important; color: var(--dm-warning-text) !important; }
+html[data-app-theme="midnight"] .alert-info, html[data-app-theme="premium"] .alert-info { background: var(--dm-info-bg) !important; color: var(--dm-info-text) !important; }
+
+/* --------------------------------------------------------------------
+   9) SAFETY NET — anything still rendering low-opacity/near-invisible
+   text on a now-dark surface (a class this file didn't explicitly name)
+   falls back to the primary/secondary text tokens instead of disappearing.
+   Scoped to elements that already carry a muted/soft/light utility class
+   only, so it cannot brighten something that is meant to look disabled.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] [style*="opacity:0."]:not(:disabled):not(.disabled),
+html[data-app-theme="premium"] [style*="opacity:0."]:not(:disabled):not(.disabled) {
+  opacity: 1 !important;
+}
+
+/* ==========================================================================
+   10) COVERAGE EXTENSION — 2026-08-24 (second pass)
+   ==========================================================================
+   The sections above fix every *shared/generic* surface (table, card,
+   card-header, badge, button, form, dropdown, pagination). This second pass
+   closes the remaining gaps: bespoke, page-specific components that were
+   never routed through the shared classes above, so they kept their
+   light-mode background with no matching dark-theme text. Same tokens,
+   same two theme selectors, same rule (surface + text always resolved
+   together) — nothing new is invented.
+
+   Confirmed, by direct inspection of the Razor views, to be uncovered
+   until now:
+     - Dashboard "Smart Focus" / "Business Growth Hints" chips
+       (.focus-lines a, .ai-hint-grid a, .priority-list a is only handled
+       for the Premium theme today, not Midnight; .pro-card itself was
+       never added to the shared "light card" list)
+     - Business/partner/admin/user summary cards (.business-card family)
+     - AI Report screens (.ai-report-nav, .ai-summary-card,
+       .status-summary-pills) — Views/Reports/Index.cshtml
+     - Login History Report (.lr-* family) — Views/Admin/LoginReport.cshtml
+     - User Wise Rights / permission matrix (.rights-*, .user-rights-*,
+       .permission-*) — Views/Role/UserWiseRights.cshtml — the single
+       worst screenshot; this page had *no* dark-theme rule at all.
+     - Native <select> popup lists (the browser draws these outside any
+       stacking context CSS controls, so `color` alone can leave the
+       popup unreadable even though the closed control looks fine).
+   -------------------------------------------------------------------- */
+
+/* --- Dashboard: Smart Focus Plan / Business Growth Hints / KPI chips --- */
+html[data-app-theme="midnight"] .pro-card,
+html[data-app-theme="premium"]  .pro-card,
+html[data-app-theme="midnight"] .business-card,
+html[data-app-theme="premium"]  .business-card,
+html[data-app-theme="midnight"] .partner-card,
+html[data-app-theme="premium"]  .partner-card,
+html[data-app-theme="midnight"] .admin-card,
+html[data-app-theme="premium"]  .admin-card,
+html[data-app-theme="midnight"] .user-card,
+html[data-app-theme="premium"]  .user-card {
+  background: var(--dm-bg-card) !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-primary) !important;
+}
+html[data-app-theme="midnight"] .pro-card h4,
+html[data-app-theme="premium"]  .pro-card h4 {
+  color: var(--dm-text-primary) !important;
+}
+
+/* .focus-lines / .priority-list / .ai-hint-grid rows: these are chips that
+   sit *inside* an already-dark .pro-card above, so give the chip itself a
+   readable dark-surface treatment instead of leaving it on its light-mode
+   solid background. Covers both the `a` and `div` row markup used across
+   the app, and both dark themes (the Premium-only rule in
+   app-theme-switcher.css targeted `.focus-lines div`, which never matched
+   the real `<a>` markup — this rule targets both so it can't miss again). */
+html[data-app-theme="midnight"] .focus-lines a,
+html[data-app-theme="premium"]  .focus-lines a,
+html[data-app-theme="midnight"] .focus-lines div,
+html[data-app-theme="premium"]  .focus-lines div,
+html[data-app-theme="midnight"] .priority-list a,
+html[data-app-theme="premium"]  .priority-list a,
+html[data-app-theme="midnight"] .ai-hint-grid a,
+html[data-app-theme="premium"]  .ai-hint-grid a {
+  background: var(--dm-bg-hover) !important;
+  border-color: var(--dm-border-primary) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .focus-lines span,
+html[data-app-theme="premium"]  .focus-lines span,
+html[data-app-theme="midnight"] .priority-list small,
+html[data-app-theme="premium"]  .priority-list small,
+html[data-app-theme="midnight"] .ai-hint-grid a span,
+html[data-app-theme="premium"]  .ai-hint-grid a span {
+  color: var(--dm-text-secondary) !important;
+}
+html[data-app-theme="midnight"] .focus-lines b,
+html[data-app-theme="premium"]  .focus-lines b,
+html[data-app-theme="midnight"] .priority-list strong,
+html[data-app-theme="premium"]  .priority-list strong,
+html[data-app-theme="midnight"] .ai-hint-grid a strong,
+html[data-app-theme="premium"]  .ai-hint-grid a strong {
+  color: var(--dm-text-primary) !important;
+}
+
+/* --- Reports: AI report tab nav, summary KPI chips, status pills --- */
+html[data-app-theme="midnight"] .ai-report-nav a,
+html[data-app-theme="premium"]  .ai-report-nav a,
+html[data-app-theme="midnight"] .ai-summary-card,
+html[data-app-theme="premium"]  .ai-summary-card {
+  background: var(--dm-bg-card) !important;
+  border-color: var(--dm-border-primary) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .ai-report-nav a>i,
+html[data-app-theme="premium"]  .ai-report-nav a>i,
+html[data-app-theme="midnight"] .ai-summary-card>i,
+html[data-app-theme="premium"]  .ai-summary-card>i {
+  background: var(--dm-bg-hover) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .ai-report-nav small,
+html[data-app-theme="premium"]  .ai-report-nav small,
+html[data-app-theme="midnight"] .ai-summary-card span,
+html[data-app-theme="premium"]  .ai-summary-card span,
+html[data-app-theme="midnight"] .ai-summary-card small,
+html[data-app-theme="premium"]  .ai-summary-card small {
+  color: var(--dm-text-secondary) !important;
+}
+html[data-app-theme="midnight"] .ai-report-nav b,
+html[data-app-theme="premium"]  .ai-report-nav b,
+html[data-app-theme="midnight"] .ai-summary-card strong,
+html[data-app-theme="premium"]  .ai-summary-card strong {
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .ai-report-nav a.active,
+html[data-app-theme="premium"]  .ai-report-nav a.active {
+  background: var(--dm-primary-bg) !important;
+  border-color: var(--dm-accent) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .status-summary-pills span,
+html[data-app-theme="premium"]  .status-summary-pills span {
+  background: var(--dm-bg-hover) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+/* --- Login History Report (.lr-*) --- */
+html[data-app-theme="midnight"] .lr-card,
+html[data-app-theme="premium"]  .lr-card,
+html[data-app-theme="midnight"] .lr-kpi,
+html[data-app-theme="premium"]  .lr-kpi,
+html[data-app-theme="midnight"] .lr-live-item,
+html[data-app-theme="premium"]  .lr-live-item {
+  background: var(--dm-bg-card) !important;
+  border-color: var(--dm-border-primary) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .lr-kpi-label,
+html[data-app-theme="premium"]  .lr-kpi-label,
+html[data-app-theme="midnight"] .lr-kpi-hint,
+html[data-app-theme="premium"]  .lr-kpi-hint,
+html[data-app-theme="midnight"] .lr-live-detail,
+html[data-app-theme="premium"]  .lr-live-detail,
+html[data-app-theme="midnight"] .lr-sub,
+html[data-app-theme="premium"]  .lr-sub,
+html[data-app-theme="midnight"] .lr-empty,
+html[data-app-theme="premium"]  .lr-empty {
+  color: var(--dm-text-secondary) !important;
+}
+html[data-app-theme="midnight"] .lr-kpi-value,
+html[data-app-theme="premium"]  .lr-kpi-value,
+html[data-app-theme="midnight"] .lr-title,
+html[data-app-theme="premium"]  .lr-title,
+html[data-app-theme="midnight"] .lr-live-name,
+html[data-app-theme="premium"]  .lr-live-name,
+html[data-app-theme="midnight"] .lr-card-head h3,
+html[data-app-theme="premium"]  .lr-card-head h3 {
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .lr-filters .form-control,
+html[data-app-theme="premium"]  .lr-filters .form-control,
+html[data-app-theme="midnight"] .lr-filters .form-select,
+html[data-app-theme="premium"]  .lr-filters .form-select,
+html[data-app-theme="midnight"] .lr-filters input,
+html[data-app-theme="premium"]  .lr-filters input {
+  background: var(--dm-bg-input) !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-primary) !important;
+}
+
+/* --------------------------------------------------------------------
+   User Wise Rights / permission matrix — Views/Role/UserWiseRights.cshtml.
+   This screen had no dark-theme rule anywhere in the codebase; every box
+   below kept its light-mode white background with no matching text.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .rights-toolbar-card,
+html[data-app-theme="premium"]  .rights-toolbar-card,
+html[data-app-theme="midnight"] .user-rights-card,
+html[data-app-theme="premium"]  .user-rights-card,
+html[data-app-theme="midnight"] .user-rights-row,
+html[data-app-theme="premium"]  .user-rights-row,
+html[data-app-theme="midnight"] .user-rights-detail,
+html[data-app-theme="premium"]  .user-rights-detail,
+html[data-app-theme="midnight"] .permission-group-card,
+html[data-app-theme="premium"]  .permission-group-card,
+html[data-app-theme="midnight"] .rights-sticky-save,
+html[data-app-theme="premium"]  .rights-sticky-save {
+  background: var(--dm-bg-card) !important;
+  border-color: var(--dm-border-primary) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .permission-option,
+html[data-app-theme="premium"]  .permission-option {
+  background: var(--dm-bg-hover) !important;
+  border-color: var(--dm-border-secondary) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .permission-option:hover,
+html[data-app-theme="premium"]  .permission-option:hover {
+  background: var(--dm-bg-hover) !important;
+  filter: brightness(1.35);
+}
+html[data-app-theme="midnight"] .rights-search-box,
+html[data-app-theme="premium"]  .rights-search-box,
+html[data-app-theme="midnight"] .permission-filter-box,
+html[data-app-theme="premium"]  .permission-filter-box,
+html[data-app-theme="midnight"] .rights-search-box input,
+html[data-app-theme="premium"]  .rights-search-box input,
+html[data-app-theme="midnight"] .permission-search,
+html[data-app-theme="premium"]  .permission-search {
+  background: var(--dm-bg-input) !important;
+  border-color: var(--dm-border-primary) !important;
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .rights-search-box input::placeholder,
+html[data-app-theme="premium"]  .rights-search-box input::placeholder,
+html[data-app-theme="midnight"] .permission-search::placeholder,
+html[data-app-theme="premium"]  .permission-search::placeholder {
+  color: var(--dm-text-placeholder) !important;
+}
+html[data-app-theme="midnight"] .rights-toolbar-copy,
+html[data-app-theme="premium"]  .rights-toolbar-copy,
+html[data-app-theme="midnight"] .rights-summary,
+html[data-app-theme="premium"]  .rights-summary,
+html[data-app-theme="midnight"] .mode-copy small,
+html[data-app-theme="premium"]  .mode-copy small,
+html[data-app-theme="midnight"] .permission-group-title small,
+html[data-app-theme="premium"]  .permission-group-title small,
+html[data-app-theme="midnight"] .permission-option-copy small,
+html[data-app-theme="premium"]  .permission-option-copy small,
+html[data-app-theme="midnight"] [data-mode-description],
+html[data-app-theme="premium"]  [data-mode-description] {
+  color: var(--dm-text-secondary) !important;
+}
+html[data-app-theme="midnight"] .user-identity strong,
+html[data-app-theme="premium"]  .user-identity strong,
+html[data-app-theme="midnight"] .mode-copy strong,
+html[data-app-theme="premium"]  .mode-copy strong,
+html[data-app-theme="midnight"] .permission-group-title,
+html[data-app-theme="premium"]  .permission-group-title,
+html[data-app-theme="midnight"] .permission-option-copy strong,
+html[data-app-theme="premium"]  .permission-option-copy strong,
+html[data-app-theme="midnight"] .rights-page-heading h2,
+html[data-app-theme="premium"]  .rights-page-heading h2 {
+  color: var(--dm-text-primary) !important;
+}
+html[data-app-theme="midnight"] .user-identity small,
+html[data-app-theme="premium"]  .user-identity small,
+html[data-app-theme="midnight"] .rights-page-heading p,
+html[data-app-theme="premium"]  .rights-page-heading p,
+html[data-app-theme="midnight"] .rights-kicker,
+html[data-app-theme="premium"]  .rights-kicker {
+  color: var(--dm-text-secondary) !important;
+}
+html[data-app-theme="midnight"] .user-role-pill,
+html[data-app-theme="premium"]  .user-role-pill {
+  background: var(--dm-primary-bg) !important;
+  color: var(--dm-primary-text) !important;
+}
+html[data-app-theme="midnight"] .detail-mode-badge.is-inherited,
+html[data-app-theme="premium"]  .detail-mode-badge.is-inherited {
+  background: var(--dm-secondary-bg) !important;
+  color: var(--dm-secondary-text) !important;
+}
+html[data-app-theme="midnight"] .detail-mode-badge.is-separate,
+html[data-app-theme="premium"]  .detail-mode-badge.is-separate {
+  background: var(--dm-success-bg) !important;
+  color: var(--dm-success-text) !important;
+}
+html[data-app-theme="midnight"] .toolbar-buttons .btn-light,
+html[data-app-theme="premium"]  .toolbar-buttons .btn-light,
+html[data-app-theme="midnight"] .rights-toolbar-buttons .btn-light,
+html[data-app-theme="premium"]  .rights-toolbar-buttons .btn-light {
+  background: var(--dm-bg-hover) !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-primary) !important;
+}
+
+/* --------------------------------------------------------------------
+   Native <select> option lists. The browser renders the open dropdown
+   list outside normal CSS stacking/inheritance in several browsers, so
+   the closed control can be perfectly readable while the opened list
+   (screenshot: "Select Product") stays on the OS-default white popup
+   with our dark theme's light `color` — unreadable. Explicitly styling
+   `option` fixes the popup itself where the browser allows it.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] select.form-select option,
+html[data-app-theme="premium"]  select.form-select option,
+html[data-app-theme="midnight"] select option,
+html[data-app-theme="premium"]  select option {
+  background: var(--dm-bg-input) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+/* --------------------------------------------------------------------
+   Same "surface + text resolved together" principle, extended to any
+   future light chip/card class we have not enumerated by name: a solid
+   light background sitting directly under a dark card gets the same
+   card treatment automatically instead of silently staying invisible.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .pro-card [style*="background:#fff"],
+html[data-app-theme="premium"]  .pro-card [style*="background:#fff"],
+html[data-app-theme="midnight"] .dash-panel [style*="background:#fff"],
+html[data-app-theme="premium"]  .dash-panel [style*="background:#fff"] {
+  background: var(--dm-bg-hover) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+/* ==========================================================================
+   EXTENDED GLOBAL DARK FIX — v5.1 (video + screenshot residual issues)
+   Addresses remaining light surfaces / washed text seen in:
+   Product Master, Users & Partners, Add Stock Bill, Role Master,
+   AI Business Summary / Follow-up / Conversion / Growth cards,
+   Login Report filters, User-wise Rights panels, CRM Lock overlay,
+   native select popups, empty states, filter bars, table headers.
+   Scoped only to midnight + premium (and data-dark-mode=1). Light themes untouched.
+   ========================================================================== */
+
+/* Shared selector helper: apply to both named dark themes AND the data-dark-mode flag */
+html[data-app-theme="midnight"],
+html[data-app-theme="premium"],
+html[data-dark-mode="1"] {
+  color-scheme: dark;
+}
+
+/* ---- Page surface & content shell (was still picking light #fff in places) ---- */
+html[data-app-theme="midnight"] .page-surface,
+html[data-app-theme="premium"]  .page-surface,
+html[data-dark-mode="1"]        .page-surface,
+html[data-app-theme="midnight"] .content-shell,
+html[data-app-theme="premium"]  .content-shell,
+html[data-dark-mode="1"]        .content-shell,
+html[data-app-theme="midnight"] .main-panel,
+html[data-app-theme="premium"]  .main-panel,
+html[data-dark-mode="1"]        .main-panel {
+  background: var(--dm-bg-secondary, #131a34) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-secondary, rgba(255,255,255,.08)) !important;
+}
+
+/* ---- Force Bootstrap / utility light backgrounds ---- */
+html[data-app-theme="midnight"] .bg-white,
+html[data-app-theme="premium"]  .bg-white,
+html[data-dark-mode="1"]        .bg-white,
+html[data-app-theme="midnight"] .bg-light,
+html[data-app-theme="premium"]  .bg-light,
+html[data-dark-mode="1"]        .bg-light,
+html[data-app-theme="midnight"] .bg-body,
+html[data-app-theme="premium"]  .bg-body,
+html[data-dark-mode="1"]        .bg-body,
+html[data-app-theme="midnight"] .bg-body-tertiary,
+html[data-app-theme="premium"]  .bg-body-tertiary,
+html[data-dark-mode="1"]        .bg-body-tertiary {
+  background-color: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* ---- Table header force (overrides professional-ui !important light header) ---- */
+html[data-app-theme="midnight"] .crm-app-body .table thead th,
+html[data-app-theme="premium"]  .crm-app-body .table thead th,
+html[data-dark-mode="1"]        .crm-app-body .table thead th,
+html[data-app-theme="midnight"] .table thead th,
+html[data-app-theme="premium"]  .table thead th,
+html[data-dark-mode="1"]        .table thead th,
+html[data-app-theme="midnight"] .professional-table thead th,
+html[data-app-theme="premium"]  .professional-table thead th,
+html[data-app-theme="midnight"] table.pg-table thead th,
+html[data-app-theme="premium"]  table.pg-table thead th {
+  background: var(--dm-bg-secondary, #131a34) !important;
+  background-color: var(--dm-bg-secondary, #131a34) !important;
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  --bs-table-bg: var(--dm-bg-secondary, #131a34) !important;
+  --bs-table-color: var(--dm-text-secondary, #b9c2e0) !important;
+  --bs-table-border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+html[data-app-theme="midnight"] .crm-app-body .table tbody td,
+html[data-app-theme="premium"]  .crm-app-body .table tbody td,
+html[data-dark-mode="1"]        .crm-app-body .table tbody td,
+html[data-app-theme="midnight"] .table tbody td,
+html[data-app-theme="premium"]  .table tbody td,
+html[data-dark-mode="1"]        .table tbody td {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-secondary, rgba(255,255,255,.08)) !important;
+  --bs-table-bg: transparent !important;
+  --bs-table-color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+html[data-app-theme="midnight"] .table-striped > tbody > tr:nth-of-type(odd) > *,
+html[data-app-theme="premium"]  .table-striped > tbody > tr:nth-of-type(odd) > *,
+html[data-dark-mode="1"]        .table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-bg-type: rgba(255,255,255,.03) !important;
+  background-color: rgba(255,255,255,.03) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+html[data-app-theme="midnight"] .table-hover > tbody > tr:hover > *,
+html[data-app-theme="premium"]  .table-hover > tbody > tr:hover > *,
+html[data-dark-mode="1"]        .table-hover > tbody > tr:hover > * {
+  --bs-table-bg-state: var(--dm-bg-hover, rgba(255,255,255,.06)) !important;
+  background-color: var(--dm-bg-hover, rgba(255,255,255,.06)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* Ensure nested text inside cells is never light-on-light */
+html[data-app-theme="midnight"] .table td .text-muted,
+html[data-app-theme="premium"]  .table td .text-muted,
+html[data-app-theme="midnight"] .table td .mini-muted,
+html[data-app-theme="premium"]  .table td .mini-muted,
+html[data-app-theme="midnight"] .table td .small,
+html[data-app-theme="premium"]  .table td .small,
+html[data-app-theme="midnight"] .table td small,
+html[data-app-theme="premium"]  .table td small {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+
+/* ---- Filter bars / search toolbars (Users, Login Report, Rights, etc.) ---- */
+html[data-app-theme="midnight"] .filter-bar,
+html[data-app-theme="premium"]  .filter-bar,
+html[data-app-theme="midnight"] .filters,
+html[data-app-theme="premium"]  .filters,
+html[data-app-theme="midnight"] .lr-filters,
+html[data-app-theme="premium"]  .lr-filters,
+html[data-app-theme="midnight"] .professional-filter-grid,
+html[data-app-theme="premium"]  .professional-filter-grid,
+html[data-app-theme="midnight"] .filter-row,
+html[data-app-theme="premium"]  .filter-row,
+html[data-app-theme="midnight"] [class*="filter"] .form-control,
+html[data-app-theme="premium"]  [class*="filter"] .form-control,
+html[data-app-theme="midnight"] [class*="filter"] .form-select,
+html[data-app-theme="premium"]  [class*="filter"] .form-select {
+  background-color: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+html[data-app-theme="midnight"] .filter-bar,
+html[data-app-theme="premium"]  .filter-bar,
+html[data-app-theme="midnight"] .filters,
+html[data-app-theme="premium"]  .filters,
+html[data-app-theme="midnight"] .lr-filters,
+html[data-app-theme="premium"]  .lr-filters {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* ---- Cards used by AI reports / empty states / KPI strips ---- */
+html[data-app-theme="midnight"] .ai-card,
+html[data-app-theme="premium"]  .ai-card,
+html[data-app-theme="midnight"] .signal-card,
+html[data-app-theme="premium"]  .signal-card,
+html[data-app-theme="midnight"] .report-card,
+html[data-app-theme="premium"]  .report-card,
+html[data-app-theme="midnight"] .simple-card,
+html[data-app-theme="premium"]  .simple-card,
+html[data-app-theme="midnight"] .content-card,
+html[data-app-theme="premium"]  .content-card,
+html[data-app-theme="midnight"] .list-card,
+html[data-app-theme="premium"]  .list-card,
+html[data-app-theme="midnight"] .box-card,
+html[data-app-theme="premium"]  .box-card,
+html[data-app-theme="midnight"] .white-card,
+html[data-app-theme="premium"]  .white-card,
+html[data-app-theme="midnight"] .panel,
+html[data-app-theme="premium"]  .panel,
+html[data-app-theme="midnight"] .empty-state,
+html[data-app-theme="premium"]  .empty-state {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* Empty-state message text */
+html[data-app-theme="midnight"] .empty-state,
+html[data-app-theme="premium"]  .empty-state,
+html[data-app-theme="midnight"] .text-center.text-muted,
+html[data-app-theme="premium"]  .text-center.text-muted {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+}
+
+/* ---- User-wise / Role-wise rights panels ---- */
+html[data-app-theme="midnight"] .rights-panel,
+html[data-app-theme="premium"]  .rights-panel,
+html[data-app-theme="midnight"] .permission-group,
+html[data-app-theme="premium"]  .permission-group,
+html[data-app-theme="midnight"] .rights-search-box,
+html[data-app-theme="premium"]  .rights-search-box,
+html[data-app-theme="midnight"] .user-rights-card,
+html[data-app-theme="premium"]  .user-rights-card {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* ---- CRM Lock overlay (screenshot shows light card) ---- */
+html[data-app-theme="midnight"] .crm-lock-overlay,
+html[data-app-theme="premium"]  .crm-lock-overlay,
+html[data-dark-mode="1"]        .crm-lock-overlay {
+  background: rgba(8, 12, 28, 0.92) !important;
+}
+html[data-app-theme="midnight"] .crm-lock-card,
+html[data-app-theme="premium"]  .crm-lock-card,
+html[data-dark-mode="1"]        .crm-lock-card {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .crm-lock-card h4,
+html[data-app-theme="premium"]  .crm-lock-card h4,
+html[data-app-theme="midnight"] .crm-lock-card p,
+html[data-app-theme="premium"]  .crm-lock-card p {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .crm-lock-card .form-control,
+html[data-app-theme="premium"]  .crm-lock-card .form-control {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* ---- Keyboard shortcuts modal grid (already mostly ok, belt-and-braces) ---- */
+html[data-app-theme="midnight"] .shortcut-grid > *,
+html[data-app-theme="premium"]  .shortcut-grid > * {
+  background: var(--dm-bg-secondary, #131a34) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-secondary, rgba(255,255,255,.08)) !important;
+}
+
+/* ---- Login timeline / currently-live cards ---- */
+html[data-app-theme="midnight"] .login-timeline,
+html[data-app-theme="premium"]  .login-timeline,
+html[data-app-theme="midnight"] .currently-live,
+html[data-app-theme="premium"]  .currently-live,
+html[data-app-theme="midnight"] .lr-card,
+html[data-app-theme="premium"]  .lr-card {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* ---- Buttons that were hard-coded white in professional-ui ---- */
+html[data-app-theme="midnight"] .btn-outline-primary,
+html[data-app-theme="premium"]  .btn-outline-primary,
+html[data-app-theme="midnight"] .btn-outline-secondary,
+html[data-app-theme="premium"]  .btn-outline-secondary,
+html[data-app-theme="midnight"] .btn-outline-success,
+html[data-app-theme="premium"]  .btn-outline-success,
+html[data-app-theme="midnight"] .btn-outline-warning,
+html[data-app-theme="premium"]  .btn-outline-warning,
+html[data-app-theme="midnight"] .btn-outline-danger,
+html[data-app-theme="premium"]  .btn-outline-danger,
+html[data-app-theme="midnight"] .btn-outline-info,
+html[data-app-theme="premium"]  .btn-outline-info,
+html[data-app-theme="midnight"] .btn-light,
+html[data-app-theme="premium"]  .btn-light {
+  background: transparent !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.25)) !important;
+}
+html[data-app-theme="midnight"] .btn-outline-primary:hover,
+html[data-app-theme="premium"]  .btn-outline-primary:hover {
+  background: rgba(100, 148, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+/* ---- Form controls: re-assert with higher specificity against .crm-app-body ---- */
+html[data-app-theme="midnight"] .crm-app-body .form-control,
+html[data-app-theme="premium"]  .crm-app-body .form-control,
+html[data-app-theme="midnight"] .crm-app-body .form-select,
+html[data-app-theme="premium"]  .crm-app-body .form-select,
+html[data-app-theme="midnight"] .crm-app-body textarea,
+html[data-app-theme="premium"]  .crm-app-body textarea,
+html[data-app-theme="midnight"] .crm-app-body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-app-theme="premium"]  .crm-app-body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .crm-app-body .form-control::placeholder,
+html[data-app-theme="premium"]  .crm-app-body .form-control::placeholder,
+html[data-app-theme="midnight"] .crm-app-body input::placeholder,
+html[data-app-theme="premium"]  .crm-app-body input::placeholder {
+  color: var(--dm-text-placeholder, #7a83a8) !important;
+  opacity: 1 !important;
+}
+
+/* ---- Dropdown menus (theme switcher, action menus) ---- */
+html[data-app-theme="midnight"] .dropdown-menu,
+html[data-app-theme="premium"]  .dropdown-menu,
+html[data-dark-mode="1"]        .dropdown-menu {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .dropdown-item,
+html[data-app-theme="premium"]  .dropdown-item {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .dropdown-item:hover,
+html[data-app-theme="premium"]  .dropdown-item:hover,
+html[data-app-theme="midnight"] .dropdown-item:focus,
+html[data-app-theme="premium"]  .dropdown-item:focus {
+  background: var(--dm-bg-hover, rgba(255,255,255,.06)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* ---- Alerts ---- */
+html[data-app-theme="midnight"] .alert-success,
+html[data-app-theme="premium"]  .alert-success { background: var(--dm-success-bg) !important; color: var(--dm-success-text) !important; border-color: transparent !important; }
+html[data-app-theme="midnight"] .alert-warning,
+html[data-app-theme="premium"]  .alert-warning { background: var(--dm-warning-bg) !important; color: var(--dm-warning-text) !important; border-color: transparent !important; }
+html[data-app-theme="midnight"] .alert-danger,
+html[data-app-theme="premium"]  .alert-danger  { background: var(--dm-danger-bg)  !important; color: var(--dm-danger-text)  !important; border-color: transparent !important; }
+html[data-app-theme="midnight"] .alert-info,
+html[data-app-theme="premium"]  .alert-info    { background: var(--dm-info-bg)    !important; color: var(--dm-info-text)    !important; border-color: transparent !important; }
+
+/* ---- List group / offcanvas ---- */
+html[data-app-theme="midnight"] .list-group-item,
+html[data-app-theme="premium"]  .list-group-item {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-secondary, rgba(255,255,255,.08)) !important;
+}
+html[data-app-theme="midnight"] .offcanvas,
+html[data-app-theme="premium"]  .offcanvas {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* ---- Catch-all for any remaining white/light inline or utility surfaces ---- */
+html[data-app-theme="midnight"] [style*="background:#fff"],
+html[data-app-theme="premium"]  [style*="background:#fff"],
+html[data-app-theme="midnight"] [style*="background: #fff"],
+html[data-app-theme="premium"]  [style*="background: #fff"],
+html[data-app-theme="midnight"] [style*="background:#ffffff"],
+html[data-app-theme="premium"]  [style*="background:#ffffff"],
+html[data-app-theme="midnight"] [style*="background:white"],
+html[data-app-theme="premium"]  [style*="background:white"] {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* Ensure btn-close is visible on dark modals */
+html[data-app-theme="midnight"] .btn-close,
+html[data-app-theme="premium"]  .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* END EXTENDED GLOBAL DARK FIX v5.1 */
+
+/* AI insight cards & action chips (Reports) */
+html[data-app-theme="midnight"] .ai-insight-card,
+html[data-app-theme="premium"]  .ai-insight-card,
+html[data-dark-mode="1"]        .ai-insight-card {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .ai-insight-card h5,
+html[data-app-theme="premium"]  .ai-insight-card h5,
+html[data-app-theme="midnight"] .ai-insight-card p,
+html[data-app-theme="premium"]  .ai-insight-card p {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .ai-action,
+html[data-app-theme="premium"]  .ai-action,
+html[data-dark-mode="1"]        .ai-action {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  border-color: var(--dm-border-secondary, rgba(255,255,255,.08)) !important;
+}
+html[data-app-theme="midnight"] .ai-action strong,
+html[data-app-theme="premium"]  .ai-action strong {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .ai-action span,
+html[data-app-theme="premium"]  .ai-action span {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+}
+
+/* Report filter cards */
+html[data-app-theme="midnight"] .professional-filter-card,
+html[data-app-theme="premium"]  .professional-filter-card,
+html[data-app-theme="midnight"] .report-filter-card,
+html[data-app-theme="premium"]  .report-filter-card {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* Ensure kpi-value and similar stay readable */
+html[data-app-theme="midnight"] .kpi-value,
+html[data-app-theme="premium"]  .kpi-value,
+html[data-app-theme="midnight"] .big-number,
+html[data-app-theme="premium"]  .big-number {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* ==========================================================================
+   EXTENDED GLOBAL DARK FIX — v5.2
+   Fixes remaining screenshot issues:
+   - White blank squares (ai-orb / logo-orb with invisible icons)
+   - Timeline rows (Full Status Timeline) light cards + faint text
+   - Keyboard shortcut labels nearly invisible
+   - Report table white headers
+   - Product Master still-light table surfaces
+   - Login Report light panels
+   - User-wise Rights white header strip + faint labels
+   - Generic bi / SVG icon visibility on dark surfaces
+   Scoped only to midnight / premium / data-dark-mode. Light themes untouched.
+   ========================================================================== */
+
+/* ---- Report hero decorative orbs: keep visible icon on dark themes ---- */
+html[data-app-theme="midnight"] .ai-orb,
+html[data-app-theme="premium"]  .ai-orb,
+html[data-dark-mode="1"]        .ai-orb,
+html[data-app-theme="midnight"] .logo-orb,
+html[data-app-theme="premium"]  .logo-orb,
+html[data-dark-mode="1"]        .logo-orb,
+html[data-app-theme="midnight"] .report-hero .ai-orb,
+html[data-app-theme="premium"]  .report-hero .ai-orb,
+html[data-app-theme="midnight"] body.crm-app-body .report-hero .ai-orb,
+html[data-app-theme="premium"]  body.crm-app-body .report-hero .ai-orb,
+html[data-app-theme="midnight"] body.crm-app-body .report-hero .logo-orb,
+html[data-app-theme="premium"]  body.crm-app-body .report-hero .logo-orb {
+  background: linear-gradient(145deg, #3b4f8a, #1e2a55) !important;
+  color: #f5f7ff !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35) !important;
+}
+html[data-app-theme="midnight"] .ai-orb i,
+html[data-app-theme="premium"]  .ai-orb i,
+html[data-dark-mode="1"]        .ai-orb i,
+html[data-app-theme="midnight"] .logo-orb i,
+html[data-app-theme="premium"]  .logo-orb i,
+html[data-app-theme="midnight"] .ai-orb svg,
+html[data-app-theme="premium"]  .ai-orb svg {
+  color: #f5f7ff !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Premium AI hero orb — glass style with bright icon */
+html[data-app-theme="midnight"] .premium-ai-hero .ai-orb,
+html[data-app-theme="premium"]  .premium-ai-hero .ai-orb {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+html[data-app-theme="midnight"] .premium-ai-hero .ai-orb i,
+html[data-app-theme="premium"]  .premium-ai-hero .ai-orb i {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ---- Full Status Timeline rows (Inquiry Edit) ---- */
+html[data-app-theme="midnight"] .timeline-row,
+html[data-app-theme="premium"]  .timeline-row,
+html[data-dark-mode="1"]        .timeline-row,
+html[data-app-theme="midnight"] .timeline-panel .timeline-row,
+html[data-app-theme="premium"]  .timeline-panel .timeline-row {
+  background: var(--dm-bg-input, #1b2344) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  border-left: 4px solid #64748b !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .timeline-row strong,
+html[data-app-theme="premium"]  .timeline-row strong,
+html[data-app-theme="midnight"] .timeline-row p,
+html[data-app-theme="premium"]  .timeline-row p {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .timeline-row span,
+html[data-app-theme="premium"]  .timeline-row span,
+html[data-app-theme="midnight"] .timeline-panel .timeline-row > span,
+html[data-app-theme="premium"]  .timeline-panel .timeline-row > span,
+html[data-app-theme="midnight"] .timeline-panel .timeline-row p,
+html[data-app-theme="premium"]  .timeline-panel .timeline-row p {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .timeline-panel,
+html[data-app-theme="premium"]  .timeline-panel {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* ---- Keyboard shortcuts modal ---- */
+html[data-app-theme="midnight"] .shortcut-item,
+html[data-app-theme="premium"]  .shortcut-item,
+html[data-dark-mode="1"]        .shortcut-item,
+html[data-app-theme="midnight"] .crm-app-body .shortcut-item,
+html[data-app-theme="premium"]  .crm-app-body .shortcut-item {
+  background: var(--dm-bg-secondary, #131a34) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .shortcut-item span,
+html[data-app-theme="premium"]  .shortcut-item span,
+html[data-app-theme="midnight"] .crm-app-body .shortcut-item span,
+html[data-app-theme="premium"]  .crm-app-body .shortcut-item span {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .shortcut-item::before,
+html[data-app-theme="premium"]  .shortcut-item::before {
+  color: var(--dm-text-muted, #8b94b8) !important;
+}
+html[data-app-theme="midnight"] .shortcut-item kbd,
+html[data-app-theme="premium"]  .shortcut-item kbd {
+  background: #2a3558 !important;
+  color: #e8eeff !important;
+}
+
+/* ---- Report / Product / generic table headers that stayed white ---- */
+html[data-app-theme="midnight"] thead,
+html[data-app-theme="premium"]  thead,
+html[data-app-theme="midnight"] .table > thead,
+html[data-app-theme="premium"]  .table > thead,
+html[data-app-theme="midnight"] .table thead tr,
+html[data-app-theme="premium"]  .table thead tr {
+  background: var(--dm-bg-secondary, #131a34) !important;
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+}
+html[data-app-theme="midnight"] .table thead th,
+html[data-app-theme="premium"]  .table thead th,
+html[data-app-theme="midnight"] .crm-app-body .table thead th,
+html[data-app-theme="premium"]  .crm-app-body .table thead th,
+html[data-app-theme="midnight"] .professional-table thead th,
+html[data-app-theme="premium"]  .professional-table thead th,
+html[data-app-theme="midnight"] table.pg-table thead th,
+html[data-app-theme="premium"]  table.pg-table thead th,
+html[data-app-theme="midnight"] .table > :not(caption) > * > th,
+html[data-app-theme="premium"]  .table > :not(caption) > * > th {
+  background: var(--dm-bg-secondary, #131a34) !important;
+  background-color: var(--dm-bg-secondary, #131a34) !important;
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  --bs-table-bg: var(--dm-bg-secondary, #131a34) !important;
+  --bs-table-color: var(--dm-text-secondary, #b9c2e0) !important;
+  --bs-table-border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  opacity: 1 !important;
+}
+
+/* Force table body cells readable even if parent card was light */
+html[data-app-theme="midnight"] .card .table,
+html[data-app-theme="premium"]  .card .table,
+html[data-app-theme="midnight"] .card-soft .table,
+html[data-app-theme="premium"]  .card-soft .table,
+html[data-app-theme="midnight"] .table-responsive,
+html[data-app-theme="premium"]  .table-responsive {
+  background: transparent !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .card,
+html[data-app-theme="premium"]  .card,
+html[data-app-theme="midnight"] .card-soft,
+html[data-app-theme="premium"]  .card-soft {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* Product Master style faded cell text */
+html[data-app-theme="midnight"] .table td,
+html[data-app-theme="premium"]  .table td,
+html[data-app-theme="midnight"] .table td .fw-semibold,
+html[data-app-theme="premium"]  .table td .fw-semibold,
+html[data-app-theme="midnight"] .table td strong,
+html[data-app-theme="premium"]  .table td strong {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  opacity: 1 !important;
+}
+
+/* ---- Login Report (Currently Live, Filters, Login Timeline) ---- */
+html[data-app-theme="midnight"] .lr-page,
+html[data-app-theme="premium"]  .lr-page,
+html[data-app-theme="midnight"] .lr-card,
+html[data-app-theme="premium"]  .lr-card,
+html[data-app-theme="midnight"] .lr-filters,
+html[data-app-theme="premium"]  .lr-filters,
+html[data-app-theme="midnight"] .currently-live,
+html[data-app-theme="premium"]  .currently-live,
+html[data-app-theme="midnight"] .login-timeline,
+html[data-app-theme="premium"]  .login-timeline {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .lr-page table thead th,
+html[data-app-theme="premium"]  .lr-page table thead th,
+html[data-app-theme="midnight"] .login-timeline thead th,
+html[data-app-theme="premium"]  .login-timeline thead th {
+  background: var(--dm-bg-secondary, #131a34) !important;
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+}
+html[data-app-theme="midnight"] .lr-page table tbody td,
+html[data-app-theme="premium"]  .lr-page table tbody td {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  background: transparent !important;
+}
+
+/* ---- User-wise Rights header strip (white bar with faint labels) ---- */
+html[data-app-theme="midnight"] .rights-user-header,
+html[data-app-theme="premium"]  .rights-user-header,
+html[data-app-theme="midnight"] .user-rights-header,
+html[data-app-theme="premium"]  .user-rights-header,
+html[data-app-theme="midnight"] .rights-top-bar,
+html[data-app-theme="premium"]  .rights-top-bar {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+/* Generic light header bars inside rights / permission UIs */
+html[data-app-theme="midnight"] .permission-group,
+html[data-app-theme="premium"]  .permission-group,
+html[data-app-theme="midnight"] .rights-group,
+html[data-app-theme="premium"]  .rights-group,
+html[data-app-theme="midnight"] .rights-panel .card,
+html[data-app-theme="premium"]  .rights-panel .card,
+html[data-app-theme="midnight"] .rights-panel .card-header,
+html[data-app-theme="premium"]  .rights-panel .card-header {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-secondary, rgba(255,255,255,.08)) !important;
+}
+
+/* Catch white header strips that use bg-white / light utilities in rights views */
+html[data-app-theme="midnight"] .bg-white,
+html[data-app-theme="premium"]  .bg-white,
+html[data-app-theme="midnight"] .bg-body,
+html[data-app-theme="premium"]  .bg-body {
+  background-color: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* ---- Bootstrap Icons / generic icon visibility on dark surfaces ---- */
+html[data-app-theme="midnight"] .bi,
+html[data-app-theme="premium"]  .bi,
+html[data-app-theme="midnight"] i.bi,
+html[data-app-theme="premium"]  i.bi {
+  opacity: 1 !important;
+}
+/* Outline / icon-only buttons that lost icon color */
+html[data-app-theme="midnight"] .btn-outline-primary i,
+html[data-app-theme="premium"]  .btn-outline-primary i,
+html[data-app-theme="midnight"] .btn-outline-secondary i,
+html[data-app-theme="premium"]  .btn-outline-secondary i,
+html[data-app-theme="midnight"] .btn-outline-danger i,
+html[data-app-theme="premium"]  .btn-outline-danger i,
+html[data-app-theme="midnight"] .btn-outline-success i,
+html[data-app-theme="premium"]  .btn-outline-success i,
+html[data-app-theme="midnight"] .table-actions .btn i,
+html[data-app-theme="premium"]  .table-actions .btn i,
+html[data-app-theme="midnight"] .btn-sm i,
+html[data-app-theme="premium"]  .btn-sm i {
+  color: inherit !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Eye / view icons often used without text */
+html[data-app-theme="midnight"] .bi-eye,
+html[data-app-theme="premium"]  .bi-eye,
+html[data-app-theme="midnight"] .bi-eye-fill,
+html[data-app-theme="premium"]  .bi-eye-fill,
+html[data-app-theme="midnight"] .bi-pencil,
+html[data-app-theme="premium"]  .bi-pencil,
+html[data-app-theme="midnight"] .bi-trash,
+html[data-app-theme="premium"]  .bi-trash {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+/* ---- Report tabs that stay light ---- */
+html[data-app-theme="midnight"] .report-tabs a,
+html[data-app-theme="premium"]  .report-tabs a,
+html[data-app-theme="midnight"] .ai-report-nav a,
+html[data-app-theme="premium"]  .ai-report-nav a {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .report-tabs a.active,
+html[data-app-theme="premium"]  .report-tabs a.active,
+html[data-app-theme="midnight"] .ai-report-nav a.active,
+html[data-app-theme="premium"]  .ai-report-nav a.active {
+  background: var(--dm-primary-bg, #232c56) !important;
+  color: #fff !important;
+}
+
+/* ---- Notification / tree update bodies (related faint cards) ---- */
+html[data-app-theme="midnight"] .tree-update-body,
+html[data-app-theme="premium"]  .tree-update-body,
+html[data-app-theme="midnight"] .notification-tree-item,
+html[data-app-theme="premium"]  .notification-tree-item,
+html[data-app-theme="midnight"] .latest-update-block,
+html[data-app-theme="premium"]  .latest-update-block {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* ---- Help steps / similar light panels ---- */
+html[data-app-theme="midnight"] .help-step,
+html[data-app-theme="premium"]  .help-step {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-secondary, rgba(255,255,255,.08)) !important;
+}
+
+/* ---- Ensure no global opacity wash on text inside dark cards ---- */
+html[data-app-theme="midnight"] .card *,
+html[data-app-theme="premium"]  .card *,
+html[data-app-theme="midnight"] .card-soft *,
+html[data-app-theme="premium"]  .card-soft *,
+html[data-app-theme="midnight"] .dash-panel *,
+html[data-app-theme="premium"]  .dash-panel *,
+html[data-app-theme="midnight"] .timeline-panel *,
+html[data-app-theme="premium"]  .timeline-panel * {
+  /* do not force color on everything (breaks badges), only kill opacity collapse */
+}
+html[data-app-theme="midnight"] .text-muted,
+html[data-app-theme="premium"]  .text-muted,
+html[data-app-theme="midnight"] .mini-muted,
+html[data-app-theme="premium"]  .mini-muted {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+
+/* END v5.2 */
+
+/* ---- User Wise Rights: remaining white strips (expand row + mode control + group titles) ---- */
+html[data-app-theme="midnight"] .user-rights-expand,
+html[data-app-theme="premium"]  .user-rights-expand,
+html[data-app-theme="midnight"] .user-mode-control,
+html[data-app-theme="premium"]  .user-mode-control,
+html[data-app-theme="midnight"] .permission-group-title,
+html[data-app-theme="premium"]  .permission-group-title,
+html[data-app-theme="midnight"] .user-rights-detail-head,
+html[data-app-theme="premium"]  .user-rights-detail-head {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-secondary, rgba(255,255,255,.08)) !important;
+}
+html[data-app-theme="midnight"] .user-rights-expand:hover,
+html[data-app-theme="premium"]  .user-rights-expand:hover {
+  background: var(--dm-bg-hover, rgba(255,255,255,.06)) !important;
+}
+html[data-app-theme="midnight"] .user-role-pill,
+html[data-app-theme="premium"]  .user-role-pill {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .expand-chevron,
+html[data-app-theme="premium"]  .expand-chevron {
+  color: var(--dm-text-muted, #8b94b8) !important;
+}
+html[data-app-theme="midnight"] .permission-group-title span,
+html[data-app-theme="premium"]  .permission-group-title span,
+html[data-app-theme="midnight"] .permission-group-title i,
+html[data-app-theme="premium"]  .permission-group-title i {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* Login report: force any remaining white panel */
+html[data-app-theme="midnight"] .lr-live-card,
+html[data-app-theme="premium"]  .lr-live-card,
+html[data-app-theme="midnight"] .lr-filter-bar,
+html[data-app-theme="premium"]  .lr-filter-bar,
+html[data-app-theme="midnight"] .lr-table-wrap,
+html[data-app-theme="premium"]  .lr-table-wrap {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* ==========================================================================
+   v5.3 — Screenshot Img1–Img5 + residual dark contrast
+   ========================================================================== */
+
+/* ---- Img1/Img2: Eye / row-view outline buttons — hover must keep icon visible ----
+   Root: professional-ui sets .btn-outline-primary { background:#fff } and Bootstrap
+   hover fills primary with light/white icon, or hover bg becomes white with white icon.
+*/
+html[data-app-theme="midnight"] .btn-outline-primary,
+html[data-app-theme="premium"]  .btn-outline-primary,
+html[data-app-theme="midnight"] .btn-outline-secondary,
+html[data-app-theme="premium"]  .btn-outline-secondary,
+html[data-app-theme="midnight"] .btn-outline-info,
+html[data-app-theme="premium"]  .btn-outline-info,
+html[data-app-theme="midnight"] .row-view-btn,
+html[data-app-theme="premium"]  .row-view-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #c5d0f0 !important;
+  border-color: rgba(157, 180, 255, 0.45) !important;
+}
+html[data-app-theme="midnight"] .btn-outline-primary i,
+html[data-app-theme="premium"]  .btn-outline-primary i,
+html[data-app-theme="midnight"] .btn-outline-secondary i,
+html[data-app-theme="premium"]  .btn-outline-secondary i,
+html[data-app-theme="midnight"] .row-view-btn i,
+html[data-app-theme="premium"]  .row-view-btn i,
+html[data-app-theme="midnight"] .btn-outline-primary .bi,
+html[data-app-theme="premium"]  .btn-outline-primary .bi,
+html[data-app-theme="midnight"] .row-view-btn .bi-eye,
+html[data-app-theme="premium"]  .row-view-btn .bi-eye,
+html[data-app-theme="midnight"] .row-view-btn .bi-eye-fill,
+html[data-app-theme="premium"]  .row-view-btn .bi-eye-fill {
+  color: inherit !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+html[data-app-theme="midnight"] .btn-outline-primary:hover,
+html[data-app-theme="premium"]  .btn-outline-primary:hover,
+html[data-app-theme="midnight"] .btn-outline-primary:focus,
+html[data-app-theme="premium"]  .btn-outline-primary:focus,
+html[data-app-theme="midnight"] .btn-outline-primary:focus-visible,
+html[data-app-theme="premium"]  .btn-outline-primary:focus-visible,
+html[data-app-theme="midnight"] .btn-outline-primary:active,
+html[data-app-theme="premium"]  .btn-outline-primary:active,
+html[data-app-theme="midnight"] .row-view-btn:hover,
+html[data-app-theme="premium"]  .row-view-btn:hover,
+html[data-app-theme="midnight"] .row-view-btn:focus,
+html[data-app-theme="premium"]  .row-view-btn:focus,
+html[data-app-theme="midnight"] .row-view-btn:active,
+html[data-app-theme="premium"]  .row-view-btn:active,
+html[data-app-theme="midnight"] .btn-outline-secondary:hover,
+html[data-app-theme="premium"]  .btn-outline-secondary:hover {
+  background: #3b4f8a !important;
+  background-color: #3b4f8a !important;
+  color: #ffffff !important;
+  border-color: #9db4ff !important;
+}
+html[data-app-theme="midnight"] .btn-outline-primary:hover i,
+html[data-app-theme="premium"]  .btn-outline-primary:hover i,
+html[data-app-theme="midnight"] .btn-outline-primary:focus i,
+html[data-app-theme="premium"]  .btn-outline-primary:focus i,
+html[data-app-theme="midnight"] .btn-outline-primary:active i,
+html[data-app-theme="premium"]  .btn-outline-primary:active i,
+html[data-app-theme="midnight"] .row-view-btn:hover i,
+html[data-app-theme="premium"]  .row-view-btn:hover i,
+html[data-app-theme="midnight"] .row-view-btn:focus i,
+html[data-app-theme="premium"]  .row-view-btn:focus i,
+html[data-app-theme="midnight"] .row-view-btn:active i,
+html[data-app-theme="premium"]  .row-view-btn:active i,
+html[data-app-theme="midnight"] .btn-outline-primary:hover .bi,
+html[data-app-theme="premium"]  .btn-outline-primary:hover .bi,
+html[data-app-theme="midnight"] .row-view-btn:hover .bi-eye,
+html[data-app-theme="premium"]  .row-view-btn:hover .bi-eye {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ---- Img3: settings-note (white info box under channels) ---- */
+html[data-app-theme="midnight"] .settings-note,
+html[data-app-theme="premium"]  .settings-note,
+html[data-dark-mode="1"]        .settings-note {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .settings-note span,
+html[data-app-theme="premium"]  .settings-note span,
+html[data-app-theme="midnight"] .settings-note i,
+html[data-app-theme="premium"]  .settings-note i {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  opacity: 1 !important;
+}
+
+/* Also darken generic alert-info in dark themes (settings + elsewhere) */
+html[data-app-theme="midnight"] .alert-info,
+html[data-app-theme="premium"]  .alert-info {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #dbeafe !important;
+  border-color: rgba(59, 130, 246, 0.28) !important;
+}
+html[data-app-theme="midnight"] .alert-info *,
+html[data-app-theme="premium"]  .alert-info * {
+  color: inherit !important;
+}
+
+/* ---- Img4: Shortcut labels (kbd OK, span labels invisible) ----
+   professional-ui: .shortcut-item span { color:#475872 } and background:#fff
+   Modal may not sit under .crm-app-body in some paths — use broader selectors.
+*/
+html[data-app-theme="midnight"] .shortcut-item,
+html[data-app-theme="premium"]  .shortcut-item,
+html[data-dark-mode="1"]        .shortcut-item,
+html[data-app-theme="midnight"] body .shortcut-item,
+html[data-app-theme="premium"]  body .shortcut-item,
+html[data-app-theme="midnight"] .modal .shortcut-item,
+html[data-app-theme="premium"]  .modal .shortcut-item,
+html[data-app-theme="midnight"] .crm-app-body .shortcut-item,
+html[data-app-theme="premium"]  .crm-app-body .shortcut-item {
+  background: #1a2344 !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: #f5f7ff !important;
+}
+html[data-app-theme="midnight"] .shortcut-item span,
+html[data-app-theme="premium"]  .shortcut-item span,
+html[data-dark-mode="1"]        .shortcut-item span,
+html[data-app-theme="midnight"] body .shortcut-item span,
+html[data-app-theme="premium"]  body .shortcut-item span,
+html[data-app-theme="midnight"] .modal .shortcut-item span,
+html[data-app-theme="premium"]  .modal .shortcut-item span,
+html[data-app-theme="midnight"] .crm-app-body .shortcut-item span,
+html[data-app-theme="premium"]  .crm-app-body .shortcut-item span {
+  color: #f0f4ff !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+html[data-app-theme="midnight"] .shortcut-item kbd,
+html[data-app-theme="premium"]  .shortcut-item kbd,
+html[data-app-theme="midnight"] body .shortcut-item kbd,
+html[data-app-theme="premium"]  body .shortcut-item kbd {
+  background: #2a3558 !important;
+  color: #e8eeff !important;
+  border: none !important;
+}
+
+/* ---- Img5: workflow-switch (Training is required / Paid training) ----
+   crm-polish: .workflow-switch { background:#f7faff } — light pill with faint label
+*/
+html[data-app-theme="midnight"] .workflow-switch,
+html[data-app-theme="premium"]  .workflow-switch,
+html[data-dark-mode="1"]        .workflow-switch,
+html[data-app-theme="midnight"] .form-check.form-switch.workflow-switch,
+html[data-app-theme="premium"]  .form-check.form-switch.workflow-switch {
+  background: #1b2344 !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: #f5f7ff !important;
+}
+html[data-app-theme="midnight"] .workflow-switch .form-check-label,
+html[data-app-theme="premium"]  .workflow-switch .form-check-label,
+html[data-app-theme="midnight"] .workflow-switch label,
+html[data-app-theme="premium"]  .workflow-switch label {
+  color: #f0f4ff !important;
+  opacity: 1 !important;
+}
+/* Generic form-switch labels on dark surfaces (when they sit on light pills) */
+html[data-app-theme="midnight"] .form-check.form-switch,
+html[data-app-theme="premium"]  .form-check.form-switch {
+  color: var(--dm-text-primary, #f5f7ff);
+}
+html[data-app-theme="midnight"] .form-check.form-switch .form-check-label,
+html[data-app-theme="premium"]  .form-check.form-switch .form-check-label {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  opacity: 1 !important;
+}
+/* Light-pill switches that appear as white rounded bars */
+html[data-app-theme="midnight"] .form-check.form-switch:not(.workflow-switch),
+html[data-app-theme="premium"]  .form-check.form-switch:not(.workflow-switch) {
+  /* don't force bg on every switch — only when they look like light cards */
+}
+/* When form-switch is given a light background via utility or parent */
+html[data-app-theme="midnight"] .form-check.bg-white,
+html[data-app-theme="premium"]  .form-check.bg-white,
+html[data-app-theme="midnight"] .form-switch.bg-light,
+html[data-app-theme="premium"]  .form-switch.bg-light {
+  background: #1b2344 !important;
+  color: #f5f7ff !important;
+}
+
+/* ==========================================================================
+   v5.4 — Hardened Img1/Img2 eye-icon hover + Img3 shortcut contrast + Head1
+   Premium Elite / Midnight only. No impact on light themes.
+   ========================================================================== */
+
+/* Ultimate eye / row-view / outline-primary: kill any residual white bg on hover */
+html[data-app-theme="midnight"] body.crm-app-body .btn-outline-primary,
+html[data-app-theme="premium"]  body.crm-app-body .btn-outline-primary,
+html[data-app-theme="midnight"] body.crm-app-body .row-view-btn,
+html[data-app-theme="premium"]  body.crm-app-body .row-view-btn,
+html[data-app-theme="midnight"] .btn.btn-sm.btn-outline-primary.row-view-btn,
+html[data-app-theme="premium"]  .btn.btn-sm.btn-outline-primary.row-view-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #c5d0f0 !important;
+  border-color: rgba(157, 180, 255, 0.5) !important;
+  box-shadow: none !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .btn-outline-primary:hover,
+html[data-app-theme="premium"]  body.crm-app-body .btn-outline-primary:hover,
+html[data-app-theme="midnight"] body.crm-app-body .btn-outline-primary:focus,
+html[data-app-theme="premium"]  body.crm-app-body .btn-outline-primary:focus,
+html[data-app-theme="midnight"] body.crm-app-body .btn-outline-primary:active,
+html[data-app-theme="premium"]  body.crm-app-body .btn-outline-primary:active,
+html[data-app-theme="midnight"] body.crm-app-body .row-view-btn:hover,
+html[data-app-theme="premium"]  body.crm-app-body .row-view-btn:hover,
+html[data-app-theme="midnight"] body.crm-app-body .row-view-btn:focus,
+html[data-app-theme="premium"]  body.crm-app-body .row-view-btn:focus,
+html[data-app-theme="midnight"] body.crm-app-body .row-view-btn:active,
+html[data-app-theme="premium"]  body.crm-app-body .row-view-btn:active,
+html[data-app-theme="midnight"] .btn.btn-sm.btn-outline-primary.row-view-btn:hover,
+html[data-app-theme="premium"]  .btn.btn-sm.btn-outline-primary.row-view-btn:hover {
+  background: #3b4f8a !important;
+  background-color: #3b4f8a !important;
+  color: #ffffff !important;
+  border-color: #9db4ff !important;
+  box-shadow: 0 0 0 1px rgba(157, 180, 255, 0.35) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .btn-outline-primary:hover i,
+html[data-app-theme="premium"]  body.crm-app-body .btn-outline-primary:hover i,
+html[data-app-theme="midnight"] body.crm-app-body .btn-outline-primary:hover .bi,
+html[data-app-theme="premium"]  body.crm-app-body .btn-outline-primary:hover .bi,
+html[data-app-theme="midnight"] body.crm-app-body .row-view-btn:hover i,
+html[data-app-theme="premium"]  body.crm-app-body .row-view-btn:hover i,
+html[data-app-theme="midnight"] body.crm-app-body .row-view-btn:hover .bi-eye,
+html[data-app-theme="premium"]  body.crm-app-body .row-view-btn:hover .bi-eye,
+html[data-app-theme="midnight"] body.crm-app-body .row-view-btn:hover .bi-eye-fill,
+html[data-app-theme="premium"]  body.crm-app-body .row-view-btn:hover .bi-eye-fill {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+/* Premium Elite gold-accent hover variant for outline buttons (matches theme) */
+html[data-app-theme="premium"] body.crm-app-body .btn-outline-primary:hover,
+html[data-app-theme="premium"] body.crm-app-body .row-view-btn:hover {
+  background: rgba(202, 161, 74, 0.22) !important;
+  background-color: rgba(202, 161, 74, 0.22) !important;
+  color: #f1d385 !important;
+  border-color: rgba(202, 161, 74, 0.65) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .btn-outline-primary:hover i,
+html[data-app-theme="premium"] body.crm-app-body .row-view-btn:hover i,
+html[data-app-theme="premium"] body.crm-app-body .row-view-btn:hover .bi-eye {
+  color: #f1d385 !important;
+}
+
+/* ---- Img3: Shortcut menu labels — maximum contrast ---- */
+html[data-app-theme="midnight"] body.crm-app-body .shortcut-item,
+html[data-app-theme="premium"]  body.crm-app-body .shortcut-item,
+html[data-app-theme="midnight"] .modal .shortcut-item,
+html[data-app-theme="premium"]  .modal .shortcut-item,
+html[data-app-theme="midnight"] .shortcut-grid .shortcut-item,
+html[data-app-theme="premium"]  .shortcut-grid .shortcut-item {
+  background: #151c3a !important;
+  background-color: #151c3a !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #f5f7ff !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .shortcut-item span,
+html[data-app-theme="premium"]  body.crm-app-body .shortcut-item span,
+html[data-app-theme="midnight"] .modal .shortcut-item span,
+html[data-app-theme="premium"]  .modal .shortcut-item span,
+html[data-app-theme="midnight"] .shortcut-item > span,
+html[data-app-theme="premium"]  .shortcut-item > span {
+  color: #f0f4ff !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.01em !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .shortcut-item kbd,
+html[data-app-theme="premium"]  body.crm-app-body .shortcut-item kbd,
+html[data-app-theme="midnight"] .modal .shortcut-item kbd,
+html[data-app-theme="premium"]  .modal .shortcut-item kbd {
+  background: #2a3558 !important;
+  color: #e8eeff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  font-weight: 700 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .shortcut-item::before,
+html[data-app-theme="premium"]  body.crm-app-body .shortcut-item::before,
+html[data-app-theme="midnight"] .modal .shortcut-item::before,
+html[data-app-theme="premium"]  .modal .shortcut-item::before {
+  color: #8a94b8 !important;
+  opacity: 0.9 !important;
+}
+/* Premium Elite gold accent on shortcut kbd */
+html[data-app-theme="premium"] body.crm-app-body .shortcut-item kbd,
+html[data-app-theme="premium"] .modal .shortcut-item kbd {
+  background: rgba(202, 161, 74, 0.18) !important;
+  color: #f1d385 !important;
+  border-color: rgba(202, 161, 74, 0.35) !important;
+}
+
+/* ---- Head1: Premium Elite table / grid heading standardization ----
+   Gold typography, weight, spacing matching the reference header bar.
+*/
+html[data-app-theme="premium"] .table thead th,
+html[data-app-theme="premium"] table thead th,
+html[data-app-theme="premium"] .pro-grid thead th,
+html[data-app-theme="premium"] .data-grid thead th,
+html[data-app-theme="premium"] .crm-table thead th,
+html[data-app-theme="premium"] .report-table thead th {
+  background: rgba(202, 161, 74, 0.12) !important;
+  color: #e0c479 !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  border-color: rgba(202, 161, 74, 0.22) !important;
+  padding-top: 0.7rem !important;
+  padding-bottom: 0.7rem !important;
+}
+html[data-app-theme="premium"] .table thead th a,
+html[data-app-theme="premium"] .table thead th i,
+html[data-app-theme="premium"] .table thead th .bi,
+html[data-app-theme="premium"] table thead th a,
+html[data-app-theme="premium"] table thead th i {
+  color: #e0c479 !important;
+  opacity: 0.95 !important;
+}
+/* Page / section headings under Premium Elite — serif + gold accent where appropriate */
+html[data-app-theme="premium"] .page-title,
+html[data-app-theme="premium"] .panel-heading h3,
+html[data-app-theme="premium"] .section-title,
+html[data-app-theme="premium"] .crm-section-title {
+  color: #f3ecff !important;
+}
+html[data-app-theme="premium"] .eyebrow,
+html[data-app-theme="premium"] .pro-eyebrow,
+html[data-app-theme="premium"] .crm-modal-eyebrow,
+html[data-app-theme="premium"] .ld-eyebrow {
+  color: #caa14a !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+/* ==========================================================================
+   v5.5 — Premium Elite ONLY
+   Image 1: table headers = dark bar + gold text (same everywhere)
+   Image 2: Export / brand buttons = solid gold pill
+   Image 3 → Image 4: logo-orb white card with logo (not blue gradient)
+   ========================================================================== */
+
+/* ---- Image 1: grid / table headers — dark + gold text ---- */
+html[data-app-theme="premium"] .report-business-table thead th,
+html[data-app-theme="premium"] body.crm-app-body .report-business-table thead th,
+html[data-app-theme="premium"] table.report-business-table thead th,
+html[data-app-theme="premium"] .table thead th,
+html[data-app-theme="premium"] body.crm-app-body .table thead th,
+html[data-app-theme="premium"] .professional-table thead th,
+html[data-app-theme="premium"] table.pg-table thead th,
+html[data-app-theme="premium"] .crm-table thead th,
+html[data-app-theme="premium"] .pro-grid thead th,
+html[data-app-theme="premium"] .data-grid thead th,
+html[data-app-theme="premium"] .report-table thead th {
+  color: #e0c479 !important;
+  background: #1a1630 !important;
+  background-color: #1a1630 !important;
+  border-color: rgba(202, 161, 74, 0.22) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+html[data-app-theme="premium"] .table thead th i,
+html[data-app-theme="premium"] .table thead th .bi,
+html[data-app-theme="premium"] .table thead th a,
+html[data-app-theme="premium"] .report-business-table thead th i,
+html[data-app-theme="premium"] table.pg-table thead th i,
+html[data-app-theme="premium"] table.pg-table thead th .bi {
+  color: #e0c479 !important;
+  opacity: 0.95 !important;
+}
+
+/* ---- ALL buttons = Image 1 solid gold + dark font (Premium Elite whole CRM) ---- */
+html[data-app-theme="premium"] .btn-brand,
+html[data-app-theme="premium"] body.crm-app-body .btn-brand,
+html[data-app-theme="premium"] .btn-brand.btn-sm,
+html[data-app-theme="premium"] .btn-brand.btn-lg,
+html[data-app-theme="premium"] .btn-brand.dropdown-toggle,
+html[data-app-theme="premium"] body.crm-app-body .pg-toolbar .btn-brand,
+html[data-app-theme="premium"] body.crm-app-body .pg-toolbar-right .btn-brand,
+html[data-app-theme="premium"] .btn-primary,
+html[data-app-theme="premium"] body.crm-app-body .btn-primary,
+html[data-app-theme="premium"] .btn-soft,
+html[data-app-theme="premium"] body.crm-app-body .btn-soft,
+html[data-app-theme="premium"] .btn-outline-primary,
+html[data-app-theme="premium"] body.crm-app-body .btn-outline-primary,
+html[data-app-theme="premium"] .btn-outline-secondary,
+html[data-app-theme="premium"] body.crm-app-body .btn-outline-secondary,
+html[data-app-theme="premium"] .btn-outline-info,
+html[data-app-theme="premium"] body.crm-app-body .btn-outline-info,
+html[data-app-theme="premium"] .btn-outline-success,
+html[data-app-theme="premium"] body.crm-app-body .btn-outline-success,
+html[data-app-theme="premium"] .btn-outline-warning,
+html[data-app-theme="premium"] body.crm-app-body .btn-outline-warning,
+html[data-app-theme="premium"] .btn-success,
+html[data-app-theme="premium"] body.crm-app-body .btn-success,
+html[data-app-theme="premium"] .btn-info,
+html[data-app-theme="premium"] body.crm-app-body .btn-info,
+html[data-app-theme="premium"] .btn-warning,
+html[data-app-theme="premium"] body.crm-app-body .btn-warning,
+html[data-app-theme="premium"] .row-view-btn,
+html[data-app-theme="premium"] body.crm-app-body .row-view-btn,
+html[data-app-theme="premium"] a.btn.btn-brand,
+html[data-app-theme="premium"] a.btn.btn-soft,
+html[data-app-theme="premium"] a.btn.btn-primary,
+html[data-app-theme="premium"] a.btn.btn-outline-primary,
+html[data-app-theme="premium"] a.btn.btn-outline-secondary,
+html[data-app-theme="premium"] a.btn.btn-outline-info,
+html[data-app-theme="premium"] button.btn.btn-soft,
+html[data-app-theme="premium"] button.btn.btn-brand {
+  background: linear-gradient(135deg, #caa14a, #f1d385) !important;
+  background-color: #caa14a !important;
+  color: #1a1330 !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 8px 20px rgba(202, 161, 74, 0.35) !important;
+}
+html[data-app-theme="premium"] .btn-brand:hover,
+html[data-app-theme="premium"] body.crm-app-body .btn-brand:hover,
+html[data-app-theme="premium"] .btn-brand.dropdown-toggle:hover,
+html[data-app-theme="premium"] .btn-primary:hover,
+html[data-app-theme="premium"] .btn-soft:hover,
+html[data-app-theme="premium"] body.crm-app-body .btn-soft:hover,
+html[data-app-theme="premium"] .btn-outline-primary:hover,
+html[data-app-theme="premium"] .btn-outline-secondary:hover,
+html[data-app-theme="premium"] .btn-outline-info:hover,
+html[data-app-theme="premium"] .btn-outline-success:hover,
+html[data-app-theme="premium"] .btn-outline-warning:hover,
+html[data-app-theme="premium"] .btn-success:hover,
+html[data-app-theme="premium"] .btn-info:hover,
+html[data-app-theme="premium"] .btn-warning:hover,
+html[data-app-theme="premium"] .row-view-btn:hover {
+  filter: brightness(1.06) !important;
+  background: linear-gradient(135deg, #d4af5a, #f5dfa0) !important;
+  background-color: #d4af5a !important;
+  color: #1a1330 !important;
+  border-color: transparent !important;
+}
+/* Font + icon color same as Image 1 (dark on gold) — all button variants */
+html[data-app-theme="premium"] .btn-brand,
+html[data-app-theme="premium"] .btn-brand *,
+html[data-app-theme="premium"] .btn-primary,
+html[data-app-theme="premium"] .btn-primary *,
+html[data-app-theme="premium"] .btn-soft,
+html[data-app-theme="premium"] .btn-soft *,
+html[data-app-theme="premium"] .btn-outline-primary,
+html[data-app-theme="premium"] .btn-outline-primary *,
+html[data-app-theme="premium"] .btn-outline-secondary,
+html[data-app-theme="premium"] .btn-outline-secondary *,
+html[data-app-theme="premium"] .btn-outline-info,
+html[data-app-theme="premium"] .btn-outline-info *,
+html[data-app-theme="premium"] .btn-outline-success,
+html[data-app-theme="premium"] .btn-outline-success *,
+html[data-app-theme="premium"] .btn-outline-warning,
+html[data-app-theme="premium"] .btn-outline-warning *,
+html[data-app-theme="premium"] .btn-success,
+html[data-app-theme="premium"] .btn-success *,
+html[data-app-theme="premium"] .btn-info,
+html[data-app-theme="premium"] .btn-info *,
+html[data-app-theme="premium"] .btn-warning,
+html[data-app-theme="premium"] .btn-warning *,
+html[data-app-theme="premium"] .row-view-btn,
+html[data-app-theme="premium"] .row-view-btn *,
+html[data-app-theme="premium"] .btn-brand i,
+html[data-app-theme="premium"] .btn-brand .bi,
+html[data-app-theme="premium"] .btn-soft i,
+html[data-app-theme="premium"] .btn-soft .bi,
+html[data-app-theme="premium"] .btn-primary i,
+html[data-app-theme="premium"] .btn-outline-primary i,
+html[data-app-theme="premium"] .btn-outline-secondary i,
+html[data-app-theme="premium"] .btn-outline-info i,
+html[data-app-theme="premium"] body.crm-app-body .btn:not(.btn-danger):not(.btn-outline-danger) i,
+html[data-app-theme="premium"] body.crm-app-body .btn:not(.btn-danger):not(.btn-outline-danger) .bi {
+  color: #1a1330 !important;
+  opacity: 1 !important;
+}
+/* Danger stays distinct for safety */
+html[data-app-theme="premium"] .btn-danger,
+html[data-app-theme="premium"] body.crm-app-body .btn-danger,
+html[data-app-theme="premium"] .btn-outline-danger {
+  background: linear-gradient(135deg, #c45c6a, #e88a96) !important;
+  color: #1a1012 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+}
+html[data-app-theme="premium"] .btn-danger i,
+html[data-app-theme="premium"] .btn-outline-danger i {
+  color: #1a1012 !important;
+}
+
+/* ---- Image 3 → Image 4: logo-orb white card (not blue) ---- */
+html[data-app-theme="premium"] .logo-orb,
+html[data-app-theme="premium"] .report-hero .logo-orb,
+html[data-app-theme="premium"] body.crm-app-body .report-hero .logo-orb,
+html[data-app-theme="premium"] body.crm-app-body .logo-orb,
+html[data-app-theme="premium"] .ai-orb.logo-orb {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 30px !important;
+  overflow: hidden !important;
+}
+html[data-app-theme="premium"] .logo-orb img,
+html[data-app-theme="premium"] .report-hero .logo-orb img,
+html[data-app-theme="premium"] body.crm-app-body .report-hero .logo-orb img,
+html[data-app-theme="premium"] .ai-orb.logo-orb img {
+  max-width: 78% !important;
+  max-height: 78% !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+/* ==========================================================================
+   v5.6 — Premium Elite: status summary lines + headings everywhere
+   ========================================================================== */
+
+/* Image 1: "Sold / Follow-up / Pending" each on its own line */
+html[data-app-theme="premium"] .pg-status-summary,
+html[data-app-theme="premium"] body.crm-app-body .pg-status-summary,
+.pg-status-summary {
+  line-height: 1.45 !important;
+  white-space: normal !important;
+}
+.pg-status-summary > div {
+  display: block !important;
+  white-space: nowrap !important;
+}
+html[data-app-theme="premium"] table.pg-table tfoot td,
+html[data-app-theme="premium"] body.crm-app-body table.pg-table tfoot td {
+  background: #15122a !important;
+  color: #e9e6f5 !important;
+  border-top: 1px solid rgba(202, 161, 74, 0.25) !important;
+  font-weight: 700 !important;
+  vertical-align: top !important;
+}
+html[data-app-theme="premium"] .pg-status-summary,
+html[data-app-theme="premium"] .pg-status-summary b,
+html[data-app-theme="premium"] table.pg-table tfoot td b {
+  color: #f1d385 !important;
+  background: transparent !important;
+}
+
+/* Image 2: Premium Elite heading style — all grids / tables CRM-wide */
+html[data-app-theme="premium"] thead th,
+html[data-app-theme="premium"] body.crm-app-body thead th,
+html[data-app-theme="premium"] table thead th,
+html[data-app-theme="premium"] .table thead th,
+html[data-app-theme="premium"] table.pg-table thead th,
+html[data-app-theme="premium"] .professional-table thead th,
+html[data-app-theme="premium"] .report-business-table thead th,
+html[data-app-theme="premium"] .report-table thead th,
+html[data-app-theme="premium"] .crm-table thead th,
+html[data-app-theme="premium"] .pro-grid thead th,
+html[data-app-theme="premium"] .data-grid thead th {
+  background: #1a1630 !important;
+  background-color: #1a1630 !important;
+  color: #e0c479 !important;
+  border-color: rgba(202, 161, 74, 0.22) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+html[data-app-theme="premium"] thead th span,
+html[data-app-theme="premium"] thead th .pg-th,
+html[data-app-theme="premium"] thead th .pg-th span,
+html[data-app-theme="premium"] thead th i,
+html[data-app-theme="premium"] thead th .bi,
+html[data-app-theme="premium"] thead th a,
+html[data-app-theme="premium"] .pg-th span,
+html[data-app-theme="premium"] .pg-th i,
+html[data-app-theme="premium"] .sort-caret {
+  color: #e0c479 !important;
+  opacity: 0.95 !important;
+}
+
+/* END v5.6 */
+
+/* ==========================================================================
+   2026-08-25 — Help modal + support-action-card contrast (Img2 / Img3)
+   ========================================================================== */
+
+html[data-app-theme="midnight"] #crmHelpModal .modal-content,
+html[data-app-theme="premium"] #crmHelpModal .modal-content {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+
+html[data-app-theme="midnight"] #crmHelpModal .modal-header,
+html[data-app-theme="premium"] #crmHelpModal .modal-header {
+  background: #1e293b !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-app-theme="midnight"] #crmHelpModal .modal-title,
+html[data-app-theme="premium"] #crmHelpModal .modal-title,
+html[data-app-theme="midnight"] #crmHelpModal .crm-modal-eyebrow,
+html[data-app-theme="premium"] #crmHelpModal .crm-modal-eyebrow {
+  color: #f8fafc !important;
+}
+
+html[data-app-theme="midnight"] #crmHelpModal .modal-body,
+html[data-app-theme="premium"] #crmHelpModal .modal-body {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+html[data-app-theme="midnight"] #crmHelpModal .help-steps .help-step,
+html[data-app-theme="premium"] #crmHelpModal .help-steps .help-step {
+  background: #1e293b !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  border-radius: 14px !important;
+  color: #e2e8f0 !important;
+  margin-bottom: 10px !important;
+  padding: 12px 14px !important;
+}
+
+html[data-app-theme="midnight"] #crmHelpModal .help-steps .help-step span,
+html[data-app-theme="premium"] #crmHelpModal .help-steps .help-step span {
+  color: #e2e8f0 !important;
+}
+
+html[data-app-theme="midnight"] #crmHelpModal .help-steps .help-step b,
+html[data-app-theme="premium"] #crmHelpModal .help-steps .help-step b {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+html[data-app-theme="midnight"] #crmHelpModal .btn-close,
+html[data-app-theme="premium"] #crmHelpModal .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+html[data-app-theme="midnight"] #crmHelpModal .form-select,
+html[data-app-theme="premium"] #crmHelpModal .form-select,
+html[data-app-theme="midnight"] #crmHelpModal label,
+html[data-app-theme="premium"] #crmHelpModal label,
+html[data-app-theme="midnight"] #crmHelpModal .text-muted,
+html[data-app-theme="premium"] #crmHelpModal .text-muted {
+  color: #cbd5e1 !important;
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+html[data-app-theme="midnight"] .support-action-card,
+html[data-app-theme="premium"] .support-action-card {
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-app-theme="midnight"] .support-action-card h4,
+html[data-app-theme="premium"] .support-action-card h4 {
+  color: #f8fafc !important;
+}
+
+html[data-app-theme="midnight"] .support-action-card p,
+html[data-app-theme="premium"] .support-action-card p {
+  color: #94a3b8 !important;
+}
+
+html[data-app-theme="midnight"] .support-action-card .action-arrow,
+html[data-app-theme="premium"] .support-action-card .action-arrow,
+html[data-app-theme="midnight"] .support-action-card .action-icon,
+html[data-app-theme="premium"] .support-action-card .action-icon {
+  color: #60a5fa !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme="midnight"] .support-action-card:hover,
+html[data-app-theme="premium"] .support-action-card:hover {
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-app-theme="midnight"] .role-info-card,
+html[data-app-theme="premium"] .role-info-card {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html[data-app-theme="midnight"] .role-info-card h4,
+html[data-app-theme="premium"] .role-info-card h4,
+html[data-app-theme="midnight"] .role-info-card span,
+html[data-app-theme="premium"] .role-info-card span {
+  color: #e2e8f0 !important;
+}
+
+/* ==========================================================================
+   v6.0 — Notification Logs (Premium Elite + Midnight Dark) full readability
+   Surfaces, text hierarchy, filters, tree cards, badges, messages, scrollbars.
+   Scoped only to midnight / premium. Does not change layout or logic.
+   ========================================================================== */
+
+/* ---- Page title + subtitle on dark page background ---- */
+html[data-app-theme="midnight"] .crm-app-body h3,
+html[data-app-theme="premium"]  .crm-app-body h3 {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .crm-app-body .text-muted,
+html[data-app-theme="premium"]  .crm-app-body .text-muted {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+
+/* ---- Filter card labels ---- */
+html[data-app-theme="midnight"] .professional-filter-card .form-label,
+html[data-app-theme="premium"]  .professional-filter-card .form-label,
+html[data-app-theme="midnight"] .notification-filter-grid .form-label,
+html[data-app-theme="premium"]  .notification-filter-grid .form-label,
+html[data-app-theme="midnight"] .filter-cell .form-label,
+html[data-app-theme="premium"]  .filter-cell .form-label {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}
+
+/* ---- Filter inputs / selects (reinforce) ---- */
+html[data-app-theme="midnight"] .notification-filter-grid .form-control,
+html[data-app-theme="premium"]  .notification-filter-grid .form-control,
+html[data-app-theme="midnight"] .notification-filter-grid .form-select,
+html[data-app-theme="premium"]  .notification-filter-grid .form-select,
+html[data-app-theme="midnight"] .professional-filter-card .form-control,
+html[data-app-theme="premium"]  .professional-filter-card .form-control,
+html[data-app-theme="midnight"] .professional-filter-card .form-select,
+html[data-app-theme="premium"]  .professional-filter-card .form-select {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .notification-filter-grid .form-control::placeholder,
+html[data-app-theme="premium"]  .notification-filter-grid .form-control::placeholder,
+html[data-app-theme="midnight"] .professional-filter-card .form-control::placeholder,
+html[data-app-theme="premium"]  .professional-filter-card .form-control::placeholder {
+  color: var(--dm-text-placeholder, #7a83a8) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .notification-filter-grid .form-control:focus,
+html[data-app-theme="premium"]  .notification-filter-grid .form-control:focus,
+html[data-app-theme="midnight"] .notification-filter-grid .form-select:focus,
+html[data-app-theme="premium"]  .notification-filter-grid .form-select:focus {
+  border-color: rgba(100, 148, 255, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(100, 148, 255, 0.18) !important;
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* Select option list */
+html[data-app-theme="midnight"] .form-select option,
+html[data-app-theme="premium"]  .form-select option {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* Time inputs */
+html[data-app-theme="midnight"] input[type="time"],
+html[data-app-theme="premium"]  input[type="time"] {
+  color-scheme: dark;
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* Flatpickr alt input + calendar icon area */
+html[data-app-theme="midnight"] .flatpickr-input,
+html[data-app-theme="premium"]  .flatpickr-input,
+html[data-app-theme="midnight"] .form-control.crm-date-picker,
+html[data-app-theme="premium"]  .form-control.crm-date-picker,
+html[data-app-theme="midnight"] input.flatpickr-input,
+html[data-app-theme="premium"]  input.flatpickr-input {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .flatpickr-calendar,
+html[data-app-theme="premium"]  .flatpickr-calendar {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,.45) !important;
+}
+html[data-app-theme="midnight"] .flatpickr-months,
+html[data-app-theme="premium"]  .flatpickr-months,
+html[data-app-theme="midnight"] .flatpickr-weekdays,
+html[data-app-theme="premium"]  .flatpickr-weekdays,
+html[data-app-theme="midnight"] .flatpickr-days,
+html[data-app-theme="premium"]  .flatpickr-days {
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .flatpickr-day,
+html[data-app-theme="premium"]  .flatpickr-day,
+html[data-app-theme="midnight"] .flatpickr-weekday,
+html[data-app-theme="premium"]  .flatpickr-weekday,
+html[data-app-theme="midnight"] .flatpickr-current-month,
+html[data-app-theme="premium"]  .flatpickr-current-month,
+html[data-app-theme="midnight"] .flatpickr-monthDropdown-months,
+html[data-app-theme="premium"]  .flatpickr-monthDropdown-months {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .flatpickr-day:hover,
+html[data-app-theme="premium"]  .flatpickr-day:hover {
+  background: rgba(100, 148, 255, 0.25) !important;
+  border-color: transparent !important;
+}
+html[data-app-theme="midnight"] .flatpickr-day.selected,
+html[data-app-theme="premium"]  .flatpickr-day.selected {
+  background: #4f6ef7 !important;
+  color: #fff !important;
+  border-color: #4f6ef7 !important;
+}
+html[data-app-theme="midnight"] .flatpickr-months .flatpickr-prev-month svg,
+html[data-app-theme="premium"]  .flatpickr-months .flatpickr-prev-month svg,
+html[data-app-theme="midnight"] .flatpickr-months .flatpickr-next-month svg,
+html[data-app-theme="premium"]  .flatpickr-months .flatpickr-next-month svg {
+  fill: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* ---- Buttons on filter row ---- */
+html[data-app-theme="midnight"] .filter-actions .btn-outline-secondary,
+html[data-app-theme="premium"]  .filter-actions .btn-outline-secondary,
+html[data-app-theme="midnight"] .btn-outline-secondary,
+html[data-app-theme="premium"]  .btn-outline-secondary {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.25)) !important;
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .filter-actions .btn-outline-secondary:hover,
+html[data-app-theme="premium"]  .filter-actions .btn-outline-secondary:hover,
+html[data-app-theme="midnight"] .btn-outline-secondary:hover,
+html[data-app-theme="premium"]  .btn-outline-secondary:hover {
+  background: rgba(255,255,255,.08) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: rgba(255,255,255,.35) !important;
+}
+html[data-app-theme="midnight"] .btn-outline-danger,
+html[data-app-theme="premium"]  .btn-outline-danger {
+  color: #ff9baa !important;
+  border-color: rgba(255, 155, 170, 0.45) !important;
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .btn-outline-danger:hover,
+html[data-app-theme="premium"]  .btn-outline-danger:hover {
+  background: rgba(255, 80, 100, 0.18) !important;
+  color: #ffc0c8 !important;
+  border-color: rgba(255, 155, 170, 0.65) !important;
+}
+html[data-app-theme="midnight"] .btn-outline-success,
+html[data-app-theme="premium"]  .btn-outline-success {
+  color: #6ee7a8 !important;
+  border-color: rgba(110, 231, 168, 0.45) !important;
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .btn-outline-success:hover,
+html[data-app-theme="premium"]  .btn-outline-success:hover {
+  background: rgba(110, 231, 168, 0.15) !important;
+  color: #a7f3d0 !important;
+}
+
+/* ---- Notification tree list / date groups / items (kill hard-coded white) ---- */
+html[data-app-theme="midnight"] .inquiry-tree-ui .notification-date-group,
+html[data-app-theme="premium"]  .inquiry-tree-ui .notification-date-group,
+html[data-app-theme="midnight"] .inquiry-tree-ui .notification-tree-item,
+html[data-app-theme="premium"]  .inquiry-tree-ui .notification-tree-item,
+html[data-app-theme="midnight"] .notification-tree-list .notification-date-group,
+html[data-app-theme="premium"]  .notification-tree-list .notification-date-group,
+html[data-app-theme="midnight"] .notification-tree-list .notification-tree-item,
+html[data-app-theme="premium"]  .notification-tree-list .notification-tree-item {
+  background: var(--dm-bg-card, #151c3a) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+html[data-app-theme="midnight"] .date-tree-summary,
+html[data-app-theme="premium"]  .date-tree-summary,
+html[data-app-theme="midnight"] .notification-tree-item > summary,
+html[data-app-theme="premium"]  .notification-tree-item > summary {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .date-tree-summary strong,
+html[data-app-theme="premium"]  .date-tree-summary strong,
+html[data-app-theme="midnight"] .tree-title b,
+html[data-app-theme="premium"]  .tree-title b,
+html[data-app-theme="midnight"] .tree-title strong,
+html[data-app-theme="premium"]  .tree-title strong {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  font-weight: 700 !important;
+}
+html[data-app-theme="midnight"] .tree-title small,
+html[data-app-theme="premium"]  .tree-title small {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .tree-summary-meta,
+html[data-app-theme="premium"]  .tree-summary-meta,
+html[data-app-theme="midnight"] .tree-summary-meta span,
+html[data-app-theme="premium"]  .tree-summary-meta span {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+
+/* Expand/collapse + circle */
+html[data-app-theme="midnight"] .tree-plus,
+html[data-app-theme="premium"]  .tree-plus {
+  border-color: rgba(157, 180, 255, 0.45) !important;
+  color: #a8b8ff !important;
+  background: rgba(100, 148, 255, 0.12) !important;
+}
+html[data-app-theme="midnight"] details[open] > summary .tree-plus,
+html[data-app-theme="premium"]  details[open] > summary .tree-plus {
+  background: rgba(100, 148, 255, 0.28) !important;
+  color: #e8ecff !important;
+  border-color: rgba(157, 180, 255, 0.6) !important;
+}
+
+/* Nested update rows */
+html[data-app-theme="midnight"] .tree-updates,
+html[data-app-theme="premium"]  .tree-updates {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .tree-update-row,
+html[data-app-theme="premium"]  .tree-update-row {
+  border-left-color: rgba(100, 148, 255, 0.35) !important;
+}
+html[data-app-theme="midnight"] .tree-dot,
+html[data-app-theme="premium"]  .tree-dot {
+  background: #7ea8ff !important;
+}
+html[data-app-theme="midnight"] .tree-update-body,
+html[data-app-theme="premium"]  .tree-update-body {
+  background: var(--dm-bg-input, #1b2344) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .tree-update-body strong,
+html[data-app-theme="premium"]  .tree-update-body strong {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .tree-update-body .mini-muted,
+html[data-app-theme="premium"]  .tree-update-body .mini-muted {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+
+/* Message body + latest-update block */
+html[data-app-theme="midnight"] .notification-message,
+html[data-app-theme="premium"]  .notification-message,
+html[data-app-theme="midnight"] .notification-message.compact,
+html[data-app-theme="premium"]  .notification-message.compact {
+  background: rgba(0, 0, 0, 0.22) !important;
+  border-left: 4px solid #7ea8ff !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-radius: 12px;
+  padding: 10px 12px;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .latest-update-block,
+html[data-app-theme="premium"]  .latest-update-block {
+  background: rgba(100, 148, 255, 0.14) !important;
+  border-left: 4px solid #7ea8ff !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .latest-update-block b,
+html[data-app-theme="premium"]  .latest-update-block b {
+  color: #c5d0ff !important;
+}
+
+/* ---- Badges: never use light bg + dark text on dark themes ---- */
+html[data-app-theme="midnight"] .badge.bg-light,
+html[data-app-theme="premium"]  .badge.bg-light,
+html[data-app-theme="midnight"] .badge.bg-light.text-dark,
+html[data-app-theme="premium"]  .badge.bg-light.text-dark,
+html[data-app-theme="midnight"] .badge.text-dark,
+html[data-app-theme="premium"]  .badge.text-dark,
+html[data-app-theme="midnight"] .inquiry-tree-ui .badge,
+html[data-app-theme="premium"]  .inquiry-tree-ui .badge,
+html[data-app-theme="midnight"] .notification-tree-list .badge,
+html[data-app-theme="premium"]  .notification-tree-list .badge {
+  background: rgba(100, 148, 255, 0.22) !important;
+  color: #e8ecff !important;
+  border: 1px solid rgba(157, 180, 255, 0.35) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .inquiry-tree-ui .badge,
+html[data-app-theme="premium"] .notification-tree-list .badge,
+html[data-app-theme="premium"] .badge.bg-light,
+html[data-app-theme="premium"] .badge.bg-light.text-dark {
+  background: rgba(202, 161, 74, 0.2) !important;
+  color: #f5e6c0 !important;
+  border-color: rgba(202, 161, 74, 0.4) !important;
+}
+
+/* Select-all / checkbox labels */
+html[data-app-theme="midnight"] .form-check-input,
+html[data-app-theme="premium"]  .form-check-input {
+  background-color: var(--dm-bg-input, #1b2344) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.25)) !important;
+}
+html[data-app-theme="midnight"] .form-check-input:checked,
+html[data-app-theme="premium"]  .form-check-input:checked {
+  background-color: #4f6ef7 !important;
+  border-color: #4f6ef7 !important;
+}
+html[data-app-theme="midnight"] label.small,
+html[data-app-theme="premium"]  label.small {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+}
+
+/* Empty state */
+html[data-app-theme="midnight"] .card-soft.text-center,
+html[data-app-theme="premium"]  .card-soft.text-center {
+  color: var(--dm-text-muted, #8b94b8) !important;
+}
+
+/* ---- Scrollbars inside notification message / tree bodies ---- */
+html[data-app-theme="midnight"] .notification-message.compact,
+html[data-app-theme="premium"]  .notification-message.compact,
+html[data-app-theme="midnight"] .tree-update-body,
+html[data-app-theme="premium"]  .tree-update-body,
+html[data-app-theme="midnight"] .notification-tree-list,
+html[data-app-theme="premium"]  .notification-tree-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 180, 255, 0.45) rgba(255, 255, 255, 0.06);
+}
+html[data-app-theme="midnight"] .notification-message.compact::-webkit-scrollbar,
+html[data-app-theme="premium"]  .notification-message.compact::-webkit-scrollbar,
+html[data-app-theme="midnight"] .tree-update-body::-webkit-scrollbar,
+html[data-app-theme="premium"]  .tree-update-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html[data-app-theme="midnight"] .notification-message.compact::-webkit-scrollbar-track,
+html[data-app-theme="premium"]  .notification-message.compact::-webkit-scrollbar-track,
+html[data-app-theme="midnight"] .tree-update-body::-webkit-scrollbar-track,
+html[data-app-theme="premium"]  .tree-update-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+html[data-app-theme="midnight"] .notification-message.compact::-webkit-scrollbar-thumb,
+html[data-app-theme="premium"]  .notification-message.compact::-webkit-scrollbar-thumb,
+html[data-app-theme="midnight"] .tree-update-body::-webkit-scrollbar-thumb,
+html[data-app-theme="premium"]  .tree-update-body::-webkit-scrollbar-thumb {
+  background: rgba(157, 180, 255, 0.4);
+  border-radius: 8px;
+}
+html[data-app-theme="midnight"] .notification-message.compact::-webkit-scrollbar-thumb:hover,
+html[data-app-theme="premium"]  .notification-message.compact::-webkit-scrollbar-thumb:hover,
+html[data-app-theme="midnight"] .tree-update-body::-webkit-scrollbar-thumb:hover,
+html[data-app-theme="premium"]  .tree-update-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 180, 255, 0.65);
+}
+html[data-app-theme="premium"] .notification-message.compact::-webkit-scrollbar-thumb,
+html[data-app-theme="premium"] .tree-update-body::-webkit-scrollbar-thumb {
+  background: rgba(202, 161, 74, 0.45);
+}
+html[data-app-theme="premium"] .notification-message.compact::-webkit-scrollbar-thumb:hover,
+html[data-app-theme="premium"] .tree-update-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(202, 161, 74, 0.7);
+}
+
+/* Status-ish text in meta (Sent / Failed etc. remain readable) */
+html[data-app-theme="midnight"] .tree-summary-meta span:last-child,
+html[data-app-theme="premium"]  .tree-summary-meta span:last-child {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  font-weight: 600;
+}
+
+/* Page actions icons */
+html[data-app-theme="midnight"] .page-actions .btn i,
+html[data-app-theme="premium"]  .page-actions .btn i,
+html[data-app-theme="midnight"] .page-actions .btn span,
+html[data-app-theme="premium"]  .page-actions .btn span {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Ensure card-soft filter panel itself is elevated surface */
+html[data-app-theme="midnight"] .professional-filter-card.card-soft,
+html[data-app-theme="premium"]  .professional-filter-card.card-soft {
+  background: var(--dm-bg-card, #151c3a) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* END v6.0 Notification Logs readability */
+
+/* badge-count explicit for Notification Logs */
+html[data-app-theme="midnight"] .badge.badge-count,
+html[data-app-theme="midnight"] .inquiry-tree-ui .badge.badge-count {
+  background: rgba(100, 148, 255, 0.22) !important;
+  color: #e8ecff !important;
+  border-color: rgba(157, 180, 255, 0.4) !important;
+}
+html[data-app-theme="premium"] .badge.badge-count,
+html[data-app-theme="premium"] .inquiry-tree-ui .badge.badge-count {
+  background: rgba(202, 161, 74, 0.22) !important;
+  color: #f5e6c0 !important;
+  border-color: rgba(202, 161, 74, 0.45) !important;
+}
+
+/* Kill Bootstrap .text-dark on dark themes when used on badges/chips */
+html[data-app-theme="midnight"] .text-dark,
+html[data-app-theme="premium"]  .text-dark {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}

@@ -1,0 +1,138 @@
+/* ==========================================================================
+   Login screen — Midnight Dark + Premium Elite readability fix (2026-08-25)
+   Ensures labels, placeholders, inputs, button, icons and trust text remain
+   clearly visible when data-app-theme is midnight or premium.
+   Loaded last on Login.cshtml only.
+   ========================================================================== */
+
+html[data-app-theme="midnight"] .crm-login-panel,
+html[data-app-theme="premium"] .crm-login-panel {
+  background: linear-gradient(165deg, #1a2332 0%, #121a26 55%, #0e1520 100%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04) inset !important;
+  color: #e8eef7 !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-heading,
+html[data-app-theme="premium"] .crm-login-heading {
+  color: #f1f5f9 !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-heading + p,
+html[data-app-theme="premium"] .crm-login-heading + p,
+html[data-app-theme="midnight"] .crm-login-panel .text-muted,
+html[data-app-theme="premium"] .crm-login-panel .text-muted {
+  color: #94a3b8 !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-panel label,
+html[data-app-theme="premium"] .crm-login-panel label,
+html[data-app-theme="midnight"] .crm-login-panel .form-label,
+html[data-app-theme="premium"] .crm-login-panel .form-label {
+  color: #cbd5e1 !important;
+  font-weight: 600 !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-input,
+html[data-app-theme="premium"] .crm-login-input {
+  background: rgba(15, 23, 42, 0.65) !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  border-radius: 14px !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-input:focus-within,
+html[data-app-theme="premium"] .crm-login-input:focus-within {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25) !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-input .form-control,
+html[data-app-theme="premium"] .crm-login-input .form-control {
+  background: transparent !important;
+  color: #f1f5f9 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-input .form-control::placeholder,
+html[data-app-theme="premium"] .crm-login-input .form-control::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-input > i,
+html[data-app-theme="premium"] .crm-login-input > i,
+html[data-app-theme="midnight"] .password-eye-button,
+html[data-app-theme="premium"] .password-eye-button,
+html[data-app-theme="midnight"] .password-eye-button i,
+html[data-app-theme="premium"] .password-eye-button i {
+  color: #94a3b8 !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-button,
+html[data-app-theme="premium"] .crm-login-button {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-weight: 700 !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-button:hover,
+html[data-app-theme="premium"] .crm-login-button:hover {
+  filter: brightness(1.08);
+  color: #ffffff !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-trust,
+html[data-app-theme="premium"] .crm-login-trust,
+html[data-app-theme="midnight"] .crm-login-trust span,
+html[data-app-theme="premium"] .crm-login-trust span {
+  color: #94a3b8 !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-powered,
+html[data-app-theme="premium"] .crm-login-powered {
+  color: #64748b !important;
+}
+
+html[data-app-theme="midnight"] .crm-login-powered-brand,
+html[data-app-theme="premium"] .crm-login-powered-brand {
+  color: #e2e8f0 !important;
+}
+
+html[data-app-theme="midnight"] .text-danger,
+html[data-app-theme="premium"] .text-danger {
+  color: #f87171 !important;
+}
+
+/* Login error alert — high contrast on midnight/premium (overrides light pink) */
+html[data-app-theme="midnight"] .crm-login-alert,
+html[data-app-theme="premium"] .crm-login-alert {
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.55), rgba(69, 10, 10, 0.7)) !important;
+  border: 1px solid rgba(248, 113, 113, 0.5) !important;
+  color: #fecaca !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+html[data-app-theme="midnight"] .crm-login-alert i,
+html[data-app-theme="premium"] .crm-login-alert i {
+  color: #f87171 !important;
+}
+html[data-app-theme="midnight"] .crm-login-alert span,
+html[data-app-theme="premium"] .crm-login-alert span {
+  color: #fecaca !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme="midnight"] .secure-badge,
+html[data-app-theme="premium"] .secure-badge,
+html[data-app-theme="midnight"] [class*="SECURE"],
+html[data-app-theme="premium"] [class*="SECURE"] {
+  color: #86efac !important;
+}
+
+/* Keep logo readable */
+html[data-app-theme="midnight"] .crm-login-panel img,
+html[data-app-theme="premium"] .crm-login-panel img {
+  filter: none !important;
+  opacity: 1 !important;
+}

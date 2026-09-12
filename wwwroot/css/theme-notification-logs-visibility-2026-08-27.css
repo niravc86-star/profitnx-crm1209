@@ -1,0 +1,298 @@
+/* ==========================================================================
+   Notification Logs — Premium Elite + Midnight (Dark) visibility fix
+   Loaded LAST so it wins over base light-theme hard-codes in site.css.
+   No layout or business-logic changes.
+   ========================================================================== */
+
+/* Page title + muted subtitle */
+html[data-app-theme="midnight"] .crm-app-body h3,
+html[data-app-theme="premium"]  .crm-app-body h3 {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .crm-app-body .text-muted,
+html[data-app-theme="premium"]  .crm-app-body .text-muted {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+
+/* Filter card */
+html[data-app-theme="midnight"] .professional-filter-card.card-soft,
+html[data-app-theme="premium"]  .professional-filter-card.card-soft {
+  background: var(--dm-bg-card, #151c3a) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .professional-filter-card .form-label,
+html[data-app-theme="premium"]  .professional-filter-card .form-label,
+html[data-app-theme="midnight"] .notification-filter-grid .form-label,
+html[data-app-theme="premium"]  .notification-filter-grid .form-label {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}
+html[data-app-theme="midnight"] .notification-filter-grid .form-control,
+html[data-app-theme="premium"]  .notification-filter-grid .form-control,
+html[data-app-theme="midnight"] .notification-filter-grid .form-select,
+html[data-app-theme="premium"]  .notification-filter-grid .form-select,
+html[data-app-theme="midnight"] .professional-filter-card .form-control,
+html[data-app-theme="premium"]  .professional-filter-card .form-control,
+html[data-app-theme="midnight"] .professional-filter-card .form-select,
+html[data-app-theme="premium"]  .professional-filter-card .form-select {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .notification-filter-grid .form-control::placeholder,
+html[data-app-theme="premium"]  .notification-filter-grid .form-control::placeholder,
+html[data-app-theme="midnight"] .professional-filter-card .form-control::placeholder,
+html[data-app-theme="premium"]  .professional-filter-card .form-control::placeholder {
+  color: var(--dm-text-placeholder, #7a83a8) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .notification-filter-grid .form-control:focus,
+html[data-app-theme="premium"]  .notification-filter-grid .form-control:focus,
+html[data-app-theme="midnight"] .notification-filter-grid .form-select:focus,
+html[data-app-theme="premium"]  .notification-filter-grid .form-select:focus {
+  border-color: rgba(100, 148, 255, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(100, 148, 255, 0.18) !important;
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .form-select option,
+html[data-app-theme="premium"]  .form-select option {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] input[type="time"],
+html[data-app-theme="premium"]  input[type="time"] {
+  color-scheme: dark;
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+
+/* Flatpickr */
+html[data-app-theme="midnight"] .flatpickr-input,
+html[data-app-theme="premium"]  .flatpickr-input,
+html[data-app-theme="midnight"] .form-control.crm-date-picker,
+html[data-app-theme="premium"]  .form-control.crm-date-picker {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+}
+html[data-app-theme="midnight"] .flatpickr-calendar,
+html[data-app-theme="premium"]  .flatpickr-calendar {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,.45) !important;
+}
+html[data-app-theme="midnight"] .flatpickr-day,
+html[data-app-theme="premium"]  .flatpickr-day,
+html[data-app-theme="midnight"] .flatpickr-weekday,
+html[data-app-theme="premium"]  .flatpickr-weekday,
+html[data-app-theme="midnight"] .flatpickr-current-month,
+html[data-app-theme="premium"]  .flatpickr-current-month {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .flatpickr-day.selected,
+html[data-app-theme="premium"]  .flatpickr-day.selected {
+  background: #4f6ef7 !important;
+  color: #fff !important;
+  border-color: #4f6ef7 !important;
+}
+html[data-app-theme="midnight"] .flatpickr-months .flatpickr-prev-month svg,
+html[data-app-theme="premium"]  .flatpickr-months .flatpickr-prev-month svg,
+html[data-app-theme="midnight"] .flatpickr-months .flatpickr-next-month svg,
+html[data-app-theme="premium"]  .flatpickr-months .flatpickr-next-month svg {
+  fill: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* Buttons */
+html[data-app-theme="midnight"] .btn-outline-secondary,
+html[data-app-theme="premium"]  .btn-outline-secondary {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.25)) !important;
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .btn-outline-secondary:hover,
+html[data-app-theme="premium"]  .btn-outline-secondary:hover {
+  background: rgba(255,255,255,.08) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .btn-outline-danger,
+html[data-app-theme="premium"]  .btn-outline-danger {
+  color: #ff9baa !important;
+  border-color: rgba(255, 155, 170, 0.45) !important;
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .btn-outline-danger:hover,
+html[data-app-theme="premium"]  .btn-outline-danger:hover {
+  background: rgba(255, 80, 100, 0.18) !important;
+  color: #ffc0c8 !important;
+}
+html[data-app-theme="midnight"] .btn-outline-success,
+html[data-app-theme="premium"]  .btn-outline-success {
+  color: #6ee7a8 !important;
+  border-color: rgba(110, 231, 168, 0.45) !important;
+  background: transparent !important;
+}
+
+/* Tree surfaces — override site.css white hard-codes */
+html[data-app-theme="midnight"] .inquiry-tree-ui .notification-date-group,
+html[data-app-theme="premium"]  .inquiry-tree-ui .notification-date-group,
+html[data-app-theme="midnight"] .inquiry-tree-ui .notification-tree-item,
+html[data-app-theme="premium"]  .inquiry-tree-ui .notification-tree-item,
+html[data-app-theme="midnight"] .notification-tree-list .notification-date-group,
+html[data-app-theme="premium"]  .notification-tree-list .notification-date-group,
+html[data-app-theme="midnight"] .notification-tree-list .notification-tree-item,
+html[data-app-theme="premium"]  .notification-tree-list .notification-tree-item {
+  background: var(--dm-bg-card, #151c3a) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .date-tree-summary,
+html[data-app-theme="premium"]  .date-tree-summary,
+html[data-app-theme="midnight"] .notification-tree-item > summary,
+html[data-app-theme="premium"]  .notification-tree-item > summary {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .date-tree-summary strong,
+html[data-app-theme="premium"]  .date-tree-summary strong,
+html[data-app-theme="midnight"] .tree-title b,
+html[data-app-theme="premium"]  .tree-title b {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .tree-title small,
+html[data-app-theme="premium"]  .tree-title small {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .tree-summary-meta,
+html[data-app-theme="premium"]  .tree-summary-meta,
+html[data-app-theme="midnight"] .tree-summary-meta span,
+html[data-app-theme="premium"]  .tree-summary-meta span {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .tree-plus,
+html[data-app-theme="premium"]  .tree-plus {
+  border-color: rgba(157, 180, 255, 0.45) !important;
+  color: #a8b8ff !important;
+  background: rgba(100, 148, 255, 0.12) !important;
+}
+html[data-app-theme="midnight"] details[open] > summary .tree-plus,
+html[data-app-theme="premium"]  details[open] > summary .tree-plus {
+  background: rgba(100, 148, 255, 0.28) !important;
+  color: #e8ecff !important;
+}
+html[data-app-theme="midnight"] .tree-update-row,
+html[data-app-theme="premium"]  .tree-update-row {
+  border-left-color: rgba(100, 148, 255, 0.35) !important;
+}
+html[data-app-theme="midnight"] .tree-dot,
+html[data-app-theme="premium"]  .tree-dot {
+  background: #7ea8ff !important;
+}
+html[data-app-theme="midnight"] .tree-update-body,
+html[data-app-theme="premium"]  .tree-update-body {
+  background: var(--dm-bg-input, #1b2344) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255,255,255,.14)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .tree-update-body strong,
+html[data-app-theme="premium"]  .tree-update-body strong {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .mini-muted,
+html[data-app-theme="premium"]  .mini-muted {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .notification-message,
+html[data-app-theme="premium"]  .notification-message,
+html[data-app-theme="midnight"] .notification-message.compact,
+html[data-app-theme="premium"]  .notification-message.compact {
+  background: rgba(0, 0, 0, 0.22) !important;
+  border-left: 4px solid #7ea8ff !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .latest-update-block,
+html[data-app-theme="premium"]  .latest-update-block {
+  background: rgba(100, 148, 255, 0.14) !important;
+  border-left: 4px solid #7ea8ff !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .latest-update-block b,
+html[data-app-theme="premium"]  .latest-update-block b {
+  color: #c5d0ff !important;
+}
+
+/* Badges */
+html[data-app-theme="midnight"] .badge.badge-count,
+html[data-app-theme="midnight"] .inquiry-tree-ui .badge,
+html[data-app-theme="midnight"] .badge.bg-light,
+html[data-app-theme="midnight"] .badge.text-dark {
+  background: rgba(100, 148, 255, 0.22) !important;
+  color: #e8ecff !important;
+  border-color: rgba(157, 180, 255, 0.4) !important;
+}
+html[data-app-theme="premium"] .badge.badge-count,
+html[data-app-theme="premium"] .inquiry-tree-ui .badge,
+html[data-app-theme="premium"] .badge.bg-light,
+html[data-app-theme="premium"] .badge.text-dark {
+  background: rgba(202, 161, 74, 0.22) !important;
+  color: #f5e6c0 !important;
+  border-color: rgba(202, 161, 74, 0.45) !important;
+}
+html[data-app-theme="midnight"] .text-dark,
+html[data-app-theme="premium"]  .text-dark {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+
+/* Checkboxes / labels */
+html[data-app-theme="midnight"] .form-check-input,
+html[data-app-theme="premium"]  .form-check-input {
+  background-color: var(--dm-bg-input, #1b2344) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.25)) !important;
+}
+html[data-app-theme="midnight"] .form-check-input:checked,
+html[data-app-theme="premium"]  .form-check-input:checked {
+  background-color: #4f6ef7 !important;
+  border-color: #4f6ef7 !important;
+}
+
+/* Scrollbars */
+html[data-app-theme="midnight"] .notification-message.compact,
+html[data-app-theme="premium"]  .notification-message.compact,
+html[data-app-theme="midnight"] .tree-update-body,
+html[data-app-theme="premium"]  .tree-update-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 180, 255, 0.45) rgba(255, 255, 255, 0.06);
+}
+html[data-app-theme="midnight"] .notification-message.compact::-webkit-scrollbar,
+html[data-app-theme="premium"]  .notification-message.compact::-webkit-scrollbar {
+  width: 8px;
+}
+html[data-app-theme="midnight"] .notification-message.compact::-webkit-scrollbar-track,
+html[data-app-theme="premium"]  .notification-message.compact::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+html[data-app-theme="midnight"] .notification-message.compact::-webkit-scrollbar-thumb,
+html[data-app-theme="premium"]  .notification-message.compact::-webkit-scrollbar-thumb {
+  background: rgba(157, 180, 255, 0.4);
+  border-radius: 8px;
+}
+html[data-app-theme="premium"] .notification-message.compact::-webkit-scrollbar-thumb {
+  background: rgba(202, 161, 74, 0.45);
+}
+html[data-app-theme="midnight"] .notification-message.compact::-webkit-scrollbar-thumb:hover,
+html[data-app-theme="premium"]  .notification-message.compact::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 180, 255, 0.65);
+}
+html[data-app-theme="premium"] .notification-message.compact::-webkit-scrollbar-thumb:hover {
+  background: rgba(202, 161, 74, 0.7);
+}

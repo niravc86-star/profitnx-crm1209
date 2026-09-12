@@ -1,0 +1,86 @@
+@model ProfitNx.CRM.ViewModels.SchemeFormViewModel
+@{
+    ViewData["Title"] = Model.Id == null ? "Add Scheme" : "Edit Scheme";
+}
+<div class="row justify-content-center">
+    <div class="col-xl-9">
+        <div class="card card-soft border-0">
+            <div class="card-body p-4 p-lg-5">
+                <form asp-action="@(Model.Id == null ? "Create" : "Edit")" method="post" class="row g-4">
+                    <input asp-for="Id" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="col-md-8">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="SchemeType" class="form-label"></label>
+                        <select asp-for="SchemeType" class="form-select">
+                            <option>Margin</option>
+                            <option>Discount</option>
+                            <option>Target Based</option>
+                            <option>Combo Offer</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="StartDate" class="form-label"></label>
+                        <input asp-for="StartDate" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="EndDate" class="form-label"></label>
+                        <input asp-for="EndDate" class="form-control" />
+                        <span asp-validation-for="EndDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ApplicableRoles" class="form-label"></label>
+                        <input asp-for="ApplicableRoles" class="form-control" />
+                        <small class="text-muted">Example: User,Partner</small>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ExtraMarginPercent" class="form-label"></label>
+                        <input asp-for="ExtraMarginPercent" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="DiscountAmount" class="form-label"></label>
+                        <input asp-for="DiscountAmount" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="TargetAmount" class="form-label"></label>
+                        <input asp-for="TargetAmount" class="form-control" />
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" />
+                            <label asp-for="IsActive" class="form-check-label"></label>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-brand px-4">Save</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary px-4">Back</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

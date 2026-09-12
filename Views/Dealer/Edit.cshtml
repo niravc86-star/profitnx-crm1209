@@ -1,0 +1,84 @@
+@model DealerFormViewModel
+@{ ViewData["Title"] = Model.Id == null ? "Add Partner" : "Edit Partner"; }
+<div class="card-soft p-4">
+<form asp-action="@(Model.Id == null ? "Create" : "Edit")" method="post" id="dealerForm">
+<input asp-for="Id" type="hidden" />
+<input asp-for="TargetRowsJson" type="hidden" id="TargetRowsJson" />
+<div class="row g-3">
+<div class="col-md-6"><label class="form-label">Partner Name</label><input asp-for="DealerName" class="form-control must" data-msg="Partner name is required" /></div>
+<div class="col-md-6"><label class="form-label">Contact Person</label><input asp-for="ContactPerson" class="form-control" /></div>
+<div class="col-md-4"><label class="form-label">City</label><input asp-for="City" class="form-control" /></div>
+<div class="col-md-4"><label class="form-label">Mobile</label><input asp-for="Mobile" class="form-control" /></div>
+<div class="col-md-4"><label class="form-label">Email</label><input asp-for="Email" class="form-control" placeholder="Email (optional)" /></div>
+<div class="col-md-3"><label class="form-label">Margin %</label><input asp-for="MarginPercent" class="form-control" data-bs-toggle="tooltip" data-bs-title="Partner margin percentage" /></div>
+<div class="col-md-3"><label class="form-label">Joining Date</label><input asp-for="JoiningDate" type="date" class="form-control" /></div>
+<div class="col-md-3 form-check pt-4"><input asp-for="GivesPss" class="form-check-input pssapi-toggle" /><label asp-for="GivesPss" class="form-check-label">PSS Given</label></div>
+<div class="col-md-3 form-check pt-4"><input asp-for="GivesApi" class="form-check-input pssapi-toggle" /><label asp-for="GivesApi" class="form-check-label">API Given</label></div>
+
+<div class="col-12 mt-3">
+    <div class="dash-panel p-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div><h5 class="mb-0">Year Wise Partner Target</h5><div class="mini-muted">Partner nu target every year alag-alag maintain karva mate multiple target rows.</div></div>
+            <button type="button" class="btn btn-sm btn-brand" id="addTargetRow">+ Add Year Target</button>
+        </div>
+        <div class="table-responsive"><table class="table align-middle mb-0" id="targetTable"><thead><tr><th>Year</th><th>Target Amount</th><th>From Date</th><th>To Date</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="mini-muted mt-2">Old single target year/amount fields will be converted into the first target row automatically.</div>
+        <div class="mini-muted">Type a Year (e.g. 2026) and From/To auto-fill as the financial year 01/04/2026 - 31/03/2027 — edit them manually afterwards if you need a different range.</div>
+    </div>
+</div>
+
+<div class="col-md-4 pssapi-meta"><label class="form-label">PSS/API Change Date</label><input asp-for="PssApiChangeDate" type="date" class="form-control" /></div>
+<div class="col-md-8 pssapi-meta"><label class="form-label">PSS/API Remark</label><input asp-for="PssApiRemark" class="form-control" placeholder="Reason / remark for giving or removing" /></div>
+<div class="col-md-3 form-check ms-2"><input asp-for="IsActive" class="form-check-input active-toggle" /><label asp-for="IsActive" class="form-check-label">Active Partner</label></div>
+<div class="col-md-4 left-meta"><label class="form-label">Left Date</label><input asp-for="LeftDate" type="date" class="form-control" /></div>
+<div class="col-md-8 left-meta"><label class="form-label">Left Remark</label><input asp-for="LeftRemark" class="form-control" placeholder="Reason for leaving dealership" /></div>
+<div class="col-md-12"><label class="form-label">Notes</label><textarea asp-for="Notes" class="form-control" rows="3"></textarea></div>
+<div class="col-12 text-danger small d-none" id="dealerValidation">Please complete highlighted fields.</div>
+<div class="col-md-12 d-flex gap-2"><button class="btn btn-brand">Save Partner</button><a asp-action="Index" class="btn btn-outline-secondary">Back</a></div>
+</div></form></div>
+@section Scripts{
+<script>
+(function(){
+ const f=document.getElementById('dealerForm');
+ const hidden=document.getElementById('TargetRowsJson');
+ const tbody=document.querySelector('#targetTable tbody');
+ const legacy={ year:@Model.TargetYear, amount:'@Model.YearlyTargetAmount', from:'@(Model.TargetFromDate?.ToString("yyyy-MM-dd") ?? "")', to:'@(Model.TargetToDate?.ToString("yyyy-MM-dd") ?? "")' };
+ function esc(v){return (v||'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');}
+ // Financial year auto-fill: typing a Year (e.g. 2026) auto-sets From/To to
+ // 01/04/2026 - 31/03/2027, matching how partner targets are planned (India FY).
+ // Only auto-fills when the From/To boxes are still empty, so it never
+ // overwrites dates the user already typed/edited by hand.
+ function pad(n){ return n<10?('0'+n):(''+n); }
+ function fyFromYear(y){ return { from: y+'-04-01', to: (y+1)+'-03-31' }; }
+ function addRow(row){ row=row||{}; const tr=document.createElement('tr'); tr.innerHTML=`<td><input class="form-control target-year" type="number" min="2000" max="2100" value="${esc(row.year)}" placeholder="2027" /></td><td><input class="form-control target-amount" type="number" step="0.01" value="${esc(row.amount)}" placeholder="0.00" /></td><td><input class="form-control target-from" type="date" value="${esc(row.from)}" /></td><td><input class="form-control target-to" type="date" value="${esc(row.to)}" /></td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-target">Delete</button></td>`; tbody.appendChild(tr); tr.querySelector('.remove-target').addEventListener('click',()=>tr.remove());
+    const yearInput=tr.querySelector('.target-year'), fromInput=tr.querySelector('.target-from'), toInput=tr.querySelector('.target-to');
+    yearInput.addEventListener('input',()=>{
+        const y=parseInt(yearInput.value,10);
+        if(!y || y<2000 || y>2100) return;
+        if(!fromInput.value && !toInput.value){
+            const fy=fyFromYear(y);
+            fromInput.value=fy.from; toInput.value=fy.to;
+        }
+    });
+ }
+ function loadRows(){ let rows=[]; try{ rows=JSON.parse(hidden.value||'[]'); }catch(e){ rows=[]; } if(!rows.length && (legacy.year || parseFloat(legacy.amount||'0')>0 || legacy.from || legacy.to)){ rows=[legacy]; } if(!rows.length){ rows=[{year:new Date().getFullYear(),amount:'',from:'',to:''}]; } rows.forEach(addRow); }
+ function saveRows(){ const rows=[...tbody.querySelectorAll('tr')].map(tr=>({year:tr.querySelector('.target-year').value, amount:tr.querySelector('.target-amount').value, from:tr.querySelector('.target-from').value, to:tr.querySelector('.target-to').value})).filter(r=>r.year||r.amount||r.from||r.to); hidden.value=JSON.stringify(rows); }
+ document.getElementById('addTargetRow')?.addEventListener('click',()=>addRow({year:new Date().getFullYear(),amount:'',from:'',to:''}));
+ function sync(){ document.querySelectorAll('.left-meta').forEach(x=>x.style.display=document.querySelector('.active-toggle').checked?'none':'block'); }
+ document.querySelector('.active-toggle')?.addEventListener('change',sync); sync(); loadRows();
+ f?.addEventListener('submit',e=>{saveRows();const missing=[...f.querySelectorAll('.must')].filter(x=>!x.value.trim()); f.querySelectorAll('.input-error').forEach(x=>x.classList.remove('input-error')); if(missing.length){e.preventDefault(); missing.forEach(x=>x.classList.add('input-error')); document.getElementById('dealerValidation').classList.remove('d-none');}});
+})();
+</script>
+}
+
+@* Show partner-note after save if present *@
+@if(TempData["PartnerNote"] != null){
+    <script>document.addEventListener('DOMContentLoaded', function(){
+        const note = `@Html.Raw(TempData["PartnerNote"].ToString())`;
+        // Show as bootstrap alert at top
+        const container = document.createElement('div');
+        container.className = 'alert alert-info border-0 rounded-4 shadow-sm mt-3';
+        container.innerHTML = note;
+        document.querySelector('.card-soft')?.prepend(container);
+    });</script>
+}

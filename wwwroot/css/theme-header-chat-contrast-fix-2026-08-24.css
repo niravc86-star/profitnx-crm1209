@@ -1,0 +1,108 @@
+/* ==========================================================================
+   Table header + Chat contact list contrast fix — 2026-08-24
+   ==========================================================================
+   Reported: under "Premium Elite" / "Midnight (Dark)" with Dark Mode on,
+   column headers on almost every grid (Stock, Reports, Role, Users, Dealer,
+   Product, Performance tables, etc.) and the names in the Chat "Search
+   people" list are hard to read / washed out.
+
+   ROOT CAUSE 1 — table column headers
+   theme-contrast-fix-2026-08-18.css already solved this exact problem once,
+   but only for `.professional-table thead th` ("Table header keeps its own
+   light strip by design (every theme); only make sure its text stays
+   dark-on-light so it always reads regardless of theme" — background
+   #f8fafc / text #475467, a combination that passes contrast in every
+   theme). Almost none of the app's real tables use the `.professional-table`
+   class though — Stock, Reports, Role, Users, Dealer and Product all render
+   a plain Bootstrap `<table class="table ...">`. Those plain tables never
+   picked up the 08-18 fix, so their header text is still coming from
+   whichever older, un-coordinated, non-theme-aware rule happens to win the
+   cascade (professional-ui.css / crm-reference-ui.css / new-ui-reference /
+   site.css all separately style `.table thead th`), none of which were
+   checked against the small, uppercase, letter-spaced header font — hence
+   "not properly visible". Fix: extend the already-proven 08-18 treatment to
+   plain `.table thead th` too, so every grid in the app gets the same
+   tested, readable header regardless of theme.
+
+   ROOT CAUSE 2 — Chat "Search people" list
+   The Chat widget has its own independent light-only theme (`.chat-contacts-
+   pane{background:#fcfbff}` in chat-system.css, toggled separately via
+   "Chat theme" swatches, not via the app-wide Premium Elite / Midnight
+   switch). theme-readability-guard-2026-08-17.css's broad safety net
+   (`html[data-app-theme="..."] body.crm-app-body strong/span/li/small/
+   .text-muted{color:<light>}`) was written to catch stray headings that
+   were never given a dark-theme colour — but it also matches the contact
+   names/preview text inside the Chat pane, which was never meant to change
+   with the app theme at all. Result: light-on-light text, same pattern the
+   2026-08-17 file itself already fixed once for `.task-flash-card` and
+   `.top-logout-button` ("the generic guard rule ... repaints that text
+   light-coloured ... because it doesn't know this card's background is
+   still white"). Fix: restore the Chat pane's own colours here, the same
+   way those two components were restored.
+
+   Loaded LAST (after every existing theme file) so it always wins.
+   ========================================================================== */
+
+/* ---- 1) Plain `.table` headers: same proven light-strip treatment already
+   used for `.professional-table`, extended to every grid in the app. ---- */
+html[data-app-theme="midnight"] body.crm-app-body .table thead th,
+html[data-app-theme="premium"] body.crm-app-body .table thead th {
+  background: #f8fafc !important;
+  color: #475467 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* ---- 2) Chat "Search people" list keeps its own light pane on every app
+   theme — restore its own readable colours instead of the generic dark-
+   theme text repaint. ---- */
+html[data-app-theme="midnight"] body.crm-app-body .chat-contact-list,
+html[data-app-theme="premium"] body.crm-app-body .chat-contact-list {
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .chat-contact-top strong,
+html[data-app-theme="premium"] body.crm-app-body .chat-contact-top strong {
+  color: #17122c !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .chat-contact-preview,
+html[data-app-theme="midnight"] body.crm-app-body .chat-contact-empty,
+html[data-app-theme="premium"] body.crm-app-body .chat-contact-preview,
+html[data-app-theme="premium"] body.crm-app-body .chat-contact-empty {
+  color: #786f95 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .chat-contact-time,
+html[data-app-theme="premium"] body.crm-app-body .chat-contact-time {
+  color: #a79bd6 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .chat-contacts-search input,
+html[data-app-theme="premium"] body.crm-app-body .chat-contacts-search input {
+  color: #17122c !important;
+}
+
+/* ---- 3) "..." message actions menu (chat-msg-menu: Reply/Forward/Copy/
+   Star/Pin/Select/Delete) — same root cause as fix #2 above. This popup is
+   also an always-light floating card by design (chat-system.css hardcodes
+   `.chat-msg-menu{background:#fff}`), on both the floating drawer AND the
+   full Chat page. The 08-17 guard rule's broad `li`/`span` selector
+   (`html[data-app-theme=...] body.crm-app-body li/span{color:<light>}`)
+   is MORE specific than `.chat-msg-menu-list li{color:var(--chat-ink)}` in
+   chat-system.css (3 bare elements beats 1), so it wins even where
+   app-theme-switcher.css already resets --chat-ink to dark for the drawer
+   case - meaning the list text was washed out on this menu in every
+   surface, not just the full page. The "Star"/"Pin" labels sit in their
+   own <span>, which the guard's `span` rule repaints directly regardless
+   of the parent <li> colour (a direct match always beats an inherited
+   value), so the span needs its own restore too. Icons are untouched by
+   the guard (it never targets bare `i`) and already have their own colour
+   in chat-system.css, so they're left alone here. */
+html[data-app-theme="midnight"] body.crm-app-body .chat-msg-menu-list li,
+html[data-app-theme="midnight"] body.crm-app-body .chat-msg-menu-list li span,
+html[data-app-theme="premium"] body.crm-app-body .chat-msg-menu-list li,
+html[data-app-theme="premium"] body.crm-app-body .chat-msg-menu-list li span {
+  color: #17122c !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .chat-msg-menu-list li.chat-msg-menu-danger,
+html[data-app-theme="midnight"] body.crm-app-body .chat-msg-menu-list li.chat-msg-menu-danger span,
+html[data-app-theme="premium"] body.crm-app-body .chat-msg-menu-list li.chat-msg-menu-danger,
+html[data-app-theme="premium"] body.crm-app-body .chat-msg-menu-list li.chat-msg-menu-danger span {
+  color: #dc2626 !important;
+}

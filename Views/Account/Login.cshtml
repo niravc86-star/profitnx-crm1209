@@ -1,0 +1,160 @@
+@model ProfitNx.CRM.ViewModels.LoginViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Login";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ProfitNx CRM Login</title>
+    <script>
+    // Apply this browser's last-known theme + font choices before first paint, so the
+    // login screen matches whatever was last selected in the CRM (credential-wise, per device).
+    (function(){
+        try{
+            var cookieMatch = document.cookie.match(/(?:^|; )pnx_theme=([^;]+)/);
+            var cookie = cookieMatch ? decodeURIComponent(cookieMatch[1]) : '';
+            var stored = localStorage.getItem('profitnx-app-theme') || '';
+            var t = cookie || stored || 'classic';
+            if (t && t !== 'classic') document.documentElement.setAttribute('data-app-theme', t);
+
+            var fsCookieMatch = document.cookie.match(/(?:^|; )pnx_font_style=([^;]+)/);
+            var fontStyle = (fsCookieMatch ? decodeURIComponent(fsCookieMatch[1]) : '') || localStorage.getItem('profitnx-app-font-style') || 'default';
+            if (fontStyle && fontStyle !== 'default') document.documentElement.setAttribute('data-app-font-style', fontStyle);
+
+            var fzCookieMatch = document.cookie.match(/(?:^|; )pnx_font_size=([^;]+)/);
+            var fontSize = (fzCookieMatch ? decodeURIComponent(fzCookieMatch[1]) : '') || localStorage.getItem('profitnx-app-font-size') || 'md';
+            if (fontSize && fontSize !== 'md') document.documentElement.setAttribute('data-app-font-scale', fontSize);
+        }catch(e){}
+    })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Merriweather:wght@400;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/professional-ui.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/app-theme-switcher.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/mobile-fix-2026-08-11.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/login-premium-redesign-2026-08-24.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-global-dark-fix-FINAL-2026-08-24.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/login-dark-theme-fix-2026-08-25.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/theme-elite-midnight-audit-FINAL-2026-08-27.css" rel="stylesheet" asp-append-version="true" />
+</head>
+<body class="crm-login-page">
+    <main class="crm-login-shell">
+        <section class="crm-login-intro" aria-label="ProfitNx CRM introduction">
+            <div class="crm-login-brand">
+                <div class="crm-login-brand-mark"><img src="~/img-profit-logo.png" alt="ProfitNx" /></div>
+                <div><strong>ProfitNx CRM</strong><span>Business Relationship Workspace</span></div>
+            </div>
+
+            <div class="crm-login-copy">
+                <span class="crm-login-eyebrow"><i class="bi bi-stars"></i> Unified business workspace</span>
+                <h1>Clear work.<br />Confident decisions.</h1>
+                <p>Manage inquiries, dealers, stock, follow-ups and performance from one professional, role-based CRM.</p>
+            </div>
+
+            <div class="crm-login-features">
+                <article><span><i class="bi bi-shield-check"></i></span><div><b>Role-based control</b><small>Right access for every team member</small></div></article>
+                <article><span><i class="bi bi-lightning-charge"></i></span><div><b>Faster daily work</b><small>Shortcuts and focused workflows</small></div></article>
+                <article><span><i class="bi bi-graph-up-arrow"></i></span><div><b>Business visibility</b><small>Live reports and clear follow-ups</small></div></article>
+            </div>
+
+            <div class="crm-login-intro-footer">
+                <i class="bi bi-patch-check-fill"></i>
+                <span>Designed for focused, secure CRM operations</span>
+            </div>
+        </section>
+
+        <section class="crm-login-panel" aria-label="Sign in">
+            <div class="crm-login-panel-header crm-login-panel-header-secure-only">
+                <span class="crm-secure-signin"><i class="bi bi-lock-fill"></i> Secure</span>
+            </div>
+
+            <div class="crm-login-primary-brand">
+                <img src="~/img-profit-logo.png" alt="Profit Nx" class="crm-login-primary-logo" />
+            </div>
+
+            <div class="crm-login-heading">
+                <h2>Welcome back</h2>
+                <p>Sign in with your CRM account to continue.</p>
+            </div>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert crm-login-alert" role="alert"><i class="bi bi-exclamation-circle-fill"></i><span>@ViewBag.Error</span></div>
+            }
+
+            <form asp-action="Login" method="post" class="crm-login-form" autocomplete="on">
+                <div class="crm-login-field">
+                    <label asp-for="Username" class="form-label">Username</label>
+                    <div class="crm-login-input">
+                        <i class="bi bi-person"></i>
+                        <input asp-for="Username" class="form-control" placeholder="Enter username" autocomplete="username" autofocus />
+                    </div>
+                    <span asp-validation-for="Username" class="text-danger"></span>
+                </div>
+
+                <div class="crm-login-field">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <label asp-for="Password" class="form-label">Password</label>
+                        <span class="caps-lock-status" id="capsLockStatus" aria-live="polite"><i class="bi bi-capslock-fill"></i> Caps Lock is on</span>
+                    </div>
+                    <div class="crm-login-input password-input-wrap">
+                        <i class="bi bi-lock"></i>
+                        <input asp-for="Password" id="loginPassword" type="password" class="form-control" placeholder="Enter password" autocomplete="current-password" />
+                        <button type="button" class="password-eye-button" id="togglePassword" aria-label="Show password" aria-pressed="false" title="Show password">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="crm-login-button">
+                    <span>Sign in</span><i class="bi bi-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="crm-login-trust">
+                <span><i class="bi bi-shield-lock"></i> Protected session</span>
+                <span><i class="bi bi-person-check"></i> Permission controlled</span>
+            </div>
+            <p class="crm-login-powered">Powered by: <strong class="crm-login-powered-brand">Profit Nx</strong></p>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            var password = document.getElementById('loginPassword');
+            var toggle = document.getElementById('togglePassword');
+            var capsStatus = document.getElementById('capsLockStatus');
+            if (!password || !toggle) return;
+
+            toggle.addEventListener('click', function () {
+                var showPassword = password.type === 'password';
+                password.type = showPassword ? 'text' : 'password';
+                toggle.setAttribute('aria-pressed', String(showPassword));
+                toggle.setAttribute('aria-label', showPassword ? 'Hide password' : 'Show password');
+                toggle.title = showPassword ? 'Hide password' : 'Show password';
+                var icon = toggle.querySelector('i');
+                if (icon) icon.className = showPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+                password.focus({ preventScroll: true });
+                var end = password.value.length;
+                if (password.setSelectionRange) password.setSelectionRange(end, end);
+            });
+
+            ['keydown', 'keyup'].forEach(function (eventName) {
+                password.addEventListener(eventName, function (event) {
+                    if (!capsStatus || typeof event.getModifierState !== 'function') return;
+                    capsStatus.classList.toggle('show', event.getModifierState('CapsLock'));
+                });
+            });
+            password.addEventListener('blur', function () { if (capsStatus) capsStatus.classList.remove('show'); });
+        })();
+    </script>
+</body>
+</html>

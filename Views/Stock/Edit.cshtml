@@ -1,0 +1,99 @@
+@model ProfitNx.CRM.ViewModels.StockFormViewModel
+@{
+    ViewData["Title"] = Model.Id == null ? "Add Partner Stock" : "Edit Partner Stock";
+    ViewData["Subtitle"] = "Enter partner-wise license purchase stock. Sold qty is reduced automatically when inquiry is marked Sold.";
+    var products = ViewBag.Products as List<ProfitNx.CRM.Models.Product> ?? new();
+    var partners = ViewBag.PartnerMasters as List<ProfitNx.CRM.Models.Dealer> ?? new();
+}
+<div class="row justify-content-center">
+    <div class="col-xl-9">
+        <div class="dash-panel p-4 p-lg-5">
+            <form asp-action="@(Model.Id == null ? "Create" : "Edit")" method="post" class="row g-4">
+                <input asp-for="Id" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="col-md-6">
+                    <label asp-for="ProductId" class="form-label">Product</label>
+                    <select asp-for="ProductId" class="form-select">
+                        <option value="">-- Select Product --</option>
+                        @foreach (var item in products)
+                        {
+                            <option value="@item.Id">@item.Name - @item.Version (@item.Code)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="Version" class="form-label">Version</label>
+                    <input asp-for="Version" class="form-control" />
+                    <small class="text-muted">Blank = product default version</small>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="PartnerId" class="form-label">Partner</label>
+                    <select asp-for="PartnerId" class="form-select">
+                        <option value="">-- Select Partner --</option>
+                        @foreach (var partner in partners)
+                        {
+                            <option value="@partner.Id">@partner.DealerName (@partner.ContactPerson)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="PartnerId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="TotalPurchased" class="form-label">Total Purchased</label>
+                    <input asp-for="TotalPurchased" class="form-control" />
+                    <span asp-validation-for="TotalPurchased" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="TotalSold" class="form-label">Total Sold</label>
+                    <input asp-for="TotalSold" class="form-control" />
+                    <small class="text-muted">Auto increases when partner sale is marked Sold.</small>
+                    <span asp-validation-for="TotalSold" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="ReorderLevel" class="form-label">Reorder Level</label>
+                    <input asp-for="ReorderLevel" class="form-control" />
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="WarehouseLocation" class="form-label">Location / Note</label>
+                    <input asp-for="WarehouseLocation" class="form-control" placeholder="Partner office, city or internal note" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="BillNo" class="form-label">Bill No</label>
+                    <input asp-for="BillNo" class="form-control" placeholder="Bill / purchase no" />
+                    <span asp-validation-for="BillNo" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="LastPurchaseDate" class="form-label">Bill / Purchase Date</label>
+                    <input asp-for="LastPurchaseDate" type="date" class="form-control" />
+                    <span asp-validation-for="LastPurchaseDate" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="LicenseNumbers" class="form-label">License Numbers <span class="text-muted">(one per line, qty wise)</span></label>
+                    <textarea asp-for="LicenseNumbers" class="form-control" rows="5" placeholder="Enter one license number per line. Example: PNX-001"></textarea>
+                    <small class="text-muted">Purchased qty and license number count should match for exact product-wise license tracking.</small>
+                    <span asp-validation-for="LicenseNumbers" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Notes" class="form-label">Notes</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-brand px-4">Save Stock</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">Back</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

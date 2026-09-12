@@ -1,0 +1,71 @@
+@model ProfitNx.CRM.ViewModels.ProductFormViewModel
+@{
+    ViewData["Title"] = Model.Id == null ? "Add Product" : "Edit Product";
+    ViewData["Subtitle"] = "Maintain separate direct-customer and partner base prices. Partner margin is deducted only from partner price.";
+    var directWithGst = Model.PriceWithoutGst + (Model.PriceWithoutGst * Model.GstPercent / 100);
+    var partnerWithGst = Model.PartnerPriceWithoutGst + (Model.PartnerPriceWithoutGst * Model.GstPercent / 100);
+    var canDirectPrice = ViewBag.CanDirectPrice as bool? ?? false;
+    var canPartnerPrice = ViewBag.CanPartnerPrice as bool? ?? false;
+}
+<div class="row justify-content-center">
+    <div class="col-xl-9">
+        <div class="card card-soft border-0">
+            <div class="card-body p-4 p-lg-5">
+                <form asp-action="@(Model.Id == null ? "Create" : "Edit")" method="post" class="row g-4" id="productPriceForm">
+                    <input asp-for="Id" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="col-md-4"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" data-bs-toggle="tooltip" data-bs-title="Unique product code" /></div>
+                    <div class="col-md-4"><label asp-for="Category" class="form-label"></label><input asp-for="Category" class="form-control" data-bs-toggle="tooltip" data-bs-title="Product category" /></div>
+                    <div class="col-md-4"><label asp-for="Version" class="form-label"></label><input asp-for="Version" class="form-control" data-bs-toggle="tooltip" data-bs-title="Product version or edition" /></div>
+                    <div class="col-12"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" required data-bs-toggle="tooltip" data-bs-title="Product display name" /><span asp-validation-for="Name" class="text-danger"></span></div>
+
+                    @if (canDirectPrice)
+                    {
+                    <div class="col-lg-6">
+                        <div class="price-master-card direct-price-card">
+                            <div class="price-master-icon"><i class="bi bi-person-check"></i></div>
+                            <div><h5>Direct Customer Price</h5><p>Used when no partner is selected.</p></div>
+                            <label asp-for="PriceWithoutGst" class="form-label"></label>
+                            <input asp-for="PriceWithoutGst" class="form-control price-input" min="0" step="0.01" />
+                            <span asp-validation-for="PriceWithoutGst" class="text-danger"></span>
+                            <div class="price-preview">With GST: <strong id="directWithGst">@directWithGst.ToString("N2")</strong></div>
+                        </div>
+                    </div>
+                    }
+                    else { <input asp-for="PriceWithoutGst" type="hidden" /> }
+                    @if (canPartnerPrice)
+                    {
+                    <div class="col-lg-6">
+                        <div class="price-master-card partner-price-card">
+                            <div class="price-master-icon"><i class="bi bi-building-check"></i></div>
+                            <div><h5>Partner Product Price</h5><p>Partner margin is deducted from this base price.</p></div>
+                            <label asp-for="PartnerPriceWithoutGst" class="form-label"></label>
+                            <input asp-for="PartnerPriceWithoutGst" class="form-control price-input" min="0" step="0.01" />
+                            <span asp-validation-for="PartnerPriceWithoutGst" class="text-danger"></span>
+                            <div class="price-preview">With GST: <strong id="partnerWithGst">@partnerWithGst.ToString("N2")</strong></div>
+                        </div>
+                    </div>
+
+                    }
+                    else { <input asp-for="PartnerPriceWithoutGst" type="hidden" /> }
+
+                    <div class="col-md-4"><label asp-for="GstPercent" class="form-label"></label><input asp-for="GstPercent" class="form-control" min="0" max="100" step="0.01" /><span asp-validation-for="GstPercent" class="text-danger"></span></div>
+                    <div class="col-md-8 d-flex align-items-end"><div class="alert alert-info border-0 rounded-4 mb-0 w-100"><i class="bi bi-info-circle me-2"></i>Final partner amount = Partner Product Price − Partner Margin. GST calculations use the same selected price source.</div></div>
+                    <div class="col-12"><div class="form-check form-switch"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+                    <div class="col-12"><label asp-for="Notes" class="form-label"></label><textarea asp-for="Notes" class="form-control" rows="3" data-bs-toggle="tooltip" data-bs-title="Internal product notes"></textarea></div>
+                    <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-brand px-4" data-shortcut-action="save"><i class="bi bi-save me-1"></i>Save</button><a asp-action="Index" class="btn btn-outline-secondary px-4">Back</a></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+<script>
+(function(){
+ const direct=document.getElementById('PriceWithoutGst'), partner=document.getElementById('PartnerPriceWithoutGst'), gst=document.getElementById('GstPercent'), directOut=document.getElementById('directWithGst'), partnerOut=document.getElementById('partnerWithGst');
+ function n(x){return Number.parseFloat(x?.value||'0')||0;}
+ function draw(){const g=n(gst);if(directOut) directOut.textContent=(n(direct)*(1+g/100)).toFixed(2);if(partnerOut) partnerOut.textContent=(n(partner)*(1+g/100)).toFixed(2);}
+ [direct,partner,gst].forEach(x=>x?.addEventListener('input',draw)); draw();
+})();
+</script>
+}

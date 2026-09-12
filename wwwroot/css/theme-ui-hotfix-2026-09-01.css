@@ -1,0 +1,449 @@
+/* ==========================================================================
+   Theme UI hotfix — SaaS/Dompet menu hover + Midnight View Today + consistency
+   Loaded last so it wins specificity wars.
+   ========================================================================== */
+
+/* ---- Professional SaaS sidebar hover (never pure white + invisible text) ---- */
+html[data-app-theme="saas"] .side-rail,
+html[data-app-theme="saas"] .app-shell .side-rail {
+  background: #ffffff !important;
+}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link {
+  color: #54576c !important;
+  background: transparent !important;
+}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link .menu-text {
+  color: inherit !important;
+}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link .menu-icon {
+  color: #4f46e5 !important;
+  background: rgba(79, 70, 229, 0.10) !important;
+}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:hover,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:focus,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link.highlight {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.28) !important;
+}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:hover .menu-text,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:focus .menu-text,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link.highlight .menu-text {
+  color: #ffffff !important;
+}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:hover .menu-icon,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:focus .menu-icon {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link.active,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link[aria-current="page"],
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link.primary-menu-action {
+  background: linear-gradient(90deg, #4338ca, #6d28d9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 28px rgba(67, 56, 202, 0.32) !important;
+}
+
+/* ---- Dompet Blue sidebar hover ---- */
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link {
+  color: #5b6b8c !important;
+  background: transparent !important;
+}
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:hover,
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:focus,
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link.highlight {
+  background: linear-gradient(90deg, #2f6fed, #22c07d) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(47, 111, 237, 0.28) !important;
+}
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:hover .menu-text,
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:focus .menu-text {
+  color: #ffffff !important;
+}
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:hover .menu-icon,
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:focus .menu-icon {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link.active,
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link[aria-current="page"] {
+  background: linear-gradient(90deg, #1d4ed8, #0f9f6e) !important;
+  color: #ffffff !important;
+}
+
+/* ---- Midnight: View Today / Today Follow-ups — never pale text on pale chip ---- */
+html[data-app-theme="midnight"] .btn-followup-today,
+html[data-app-theme="midnight"] a.btn-followup-today,
+html[data-app-theme="midnight"] .alert .btn-followup-today,
+html[data-app-theme="midnight"] .alert-warning .btn-followup-today,
+html[data-app-theme="midnight"] .js-view-today {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .btn-followup-today:hover,
+html[data-app-theme="midnight"] a.btn-followup-today:hover,
+html[data-app-theme="midnight"] .js-view-today:hover {
+  background: #e2e8f0 !important;
+  color: #020617 !important;
+  border-color: #cbd5e1 !important;
+}
+html[data-app-theme="midnight"] .btn-followup-today:focus,
+html[data-app-theme="midnight"] a.btn-followup-today:focus {
+  outline: 2px solid #93c5fd !important;
+  outline-offset: 2px;
+}
+
+/* Premium Elite View Today */
+html[data-app-theme="premium"] .btn-followup-today,
+html[data-app-theme="premium"] a.btn-followup-today {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="premium"] .btn-followup-today:hover {
+  background: #1e40af !important;
+  color: #ffffff !important;
+}
+
+/* SaaS / Dompet follow-up buttons */
+html[data-app-theme="saas"] .btn-followup-today,
+html[data-app-theme="saas"] a.btn-followup-today {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  border-color: #4f46e5 !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="dompet"] .btn-followup-today,
+html[data-app-theme="dompet"] a.btn-followup-today {
+  background: #2f6fed !important;
+  color: #ffffff !important;
+  border-color: #2f6fed !important;
+  font-weight: 800 !important;
+}
+
+/* LIVE badge readability */
+html[data-app-theme="midnight"] .live-badge,
+html[data-app-theme="midnight"] .menu-live-badge,
+html[data-app-theme="midnight"] [data-live-users-badge] {
+  background: #22c55e !important;
+  color: #052e16 !important;
+  font-weight: 900 !important;
+}
+
+/* ==========================================================================
+   Inquiry Pipeline — sticky Action (scroll only up to Docs Sent)
+   + wrapping Status/Result + full Action labels
+   ========================================================================== */
+
+/* Prevent ancestor overflow from killing sticky */
+html body.crm-app-body .page-surface:has(.inquiry-action-table),
+html body.crm-app-body .main-panel:has(.inquiry-action-table),
+html body.crm-app-body .card-soft:has(.inquiry-action-table),
+html body.crm-app-body .card-soft.inquiry-card,
+html body.crm-app-body .card-soft.inquiry-report-target,
+html body.crm-app-body #inquiryReport {
+  overflow-x: visible !important;
+  overflow: visible !important;
+}
+
+html body.crm-app-body .inquiry-grid.table-responsive,
+html body.crm-app-body .table-responsive.inquiry-grid,
+html body.crm-app-body .compact-table-wrap.inquiry-grid {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  position: relative;
+}
+
+html body.crm-app-body .inquiry-action-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* Sticky Action — stays fixed on the right while Docs Sent & other cols scroll */
+html body.crm-app-body .inquiry-action-table thead th.col-action,
+html body.crm-app-body .inquiry-action-table thead th:last-child,
+html body.crm-app-body .inquiry-action-table tbody td.col-action,
+html body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html body.crm-app-body .inquiry-action-table tbody td:last-child {
+  position: sticky !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 12 !important;
+  background: #ffffff !important;
+  background-clip: padding-box !important;
+  box-shadow: -12px 0 18px -10px rgba(15, 23, 42, 0.18) !important;
+  border-left: 1px solid rgba(15, 23, 42, 0.10) !important;
+  vertical-align: top !important;
+  overflow: visible !important;
+}
+
+html body.crm-app-body .inquiry-action-table thead th.col-action,
+html body.crm-app-body .inquiry-action-table thead th:last-child {
+  z-index: 14 !important;
+  text-align: center;
+  vertical-align: middle !important;
+}
+
+/* Wide Action panel — labels fully visible, no "View / Timeli..." */
+html body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td.col-action {
+  min-width: 340px !important;
+  max-width: 380px !important;
+  width: 360px !important;
+  padding: 10px 12px !important;
+}
+
+html body.crm-app-body .inquiry-action-table tbody td.col-action:not(.inquiry-action-td) {
+  min-width: 128px !important;
+  max-width: 160px !important;
+  width: 148px !important;
+  white-space: nowrap;
+  vertical-align: middle !important;
+}
+
+html body.crm-app-body .inquiry-action-table tbody tr:hover td.col-action,
+html body.crm-app-body .inquiry-action-table tbody tr:hover td.inquiry-action-td,
+html body.crm-app-body .inquiry-action-table tbody tr:hover td:last-child {
+  background: #f5f8fc !important;
+}
+
+/* Theme opaque sticky backgrounds */
+html[data-app-theme="saas"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="saas"] body.crm-app-body .inquiry-action-table tbody td:last-child,
+html[data-app-theme="saas"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="dompet"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="dompet"] body.crm-app-body .inquiry-action-table tbody td:last-child,
+html[data-app-theme="dompet"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td {
+  background: #f8fafc !important;
+}
+
+html[data-app-theme="emerald"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="emerald"] body.crm-app-body .inquiry-action-table tbody td:last-child,
+html[data-app-theme="emerald"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td {
+  background: #f0faf6 !important;
+}
+
+html[data-app-theme="rosegold"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="rosegold"] body.crm-app-body .inquiry-action-table tbody td:last-child,
+html[data-app-theme="rosegold"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td {
+  background: #fdf8fa !important;
+}
+
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table tbody td:last-child,
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td {
+  background: #1e293b !important;
+  box-shadow: -12px 0 18px -8px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table tbody tr:hover td:last-child,
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table tbody tr:hover td.inquiry-action-td {
+  background: #24324a !important;
+}
+
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table tbody td:last-child,
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td {
+  background: #1a1330 !important;
+  box-shadow: -12px 0 18px -8px rgba(0, 0, 0, 0.5) !important;
+}
+
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table tbody tr:hover td:last-child,
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table tbody tr:hover td.inquiry-action-td {
+  background: #221a44 !important;
+}
+
+/* Action pills — full labels, no "View / Timeli..." cut-off */
+html body.crm-app-body .inquiry-action-table .qs-pill-btn {
+  flex: 1 1 auto !important;
+  min-width: max-content !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  padding: 0 10px !important;
+}
+
+html body.crm-app-body .inquiry-action-table .qs-pill-btn span {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  display: inline !important;
+}
+
+html body.crm-app-body .inquiry-action-table .qs-genuine-locked {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+/* Status + Result multi-line wrap (keep from previous request) */
+html body.crm-app-body .inquiry-action-table th.col-status,
+html body.crm-app-body .inquiry-action-table td.col-status,
+html body.crm-app-body .inquiry-action-table th.col-result,
+html body.crm-app-body .inquiry-action-table td.col-result,
+html body.crm-app-body .inquiry-action-table td.remark-cell {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  vertical-align: middle !important;
+  max-width: 240px;
+  min-width: 120px;
+}
+
+html body.crm-app-body .inquiry-action-table td.col-status .status-remark,
+html body.crm-app-body .inquiry-action-table td.col-result .result-text,
+html body.crm-app-body .inquiry-action-table td.col-result .mini-muted,
+html body.crm-app-body .inquiry-action-table td.remark-cell {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  display: block;
+  line-height: 1.35;
+  max-width: 100%;
+}
+
+html body.crm-app-body .inquiry-action-table td.col-status .status-badge {
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+}
+
+html body.crm-app-body .inquiry-action-table th.col-result,
+html body.crm-app-body .inquiry-action-table td.col-result,
+html body.crm-app-body .inquiry-action-table td.remark-cell {
+  max-width: 280px;
+  min-width: 140px;
+  width: 18%;
+}
+
+html body.crm-app-body .inquiry-action-table th.col-status,
+html body.crm-app-body .inquiry-action-table td.col-status {
+  max-width: 200px;
+  min-width: 110px;
+  width: 12%;
+}
+
+@media (max-width: 768px) {
+  html body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td {
+    min-width: 280px !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  html body.crm-app-body .inquiry-action-table th.col-status,
+  html body.crm-app-body .inquiry-action-table td.col-status,
+  html body.crm-app-body .inquiry-action-table th.col-result,
+  html body.crm-app-body .inquiry-action-table td.col-result,
+  html body.crm-app-body .inquiry-action-table td.remark-cell {
+    max-width: 180px;
+    min-width: 96px;
+  }
+}
+
+/* ==========================================================================
+   2026-09-02 — Action column hard-freeze (horizontal scroll only on left cols)
+   ========================================================================== */
+html body.crm-app-body .inquiry-grid.table-responsive,
+html body.crm-app-body .table-responsive.inquiry-grid {
+  /* Explicit scroll container for sticky positioning */
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  position: relative !important;
+  /* Avoid creating a new containing block that breaks sticky in some engines */
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
+  will-change: auto;
+}
+
+html body.crm-app-body .inquiry-action-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  /* Force table wider than viewport so horizontal scroll + sticky engage */
+  min-width: max(100%, 1100px) !important;
+  width: max-content !important;
+  max-width: none !important;
+}
+
+/* Freeze Action on the right edge of the scrollport */
+html body.crm-app-body .inquiry-action-table thead th.col-action,
+html body.crm-app-body .inquiry-action-table thead th:last-child,
+html body.crm-app-body .inquiry-action-table tbody td.col-action,
+html body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html body.crm-app-body .inquiry-action-table tbody td:last-child {
+  position: sticky !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 20 !important;
+  /* Opaque so content never shows through while scrolling */
+  background-color: #ffffff !important;
+  background-clip: padding-box !important;
+  box-shadow: -14px 0 22px -12px rgba(15, 23, 42, 0.22) !important;
+  border-left: 1px solid rgba(15, 23, 42, 0.12) !important;
+}
+
+html body.crm-app-body .inquiry-action-table thead th.col-action,
+html body.crm-app-body .inquiry-action-table thead th:last-child {
+  z-index: 22 !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Dark / themed opaque sticky backgrounds */
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table thead th.col-action,
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table tbody td.col-action,
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="midnight"] body.crm-app-body .inquiry-action-table tbody td:last-child {
+  background-color: #1e293b !important;
+  border-left-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table thead th.col-action,
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table tbody td.col-action,
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="premium"] body.crm-app-body .inquiry-action-table tbody td:last-child {
+  background-color: #1a1330 !important;
+  border-left-color: #443a78 !important;
+  color: #f3ecff !important;
+}
+html[data-app-theme="saas"] body.crm-app-body .inquiry-action-table thead th.col-action,
+html[data-app-theme="saas"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="saas"] body.crm-app-body .inquiry-action-table tbody td.col-action,
+html[data-app-theme="saas"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="saas"] body.crm-app-body .inquiry-action-table tbody td:last-child,
+html[data-app-theme="dompet"] body.crm-app-body .inquiry-action-table thead th.col-action,
+html[data-app-theme="dompet"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="dompet"] body.crm-app-body .inquiry-action-table tbody td.col-action,
+html[data-app-theme="dompet"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="dompet"] body.crm-app-body .inquiry-action-table tbody td:last-child {
+  background-color: #f8fafc !important;
+}
+html[data-app-theme="emerald"] body.crm-app-body .inquiry-action-table thead th.col-action,
+html[data-app-theme="emerald"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="emerald"] body.crm-app-body .inquiry-action-table tbody td.col-action,
+html[data-app-theme="emerald"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="emerald"] body.crm-app-body .inquiry-action-table tbody td:last-child {
+  background-color: #ecfdf5 !important;
+}
+html[data-app-theme="rosegold"] body.crm-app-body .inquiry-action-table thead th.col-action,
+html[data-app-theme="rosegold"] body.crm-app-body .inquiry-action-table thead th:last-child,
+html[data-app-theme="rosegold"] body.crm-app-body .inquiry-action-table tbody td.col-action,
+html[data-app-theme="rosegold"] body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="rosegold"] body.crm-app-body .inquiry-action-table tbody td:last-child {
+  background-color: #fff1f5 !important;
+}
+
+/* Ensure Action cells never shrink or wrap away from sticky */
+html body.crm-app-body .inquiry-action-table tbody td.inquiry-action-td {
+  min-width: 340px !important;
+  width: 360px !important;
+  max-width: 380px !important;
+}

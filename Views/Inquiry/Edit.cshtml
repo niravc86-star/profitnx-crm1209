@@ -1,0 +1,1083 @@
+@model InquiryFormViewModel
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    var isSupport = ViewBag.IsSupport as bool? ?? false;
+    var isSupportHead = ViewBag.IsSupportHead as bool? ?? false;
+    var isPartner = ViewBag.IsPartner as bool? ?? false;
+    var isUser = ViewBag.IsUser as bool? ?? false;
+    var isAdmin = ViewBag.IsAdmin as bool? ?? false;
+    var canEditInquiry = await PermissionService.HasPermissionAsync(User, "inquiry.edit");
+    var canUpdateStatus = await PermissionService.HasPermissionAsync(User, "inquiry.status");
+    var canManageFollowupRight = await PermissionService.HasPermissionAsync(User, "inquiry.followup.manage");
+    var canQuickDate = await PermissionService.HasPermissionAsync(User, "inquiry.quickdate.manage");
+    var canQuickStage = await PermissionService.HasPermissionAsync(User, "inquiry.quickstage.manage");
+    var canViewTimeline = await PermissionService.HasPermissionAsync(User, "inquiry.timeline.view");
+    var canSendDocuments = await PermissionService.HasPermissionAsync(User, "inquiry.documents.send")
+        || await PermissionService.HasPermissionAsync(User, "inquiry.edit")
+        || isAdmin;
+    var canViewDocuments = canSendDocuments
+        || await PermissionService.HasPermissionAsync(User, "inquiry.view")
+        || isAdmin;
+    var canViewConversionScore = await PermissionService.HasPermissionAsync(User, "inquiry.conversion.score.view");
+    var canViewNextBestAction = await PermissionService.HasPermissionAsync(User, "inquiry.nextbestaction.view");
+    var canCallCustomer = await PermissionService.HasPermissionAsync(User, "inquiry.contact.call");
+    var canWhatsAppCustomer = await PermissionService.HasPermissionAsync(User, "inquiry.contact.whatsapp");
+    var canEmailCustomer = await PermissionService.HasPermissionAsync(User, "inquiry.contact.email");
+    var canCopySummary = await PermissionService.HasPermissionAsync(User, "inquiry.summary.copy");
+    var canSetupImplementationFromSold = ViewBag.CanSetupImplementationFromSold as bool? ?? await PermissionService.HasPermissionAsync(User, "implementation.sold.setup");
+    var requestedReadOnly = ViewBag.IsReadOnly as bool? ?? false;
+    var inquiry = Model ?? new InquiryFormViewModel();
+    var isCreate = string.IsNullOrWhiteSpace(inquiry.Id);
+    var isQuickCreate = isCreate && (isSupport || isPartner);
+    var isCompactExisting = !isCreate && !isAdmin;
+    var useCompactForm = isQuickCreate || isCompactExisting;
+    var isReadOnly = requestedReadOnly || (!isCreate && !canEditInquiry);
+    var canManageStatus = !isReadOnly && canUpdateStatus;
+    var canManageFollowup = !isReadOnly && canManageFollowupRight;
+    var hasContactAction = (!string.IsNullOrWhiteSpace(inquiry.Mobile1) && (canCallCustomer || canWhatsAppCustomer))
+        || (!string.IsNullOrWhiteSpace(inquiry.Email1) && canEmailCustomer)
+        || canCopySummary;
+    var showConversionPanel = !isCreate && (canViewConversionScore || canViewNextBestAction || hasContactAction);
+    var showTimelinePanel = !isCreate && canViewTimeline;
+    var showDocumentsPanel = !isCreate && !string.IsNullOrWhiteSpace(Model.Id) && canViewDocuments;
+    var mainColumn = isCreate ? "12" : (showConversionPanel || showTimelinePanel ? "8" : "12");
+
+    ViewData["Title"] = isCreate
+        ? (isPartner ? "Submit Partner Inquiry" : isSupport ? "Send Inquiry to Admin" : "New Inquiry")
+        : isReadOnly ? "Inquiry Detail" : "Edit Inquiry";
+    ViewData["Subtitle"] = isQuickCreate
+        ? "Enter customer details. Admin will receive this inquiry automatically."
+        : isCompactExisting
+            ? (isReadOnly ? "View inquiry details and full timeline." : "Update customer details, next action and follow-up from one screen.")
+            : isReadOnly
+                ? "View inquiry details and full timeline."
+                : "Edit inquiry details and view full timeline.";
+
+    var partners = ViewBag.Partners as List<AppUser> ?? new();
+    var users = ViewBag.Users as List<AppUser> ?? new();
+    var canForwardAdmin = ViewBag.CanForwardAdmin as bool? ?? false;
+    var canForwardPartner = ViewBag.CanForwardPartner as bool? ?? false;
+    var canForwardUser = ViewBag.CanForwardUser as bool? ?? false;
+    var products = ViewBag.Products as List<Product> ?? new();
+    var statuses = (ViewBag.Statuses as string[] ?? Array.Empty<string>())
+        .Where(x => !x.Equals("Forwarded to Admin", StringComparison.OrdinalIgnoreCase) || canForwardAdmin)
+        .Where(x => !x.Equals("Forwarded to Partner", StringComparison.OrdinalIgnoreCase) || canForwardPartner)
+        .Where(x => !x.Equals("Forwarded to User", StringComparison.OrdinalIgnoreCase) || canForwardUser)
+        .ToArray();
+    var qualityOptions = ViewBag.QualityOptions as string[] ?? Array.Empty<string>();
+    var updates = ViewBag.Updates as List<InquiryUpdate> ?? new();
+    var canCustomerInfo = await PermissionService.HasPermissionAsync(User, "field.inquiry.customerinfo");
+    var canAmount = await PermissionService.HasPermissionAsync(User, "field.inquiry.amount");
+    var submitSource = isPartner ? "Partner" : "Support Team";
+
+
+    var mobileDigits = System.Text.RegularExpressions.Regex.Replace(inquiry.Mobile1 ?? string.Empty, "[^0-9]", string.Empty);
+    var whatsappDigits = mobileDigits.Length == 10 ? "91" + mobileDigits : mobileDigits;
+    var conversionScore = 10;
+    if (!string.IsNullOrWhiteSpace(inquiry.Mobile1)) conversionScore += 15;
+    if (!string.IsNullOrWhiteSpace(inquiry.Email1)) conversionScore += 5;
+    if (!string.IsNullOrWhiteSpace(inquiry.ProductName)) conversionScore += 15;
+    if (string.Equals(inquiry.InquiryQuality, "Genuine", StringComparison.OrdinalIgnoreCase)) conversionScore += 20;
+    if (inquiry.NextFollowUpDate.HasValue) conversionScore += 10;
+    if (inquiry.DemoScheduledDate.HasValue) conversionScore += 10;
+    if (inquiry.DemoDoneDate.HasValue) conversionScore += 10;
+    if (string.Equals(inquiry.Status, "Negotiation", StringComparison.OrdinalIgnoreCase)) conversionScore += 15;
+    if (string.Equals(inquiry.Status, "Sold", StringComparison.OrdinalIgnoreCase)) conversionScore = 100;
+    conversionScore = Math.Min(100, conversionScore);
+
+    var recommendedAction = "Confirm customer requirement and schedule the next follow-up.";
+    if (string.Equals(inquiry.Status, "Sold", StringComparison.OrdinalIgnoreCase)) recommendedAction = "Sale completed. Verify bill and license details.";
+    else if (string.Equals(inquiry.Status, "Close", StringComparison.OrdinalIgnoreCase)) recommendedAction = "Review close reason before any future reactivation.";
+    else if (string.Equals(inquiry.InquiryQuality, "Not Genuine", StringComparison.OrdinalIgnoreCase)) recommendedAction = "Validate the lead before spending more follow-up time.";
+    else if (string.Equals(inquiry.Status, "Negotiation", StringComparison.OrdinalIgnoreCase)) recommendedAction = "Share final commercial offer and define a closing date.";
+    else if (inquiry.DemoDoneDate.HasValue) recommendedAction = "Capture demo feedback and move the inquiry to negotiation.";
+    else if (inquiry.DemoScheduledDate.HasValue) recommendedAction = "Confirm demo attendance and send a reminder before the demo.";
+    else if (string.Equals(inquiry.InquiryQuality, "Genuine", StringComparison.OrdinalIgnoreCase)) recommendedAction = "Book a demo and keep the next action date mandatory.";
+
+    var nextActionClass = inquiry.NextFollowUpDate.HasValue && inquiry.NextFollowUpDate.Value.Date < DateTime.Today
+        ? "danger"
+        : inquiry.NextFollowUpDate.HasValue && inquiry.NextFollowUpDate.Value.Date <= DateTime.Today.AddDays(2)
+            ? "warning"
+            : "primary";
+}
+
+<div class="row g-4 inquiry-workspace">
+    <div class="col-xl-@mainColumn">
+        <div class="dash-panel form-pro p-4 mb-4 inquiry-entry-panel">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h4 class="mb-0">
+                        @(isQuickCreate
+                            ? (isPartner ? "Submit Inquiry to Admin" : "Send Inquiry to Admin")
+                            : isCreate
+                                ? "Create Inquiry"
+                                : isReadOnly ? "Inquiry Detail" : "Edit Inquiry")
+                    </h4>
+                    <div class="mini-muted">
+                        @(isQuickCreate
+                            ? "Fast inquiry entry for customer request, mobile, email and remarks."
+                            : isCompactExisting
+                                ? (isReadOnly ? "Read-only inquiry details with follow-up timeline." : "Same simple entry layout with follow-up and conversion controls.")
+                                : isReadOnly ? "Read-only inquiry details and status timeline." : "Update inquiry details and keep status information clear.")
+                    </div>
+                </div>
+                <a asp-action="Index" asp-fragment="inquiryReport" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+            </div>
+
+            <form asp-action="@(isCreate ? "Create" : "Edit")" method="post" id="inquiryForm" novalidate data-original-status="@inquiry.Status" data-original-note="@inquiry.StatusReason">
+                <input asp-for="Id" type="hidden" />
+                <input type="hidden" name="setupImplementation" value="false" class="setup-implementation-value" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                @if (useCompactForm)
+                {
+                    <div class="row g-3 simple-submit-form">
+                        <div class="col-md-3">
+                            <label class="form-label">Date</label>
+                            <input asp-for="CreatedDate" type="date" class="form-control" />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Submitted By</label>
+                            <input asp-for="SupportExecutiveName" class="form-control" placeholder="Submitted by" readonly="readonly" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Source</label>
+                            <input asp-for="InquirySource" class="form-control" value="@(isCreate ? submitSource : inquiry.InquirySource)" readonly="readonly" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Customer / Firm Name</label>
+                            <input asp-for="FirmName" class="form-control" placeholder="Business / customer name" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Person Name</label>
+                            <input asp-for="PersonName" class="form-control" placeholder="Contact person" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">City</label>
+                            <input asp-for="City" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Contact Number</label>
+                            <input asp-for="Mobile1" class="form-control" inputmode="tel" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Mobile 2</label>
+                            <input asp-for="Mobile2" class="form-control" inputmode="tel" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email ID</label>
+                            <input asp-for="Email1" class="form-control" type="email" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Product Interest <span class="text-muted fw-normal">(Optional)</span></label>
+                            <select asp-for="ProductName" class="form-select optional-field">
+                                <option value="">-- Select Product --</option>
+                                @foreach (var p in products)
+                                {
+                                    <option value="@p.Name">@p.Name (@p.Version)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Remarks / Requirement</label>
+                            <textarea asp-for="Remarks" class="form-control" rows="4" placeholder="Customer requirement, product code, query or remark"></textarea>
+                        </div>
+
+                        @if (!isCreate)
+                        {
+                            <div class="col-12">
+                                <div class="smart-followup-form-card">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                                        <div>
+                                            <h5 class="mb-1"><i class="bi bi-lightning-charge-fill"></i> Follow-up & Conversion</h5>
+                                            <div class="mini-muted">Keep every open inquiry with a clear next action.</div>
+                                        </div>
+                                        @if (canViewConversionScore)
+                                        {
+                                            <span class="smart-score-badge">Conversion Score: <b id="liveConversionScore">@conversionScore%</b></span>
+                                        }
+                                    </div>
+
+                                    @if (canManageStatus || canManageFollowup || isReadOnly)
+                                    {
+                                        <div class="row g-3">
+                                            @if (canManageStatus || isReadOnly)
+                                            {
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Status</label>
+                                                    <select asp-for="Status" class="form-select" id="statusSelect">
+                                                        @foreach (var s in statuses)
+                                                        {
+                                                            <option value="@s">@s</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Genuine Status</label>
+                                                    <select asp-for="InquiryQuality" class="form-select" id="qualitySelect">
+                                                        <option value="">Pending</option>
+                                                        @foreach (var q in qualityOptions)
+                                                        {
+                                                            <option value="@q">@q</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <input asp-for="Status" type="hidden" />
+                                                <input asp-for="InquiryQuality" type="hidden" />
+                                            }
+
+                                            @if (canManageFollowup || isReadOnly)
+                                            {
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Next Follow Up</label>
+                                                    <input asp-for="NextFollowUpDate" type="date" class="form-control" id="nextFollowUpInput" />
+                                                    <span asp-validation-for="NextFollowUpDate" class="text-danger small"></span>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Demo Scheduled</label>
+                                                    <input asp-for="DemoScheduledDate" type="date" class="form-control" id="demoScheduledInput" />
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Demo Done</label>
+                                                    <input asp-for="DemoDoneDate" type="date" class="form-control" id="demoDoneInput" />
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Latest Follow-up Note</label>
+                                                    <input asp-for="StatusReason" class="form-control" id="followUpNoteInput" placeholder="Call result / next commitment" />
+                                                    <span asp-validation-for="StatusReason" class="text-danger small"></span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <input asp-for="NextFollowUpDate" type="hidden" />
+                                                <input asp-for="DemoScheduledDate" type="hidden" />
+                                                <input asp-for="DemoDoneDate" type="hidden" />
+                                                <input asp-for="StatusReason" type="hidden" />
+                                                <div class="col-12">
+                                                    <div class="status-readonly-summary">
+                                                        <span>Next Follow-up: <b>@(inquiry.NextFollowUpDate?.ToString("dd/MM/yyyy") ?? "Not set")</b></span>
+                                                        <span>Demo: <b>@(inquiry.DemoScheduledDate?.ToString("dd/MM/yyyy") ?? "Not set")</b></span>
+                                                        <span>Latest Note: <b>@(string.IsNullOrWhiteSpace(inquiry.StatusReason) ? "-" : inquiry.StatusReason)</b></span>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        @if (canManageFollowup && canQuickDate)
+                                        {
+                                            <div class="smart-quick-actions mt-3">
+                                                <span class="mini-muted fw-bold">Quick next date:</span>
+                                                <button type="button" class="btn btn-sm btn-outline-primary js-followup-day" data-days="0">Today</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary js-followup-day" data-days="1">Tomorrow</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary js-followup-day" data-days="3">+3 Days</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary js-followup-day" data-days="7">+7 Days</button>
+                                            </div>
+                                        }
+                                        @if (canManageStatus && canQuickStage)
+                                        {
+                                            <div class="smart-quick-actions mt-2">
+                                                <span class="mini-muted fw-bold">Quick stage:</span>
+                                                <button type="button" class="btn btn-sm btn-soft js-stage" data-status="Follow Up">Follow Up</button>
+                                                <button type="button" class="btn btn-sm btn-soft js-stage" data-status="Demo Scheduled">Demo</button>
+                                                <button type="button" class="btn btn-sm btn-soft js-stage" data-status="Negotiation">Negotiation</button>
+                                            </div>
+                                        }
+
+                                        @if (canManageStatus || isReadOnly)
+                                        {
+                                            <div class="row g-3 mt-1 sold-field">
+                                                <div class="col-md-3"><label class="form-label">Licenses</label><input asp-for="LicensesPurchased" class="form-control" min="0" /></div>
+                                                <div class="col-md-3"><label class="form-label">License Number</label><input asp-for="LicenseNumber" class="form-control" /></div>
+                                                <div class="col-md-3"><label class="form-label">Bill No</label><input asp-for="BillNo" class="form-control" /></div>
+                                                <div class="col-md-3"><label class="form-label">Bill Date</label><input asp-for="BillDate" type="date" class="form-control" /></div>
+                                                @if (canAmount)
+                                                {
+                                                    <div class="col-md-3"><label class="form-label">Amount W/O GST</label><input asp-for="AmountWithoutGst" class="form-control" /></div>
+                                                    <div class="col-md-3"><label class="form-label">Amount With GST</label><input asp-for="AmountWithGst" class="form-control" /></div>
+                                                }
+                                            </div>
+                                            <div class="row g-3 mt-1 close-field">
+                                                <div class="col-md-12"><label class="form-label">Close Reason</label><textarea asp-for="CloseReason" class="form-control" rows="2"></textarea></div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <input asp-for="LicensesPurchased" type="hidden" />
+                                            <input asp-for="LicenseNumber" type="hidden" />
+                                            <input asp-for="BillNo" type="hidden" />
+                                            <input asp-for="BillDate" type="hidden" />
+                                            <input asp-for="CloseReason" type="hidden" />
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <input asp-for="Status" type="hidden" />
+                                        <input asp-for="InquiryQuality" type="hidden" />
+                                        <input asp-for="NextFollowUpDate" type="hidden" />
+                                        <input asp-for="DemoScheduledDate" type="hidden" />
+                                        <input asp-for="DemoDoneDate" type="hidden" />
+                                        <input asp-for="StatusReason" type="hidden" />
+                                        <input asp-for="LicensesPurchased" type="hidden" />
+                                        <input asp-for="LicenseNumber" type="hidden" />
+                                        <input asp-for="BillNo" type="hidden" />
+                                        <input asp-for="BillDate" type="hidden" />
+                                        <input asp-for="CloseReason" type="hidden" />
+                                        <div class="alert alert-info border-0 rounded-3 py-2 px-3 mb-3">
+                                            Enable <strong>Inquiry Status Update</strong> or <strong>Follow-up Date / Demo / Note Manage</strong> in Rights to update this section.
+                                        </div>
+                                        <div class="status-readonly-summary">
+                                            <span>Status: <b>@inquiry.Status</b></span>
+                                            <span>Genuine: <b>@(string.IsNullOrWhiteSpace(inquiry.InquiryQuality) ? "Pending" : inquiry.InquiryQuality)</b></span>
+                                            <span>Next Follow-up: <b>@(inquiry.NextFollowUpDate?.ToString("dd/MM/yyyy") ?? "Not set")</b></span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <input asp-for="Status" type="hidden" value="New Inquiry" />
+                        }
+
+                        <input asp-for="Email2" type="hidden" />
+                        <input asp-for="VersionType" type="hidden" />
+                        <input asp-for="ForwardedToPartnerId" type="hidden" />
+                        <input asp-for="ForwardedToUserId" type="hidden" />
+                        <input asp-for="DealerId" type="hidden" />
+                        <input asp-for="CustomerInfo" type="hidden" />
+                        @if (!canAmount)
+                        {
+                            <input asp-for="AmountWithoutGst" type="hidden" />
+                            <input asp-for="AmountWithGst" type="hidden" />
+                        }
+
+                        <div class="col-md-12 d-flex gap-2 flex-wrap">
+                            @if (!isReadOnly)
+                            {
+                                <button type="submit" class="btn btn-brand">
+                                    <i class="bi bi-save"></i>
+                                    @(isCreate ? (isPartner ? "Submit Inquiry" : "Send Inquiry to Admin") : "Save Inquiry & Follow-up")
+                                </button>
+                            }
+                            <a asp-action="Index" asp-fragment="inquiryReport" class="btn btn-outline-secondary">Back / Report</a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        <div class="col-md-3"><label class="form-label">Inquiry Date</label><input asp-for="CreatedDate" type="date" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label">Support Executive</label><input asp-for="SupportExecutiveName" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Source</label><input asp-for="InquirySource" class="form-control" /></div>
+                        <div class="col-md-5"><label class="form-label">Business / Firm Name</label><input asp-for="FirmName" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label">Contact Person</label><input asp-for="PersonName" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">City</label><input asp-for="City" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Contact Number</label><input asp-for="Mobile1" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Mobile 2</label><input asp-for="Mobile2" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Email 1</label><input asp-for="Email1" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Email 2</label><input asp-for="Email2" class="form-control" /></div>
+                        <div class="col-md-4">
+                            <label class="form-label">Product</label>
+                            <select asp-for="ProductName" class="form-select">
+                                <option value="">-- Select Product --</option>
+                                @foreach (var p in products)
+                                {
+                                    <option value="@p.Name">@p.Name (@p.Version)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2"><label class="form-label">Version</label><select asp-for="VersionType" class="form-select"><option>New</option><option>Upgrade</option><option>Renewal</option></select></div>
+                        @if (canForwardPartner)
+                        {
+                            <div class="col-md-3">
+                                <label class="form-label">Forward to Partner</label>
+                                <select asp-for="ForwardedToPartnerId" class="form-select" title="Partner product price and partner margin apply when selected">
+                                    <option value="">-- No Partner --</option>
+                                    @foreach (var p in partners) { <option value="@p.Id">@p.FullName</option> }
+                                </select>
+                            </div>
+                        }
+                        else { <input asp-for="ForwardedToPartnerId" type="hidden" /> }
+                        @if (canForwardUser)
+                        {
+                            <div class="col-md-3">
+                                <label class="form-label">Forward to User</label>
+                                <select asp-for="ForwardedToUserId" class="form-select" title="Assign this inquiry to a user for attendance">
+                                    <option value="">-- No User --</option>
+                                    @foreach (var u in users) { <option value="@u.Id">@u.FullName (@u.Role)</option> }
+                                </select>
+                            </div>
+                        }
+                        else { <input asp-for="ForwardedToUserId" type="hidden" /> }
+                        @if (canManageStatus || isReadOnly)
+                        {
+                            <div class="col-md-3"><label class="form-label">Status</label><select asp-for="Status" class="form-select" id="statusSelect">@foreach (var s in statuses) { <option value="@s">@s</option> }</select></div>
+                            <div class="col-md-3"><label class="form-label">Genuine Status</label><select asp-for="InquiryQuality" class="form-select" id="qualitySelect"><option value="">Pending</option>@foreach (var q in qualityOptions) { <option value="@q">@q</option> }</select></div>
+                        }
+                        else
+                        {
+                            <input asp-for="Status" type="hidden" />
+                            <input asp-for="InquiryQuality" type="hidden" />
+                        }
+                        @if (canManageFollowup || isReadOnly)
+                        {
+                            <div class="col-md-3"><label class="form-label">Next Follow Up</label><input asp-for="NextFollowUpDate" type="date" class="form-control" id="nextFollowUpInput" /><span asp-validation-for="NextFollowUpDate" class="text-danger small"></span></div>
+                            <div class="col-md-3"><label class="form-label">Demo Scheduled</label><input asp-for="DemoScheduledDate" type="date" class="form-control" id="demoScheduledInput" /></div>
+                            <div class="col-md-3"><label class="form-label">Demo Done</label><input asp-for="DemoDoneDate" type="date" class="form-control" id="demoDoneInput" /></div>
+                            <div class="col-md-3"><label class="form-label">Latest Follow-up Note <span class="text-muted small">(Optional)</span></label><input asp-for="StatusReason" class="form-control" id="followUpNoteInput" /><span asp-validation-for="StatusReason" class="text-danger small"></span></div>
+                        }
+                        else
+                        {
+                            <input asp-for="NextFollowUpDate" type="hidden" />
+                            <input asp-for="DemoScheduledDate" type="hidden" />
+                            <input asp-for="DemoDoneDate" type="hidden" />
+                            <input asp-for="StatusReason" type="hidden" />
+                        }
+                        @if (canManageStatus || isReadOnly)
+                        {
+                            <div class="col-md-3 sold-field"><label class="form-label">Licenses</label><input asp-for="LicensesPurchased" class="form-control" /></div>
+                            <div class="col-md-3 sold-field"><label class="form-label">License Number</label><input asp-for="LicenseNumber" class="form-control" /></div>
+                            <div class="col-md-3 sold-field"><label class="form-label">Bill No</label><input asp-for="BillNo" class="form-control" /></div>
+                            <div class="col-md-3 sold-field"><label class="form-label">Bill Date</label><input asp-for="BillDate" type="date" class="form-control" /></div>
+                            @if (canAmount)
+                            {
+                                <div class="col-md-3 sold-field"><label class="form-label">Amount W/O GST</label><input asp-for="AmountWithoutGst" class="form-control" /></div>
+                                <div class="col-md-3 sold-field"><label class="form-label">Amount With GST</label><input asp-for="AmountWithGst" class="form-control" /></div>
+                            }
+                            <div class="col-md-6 close-field"><label class="form-label">Close Reason</label><textarea asp-for="CloseReason" class="form-control" rows="2"></textarea></div>
+                        }
+                        else
+                        {
+                            <input asp-for="LicensesPurchased" type="hidden" />
+                            <input asp-for="LicenseNumber" type="hidden" />
+                            <input asp-for="BillNo" type="hidden" />
+                            <input asp-for="BillDate" type="hidden" />
+                            <input asp-for="CloseReason" type="hidden" />
+                        }
+                        @if (canCustomerInfo)
+                        {
+                            <div class="col-md-12"><label class="form-label">Customer Info <span class="text-muted small">(Optional)</span></label><textarea asp-for="CustomerInfo" class="form-control" rows="2"></textarea></div>
+                        }
+                        <div class="col-md-12"><label class="form-label">Other Remark / Requirement <span class="text-muted small">(Optional)</span></label><textarea asp-for="Remarks" class="form-control" rows="3"></textarea></div>
+                        <div class="col-md-12 d-flex gap-2 flex-wrap">
+                            @if (!isReadOnly)
+                            {
+                                <button type="submit" class="btn btn-brand"><i class="bi bi-save"></i> Save Inquiry</button>
+                            }
+                            <a asp-action="Index" asp-fragment="inquiryReport" class="btn btn-outline-secondary">Back / Report</a>
+                        </div>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+
+    @if (showConversionPanel || showTimelinePanel)
+    {
+        <div class="col-xl-4">
+            @if (showConversionPanel)
+            {
+                <div class="smart-conversion-panel mb-4">
+                    <div class="smart-panel-head">
+                        <div>
+                            <span class="smart-eyebrow">@(canViewNextBestAction ? "Conversion Assistant" : "Customer Actions")</span>
+                            <h5 class="mb-0">@(canViewNextBestAction ? "Next Best Action" : "Quick Contact")</h5>
+                        </div>
+                        @if (canViewConversionScore)
+                        {
+                            <div class="score-ring" style="--score:@(conversionScore)%"><span>@conversionScore%</span></div>
+                        }
+                    </div>
+
+                    @if (canViewNextBestAction)
+                    {
+                        <p class="smart-recommendation">@recommendedAction</p>
+                        <div class="smart-signal-grid">
+                            <div><span>Current Stage</span><b>@inquiry.Status</b></div>
+                            <div><span>Lead Quality</span><b>@(string.IsNullOrWhiteSpace(inquiry.InquiryQuality) ? "Pending" : inquiry.InquiryQuality)</b></div>
+                            <div class="signal-@nextActionClass"><span>Next Follow-up</span><b>@(inquiry.NextFollowUpDate?.ToString("dd/MM/yyyy") ?? "Not Set")</b></div>
+                            <div><span>Last Updated</span><b>@(updates.Any() ? updates[0].UpdateDate.ToString("dd/MM/yyyy") : "No History")</b></div>
+                        </div>
+                    }
+
+                    @if (hasContactAction)
+                    {
+                        <div class="contact-action-grid mt-3">
+                            @if (canCallCustomer && !string.IsNullOrWhiteSpace(inquiry.Mobile1))
+                            {
+                                <a href="tel:@mobileDigits" class="btn btn-outline-primary"><i class="bi bi-telephone"></i> Call</a>
+                            }
+                            @if (canWhatsAppCustomer && !string.IsNullOrWhiteSpace(inquiry.Mobile1))
+                            {
+                                <a href="https://wa.me/@whatsappDigits" target="_blank" rel="noopener" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                            }
+                            @if (canEmailCustomer && !string.IsNullOrWhiteSpace(inquiry.Email1))
+                            {
+                                <a href="mailto:@inquiry.Email1" class="btn btn-outline-info"><i class="bi bi-envelope"></i> Email</a>
+                            }
+                            @if (canCopySummary)
+                            {
+                                <button type="button" class="btn btn-outline-secondary js-copy-summary" data-summary="@($"Customer: {inquiry.FirmName} | Contact: {inquiry.Mobile1} | Product: {inquiry.ProductName} | Status: {inquiry.Status}")"><i class="bi bi-clipboard"></i> Copy</button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (showDocumentsPanel)
+            {
+                <div class="card border-0 shadow-sm rounded-4 mb-3 inq-docs-card" id="inquiryDocumentsPanel" data-inquiry-id="@Model.Id">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-arrow-up me-1"></i> Quotation &amp; Documents</h5>
+                            <div class="d-flex flex-wrap gap-2">
+                                @if (canSendDocuments)
+                                {
+                                    <button type="button" class="btn btn-success" id="inqOpenSendBtn">
+                                        <i class="bi bi-send-fill"></i> Send details
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="inqDocsToggle" aria-expanded="true">Hide</button>
+                            </div>
+                        </div>
+                        <div id="inqDocsBody">
+                            <div class="inq-docs-box">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                    <div class="inq-docs-box-title mb-0"><i class="bi bi-paperclip me-1"></i> Attached files &amp; send history</div>
+                                    <span class="badge rounded-pill text-bg-light border" id="inqDocCountBadge">0 files</span>
+                                </div>
+                                <div id="inqDocList" class="inq-doc-list">Loading documents…</div>
+                                <div id="inqSendHistory" class="mt-3"></div>
+                                <div id="inqSendResult" class="mt-2 small"></div>
+                                @if (!canSendDocuments)
+                                {
+                                    <div class="alert alert-warning py-2 mb-0 small mt-2">Upload/Send needs <b>Send Quotation / Documents</b> or <b>Inquiry Edit</b> right.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Send details form modal: upload + send in one clean form -->
+                <div class="modal fade" id="inqSendModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                        <div class="modal-content rounded-4 border-0 shadow-lg">
+                            <div class="modal-header border-0 pb-0">
+                                <div>
+                                    <div class="text-uppercase small fw-bold text-success" style="letter-spacing:.08em">Send to customer</div>
+                                    <h5 class="modal-title mt-1"><i class="bi bi-send-fill text-success"></i> Quotation &amp; Documents</h5>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body pt-3">
+                                <div class="inq-modal-section mb-4">
+                                    <div class="inq-modal-section-title"><i class="bi bi-cloud-arrow-up"></i> 1. Upload file(s)</div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Document type</label>
+                                        <select id="inqDocType" class="form-select form-select-lg">
+                                            <option value="Quotation">Quotation</option>
+                                            <option value="PriceList">Price List</option>
+                                            <option value="BankDetails">Bank Details</option>
+                                            <option value="UpiImage">UPI Image</option>
+                                            <option value="Brochure">Brochure</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Choose file(s)</label>
+                                        <input type="file" id="inqDocFile" class="form-control form-control-lg" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" />
+                                        <div class="form-text">Multiple files allowed · Max 15 MB each · PDF, images, Word, Excel, ZIP</div>
+                                        <div id="inqDocSelectedPreview" class="inq-doc-selected-preview mt-2 d-none"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Note <span class="text-muted fw-normal">(optional)</span></label>
+                                        <input type="text" id="inqDocNotes" class="form-control form-control-lg" placeholder="e.g. Final quote for version 5.2" />
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-lg w-100 inq-upload-btn" id="inqDocUploadBtn">
+                                        <i class="bi bi-upload"></i> Upload &amp; Attach
+                                    </button>
+                                </div>
+
+                                <hr class="my-4" />
+
+                                <div class="inq-modal-section">
+                                    <div class="inq-modal-section-title"><i class="bi bi-send"></i> 2. Send to customer</div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">What to send</label>
+                                        <select id="inqSendType" class="form-select form-select-lg">
+                                            <option value="Quotation">Quotation</option>
+                                            <option value="PaymentPack">Price list / Bank / UPI</option>
+                                            <option value="Brochure">Brochure</option>
+                                            <option value="Resend">Resend last / selected type</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Channel</label>
+                                        <select id="inqSendChannel" class="form-select form-select-lg">
+                                            <option value="Both">Email + WhatsApp</option>
+                                            <option value="Email">Email only</option>
+                                            <option value="WhatsApp">WhatsApp</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="form-label fw-semibold">Message <span class="text-muted fw-normal">(optional)</span></label>
+                                        <textarea id="inqSendMessage" class="form-control" rows="3" placeholder="Optional custom message to customer"></textarea>
+                                    </div>
+                                    <div class="form-text mt-2">Attached files that are checked in the list below the card will be included when you send.</div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0 flex-wrap gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-lg" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-success btn-lg px-4" id="inqSendBtn"><i class="bi bi-send-fill"></i> Send / Resend</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (showTimelinePanel)
+            {
+                <div class="dash-panel p-4 timeline-panel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Full Status Timeline</h5>
+                        <span class="badge bg-soft-primary">@updates.Count Update(s)</span>
+                    </div>
+                    @if (updates.Any())
+                    {
+                        <div class="timeline-list timeline-list-scroll">
+                            @foreach (var u in updates)
+                            {
+                                <div class="timeline-row">
+                                    <strong>@u.Status</strong>
+                                    <span>@u.UpdateDate.ToString("dd/MM/yyyy hh:mm tt") · @u.UserName</span>
+                                    <p>@u.Note</p>
+                                    @if (u.NextFollowUpDate.HasValue) { <span>Next: @u.NextFollowUpDate.Value.ToString("dd/MM/yyyy")</span> }
+                                    @if (!string.IsNullOrWhiteSpace(u.BillNo)) { <span>Bill: @u.BillNo / @(u.BillDate?.ToString("dd/MM/yyyy") ?? "-")</span> }
+                                    @if (!string.IsNullOrWhiteSpace(u.CloseReason)) { <span>Close: @u.CloseReason</span> }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">No update history yet.</div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts
+{
+<script>
+(function () {
+    const form = document.getElementById('inquiryForm');
+    if (!form) return;
+
+    const isReadOnly = @isReadOnly.ToString().ToLowerInvariant();
+    const isCreate = @isCreate.ToString().ToLowerInvariant();
+    const canSetupImplementationFromSold = @canSetupImplementationFromSold.ToString().ToLowerInvariant();
+    const status = document.getElementById('statusSelect');
+    const quality = document.getElementById('qualitySelect');
+    const nextFollowUp = document.getElementById('nextFollowUpInput');
+    const demoScheduled = document.getElementById('demoScheduledInput');
+    const demoDone = document.getElementById('demoDoneInput');
+    const note = document.getElementById('followUpNoteInput');
+    const originalStatus = form.dataset.originalStatus || '';
+    const originalNote = form.dataset.originalNote || '';
+
+    if (isReadOnly) {
+        form.querySelectorAll('input, textarea, select, button[type="submit"]').forEach(function (control) {
+            if (control.type !== 'hidden') {
+                control.setAttribute('readonly', 'readonly');
+                if (control.tagName === 'SELECT' || control.tagName === 'BUTTON') control.setAttribute('disabled', 'disabled');
+            }
+        });
+    }
+
+    function syncStatusFields() {
+        const currentStatus = status ? status.value : '';
+        const sold = currentStatus === 'Sold';
+        const close = currentStatus === 'Close';
+        document.querySelectorAll('.sold-field').forEach(function (element) { element.style.display = sold ? '' : 'none'; });
+        document.querySelectorAll('.close-field').forEach(function (element) { element.style.display = close ? '' : 'none'; });
+        document.querySelectorAll('.forward-partner-field').forEach(function (element) { element.style.display = currentStatus === 'Forwarded to Partner' ? '' : 'none'; });
+        document.querySelectorAll('.forward-user-field').forEach(function (element) { element.style.display = currentStatus === 'Forwarded to User' ? '' : 'none'; });
+        refreshScore();
+    }
+
+    function dateValue(days) {
+        const date = new Date();
+        date.setHours(12, 0, 0, 0);
+        date.setDate(date.getDate() + days);
+        return date.toISOString().slice(0, 10);
+    }
+
+    document.querySelectorAll('.js-followup-day').forEach(function (button) {
+        button.addEventListener('click', function () {
+            if (!nextFollowUp) return;
+            nextFollowUp.value = dateValue(parseInt(button.dataset.days || '0', 10));
+            nextFollowUp.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+
+    document.querySelectorAll('.js-stage').forEach(function (button) {
+        button.addEventListener('click', function () {
+            if (!status) return;
+            status.value = button.dataset.status || 'Follow Up';
+            if (status.value === 'Demo Scheduled' && demoScheduled && !demoScheduled.value) demoScheduled.value = dateValue(1);
+            if (nextFollowUp && !nextFollowUp.value) nextFollowUp.value = dateValue(status.value === 'Negotiation' ? 2 : 1);
+            syncStatusFields();
+        });
+    });
+
+    function refreshScore() {
+        const mobile = form.querySelector('[name="Mobile1"]')?.value.trim() || '';
+        const email = form.querySelector('[name="Email1"]')?.value.trim() || '';
+        const product = form.querySelector('[name="ProductName"]')?.value.trim() || '';
+        const statusValue = status?.value || form.querySelector('[name="Status"]')?.value || '';
+        const qualityValue = quality?.value || form.querySelector('[name="InquiryQuality"]')?.value || '';
+        let score = 10;
+        if (mobile) score += 15;
+        if (email) score += 5;
+        if (product) score += 15;
+        if (qualityValue === 'Genuine') score += 20;
+        if (nextFollowUp?.value) score += 10;
+        if (demoScheduled?.value) score += 10;
+        if (demoDone?.value) score += 10;
+        if (statusValue === 'Negotiation') score += 15;
+        if (statusValue === 'Sold') score = 100;
+        score = Math.min(100, score);
+        const target = document.getElementById('liveConversionScore');
+        if (target) target.textContent = score + '%';
+    }
+
+    [status, quality, nextFollowUp, demoScheduled, demoDone].forEach(function (control) {
+        control?.addEventListener('change', refreshScore);
+    });
+    form.querySelectorAll('[name="Mobile1"], [name="Email1"], [name="ProductName"]').forEach(function (control) {
+        control.addEventListener('input', refreshScore);
+        control.addEventListener('change', refreshScore);
+    });
+
+    form.addEventListener('submit', function (event) {
+        if (isReadOnly) {
+            event.preventDefault();
+            return;
+        }
+
+        const currentStatus = status?.value || '';
+        const currentQuality = quality?.value || '';
+        const activeStages = ['Follow Up', 'Demo Scheduled', 'Demo Done', 'Negotiation'];
+        if (activeStages.includes(currentStatus) && currentQuality !== 'Not Genuine' && nextFollowUp && !nextFollowUp.value) {
+            event.preventDefault();
+            nextFollowUp.classList.add('is-invalid');
+            nextFollowUp.focus();
+            alert('Next Follow Up date is required for an active inquiry.');
+            return;
+        }
+        // Latest Follow-up Note is optional now — no longer blocks save when left blank.
+        if (currentStatus === 'Sold') {
+            const soldRequired = [
+                { control: form.querySelector('[name="LicenseNumber"]'), label: 'License number' },
+                { control: form.querySelector('[name="BillNo"]'), label: 'Bill number' },
+                { control: form.querySelector('[name="BillDate"]'), label: 'Bill date' }
+            ];
+            const missing = soldRequired.find(function (item) { return item.control && !String(item.control.value || '').trim(); });
+            if (missing) {
+                event.preventDefault();
+                missing.control.classList.add('is-invalid');
+                missing.control.focus();
+                alert(missing.label + ' is required when status is Sold.');
+                return;
+            }
+        }
+        if (!isCreate && currentStatus === 'Sold' && originalStatus !== 'Sold' && canSetupImplementationFromSold && !form.dataset.implementationDecision) {
+            event.preventDefault();
+            const customer = form.querySelector('[name="FirmName"]')?.value.trim()
+                || form.querySelector('[name="PersonName"]')?.value.trim()
+                || 'Customer';
+            const product = form.querySelector('[name="ProductName"]')?.value.trim() || '';
+            window.ProfitNxCRM?.confirmImplementationSetup({ customer, product })
+                .then(function (decision) {
+                    if (decision === null || typeof decision === 'undefined') return;
+                    const setupField = form.querySelector('.setup-implementation-value');
+                    if (setupField) setupField.value = decision ? 'true' : 'false';
+                    form.dataset.implementationDecision = decision ? 'yes' : 'no';
+                    form.requestSubmit();
+                });
+            return;
+        }
+    });
+
+    document.querySelectorAll('.js-copy-summary').forEach(function (button) {
+        button.addEventListener('click', async function () {
+            const text = button.dataset.summary || '';
+            try {
+                await navigator.clipboard.writeText(text);
+                const oldText = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check2"></i> Copied';
+                setTimeout(function () { button.innerHTML = oldText; }, 1500);
+            } catch {
+                window.prompt('Copy inquiry summary:', text);
+            }
+        });
+    });
+
+    status?.addEventListener('change', syncStatusFields);
+    quality?.addEventListener('change', refreshScore);
+    syncStatusFields();
+    refreshScore();
+})();
+</script>
+
+<script>
+(function () {
+    const panel = document.getElementById('inquiryDocumentsPanel');
+    const docsToggle = document.getElementById('inqDocsToggle');
+    const docsBody = document.getElementById('inqDocsBody');
+    if (docsToggle && docsBody) {
+        docsToggle.addEventListener('click', function () {
+            const open = docsBody.style.display !== 'none';
+            docsBody.style.display = open ? 'none' : '';
+            docsToggle.textContent = open ? 'Show' : 'Hide';
+            docsToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+        });
+    }
+
+    if (!panel) return;
+    const inquiryId = panel.getAttribute('data-inquiry-id');
+    if (!inquiryId) { panel.style.display = 'none'; return; }
+
+    // Arrived from the "Sent × N" badge on the Inquiry Pipeline list —
+    // jump straight to the documents/send-history panel (Point 2 fix).
+    if (location.hash === '#inquiryDocumentsPanel') {
+        window.setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    }
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    const listEl = document.getElementById('inqDocList');
+    const histEl = document.getElementById('inqSendHistory');
+    const resultEl = document.getElementById('inqSendResult');
+    const countBadge = document.getElementById('inqDocCountBadge');
+
+    function tokenBody(extra) {
+        const fd = new FormData();
+        fd.append('__RequestVerificationToken', token);
+        Object.keys(extra || {}).forEach(k => {
+            const v = extra[k];
+            if (Array.isArray(v)) v.forEach(x => fd.append(k, x));
+            else fd.append(k, v);
+        });
+        return fd;
+    }
+
+    function esc(s) {
+        return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    async function refreshDocs() {
+        try {
+            const res = await fetch('/Inquiry/Documents?id=' + encodeURIComponent(inquiryId), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await res.json();
+            const docs = data.documents || [];
+            const logs = data.sendLogs || data.history || [];
+            if (countBadge) countBadge.textContent = docs.length + (docs.length === 1 ? ' file' : ' files');
+
+            // Count sends per doc type
+            const sendCount = {};
+            const lastSend = {};
+            logs.forEach(function (l) {
+                const t = l.sendType || l.docType || 'Other';
+                sendCount[t] = (sendCount[t] || 0) + 1;
+                if (!lastSend[t] || (l.sentAt || '') > (lastSend[t] || '')) lastSend[t] = l.sentAt || '';
+            });
+
+            if (!docs.length) {
+                listEl.innerHTML = '<div class="text-muted py-2">No files attached yet.</div>';
+            } else {
+                listEl.innerHTML = docs.map(function (d) {
+                    const type = d.docType || 'Other';
+                    const times = sendCount[type] || 0;
+                    const last = lastSend[type] || '';
+                    const meta = times
+                        ? ('Sent <b>' + times + '</b> time' + (times > 1 ? 's' : '') + (last ? (' · last ' + esc(last)) : ''))
+                        : 'Not sent yet';
+                    return '<div class="inq-doc-row">' +
+                        '<div class="inq-doc-row-main">' +
+                        '<label class="inq-doc-check-wrap"><input type="checkbox" class="form-check-input inq-doc-check" value="' + esc(d.id) + '" checked /></label>' +
+                        '<div class="inq-doc-meta">' +
+                        '<div class="inq-doc-name"><span class="badge text-bg-light border me-1">' + esc(type) + '</span> ' +
+                        '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.fileName) + '</a></div>' +
+                        '<div class="text-muted small">Uploaded ' + esc(d.uploadedAt) + (d.uploadedByName ? (' · ' + esc(d.uploadedByName)) : '') + '</div>' +
+                        '<div class="small text-primary">' + meta + '</div>' +
+                        '</div></div>' +
+                        '<div class="inq-doc-actions">' +
+                        '<a class="btn btn-sm btn-outline-secondary" href="' + esc(d.url) + '" target="_blank" title="Open"><i class="bi bi-eye"></i></a> ' +
+                        '<button type="button" class="btn btn-sm btn-outline-danger inq-doc-del" data-id="' + esc(d.id) + '" title="Delete"><i class="bi bi-trash"></i></button>' +
+                        '</div></div>';
+                }).join('');
+            }
+
+            if (histEl) {
+                if (!logs.length) {
+                    histEl.innerHTML = '';
+                } else {
+                    histEl.innerHTML = '<div class="inq-docs-box-title">Send log</div><div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>When</th><th>Type</th><th>Channel</th><th>By</th><th>Status</th><th>Files sent</th></tr></thead><tbody>' +
+                        logs.slice(0, 20).map(function (l) {
+                            const files = l.sentFiles || [];
+                            const filesHtml = files.length
+                                ? files.map(function (f) {
+                                    return '<a href="' + esc(f.url) + '" target="_blank" rel="noopener" class="badge text-bg-light border me-1 mb-1" title="Open ' + esc(f.fileName) + '"><i class="bi bi-file-earmark-text"></i> ' + esc(f.fileName) + '</a>';
+                                  }).join('')
+                                : '<span class="text-muted small">—</span>';
+                            return '<tr><td>' + esc(l.sentAt || '') + '</td><td>' + esc(l.sendType || '') + '</td><td>' + esc(l.channel || '') + '</td><td>' + esc(l.sentByName || '') + '</td><td>' + esc(l.status || 'Sent') + '</td><td>' + filesHtml + '</td></tr>';
+                        }).join('') +
+                        '</tbody></table></div>';
+                }
+            }
+        } catch (e) {
+            if (listEl) listEl.innerHTML = '<div class="text-danger">Could not load documents.</div>';
+        }
+    }
+
+    document.getElementById('inqOpenSendBtn')?.addEventListener('click', function () {
+        const modalEl = document.getElementById('inqSendModal');
+        if (modalEl && window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        } else if (modalEl) {
+            modalEl.style.display = 'block';
+            modalEl.classList.add('show');
+        }
+    });
+
+    // Preview selected files — actual image thumbnails so you can see the
+    // exact file before it uploads, not just its name (Point 2 fix).
+    function fileIconClass(name) {
+        const ext = (name.split('.').pop() || '').toLowerCase();
+        if (['pdf'].includes(ext)) return 'bi-file-earmark-pdf text-danger';
+        if (['doc', 'docx'].includes(ext)) return 'bi-file-earmark-word text-primary';
+        if (['xls', 'xlsx', 'csv'].includes(ext)) return 'bi-file-earmark-excel text-success';
+        if (['zip', 'rar'].includes(ext)) return 'bi-file-earmark-zip text-warning';
+        return 'bi-file-earmark text-secondary';
+    }
+    document.getElementById('inqDocFile')?.addEventListener('change', function () {
+        const preview = document.getElementById('inqDocSelectedPreview');
+        if (!preview) return;
+        const files = Array.from(this.files || []);
+        if (!files.length) { preview.classList.add('d-none'); preview.innerHTML = ''; return; }
+        preview.classList.remove('d-none');
+        preview.innerHTML = '<div class="small text-muted mb-2">' + files.length + ' file(s) selected — this is exactly what will attach:</div>' +
+            '<div class="inq-doc-thumb-row d-flex flex-wrap gap-2"></div>';
+        const row = preview.querySelector('.inq-doc-thumb-row');
+        files.forEach(f => {
+            const card = document.createElement('div');
+            card.className = 'inq-doc-thumb-card';
+            card.title = f.name;
+            if (f.type && f.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.className = 'inq-doc-thumb-img';
+                img.src = URL.createObjectURL(f);
+                card.appendChild(img);
+            } else {
+                const icon = document.createElement('i');
+                icon.className = 'bi ' + fileIconClass(f.name) + ' inq-doc-thumb-icon';
+                card.appendChild(icon);
+            }
+            const label = document.createElement('div');
+            label.className = 'inq-doc-thumb-name';
+            label.textContent = f.name.length > 16 ? (f.name.slice(0, 13) + '…') : f.name;
+            card.appendChild(label);
+            const size = document.createElement('div');
+            size.className = 'inq-doc-thumb-size';
+            size.textContent = Math.round(f.size / 1024) + ' KB';
+            card.appendChild(size);
+            row.appendChild(card);
+        });
+    });
+
+    document.getElementById('inqDocUploadBtn')?.addEventListener('click', async function () {
+        const fileInput = document.getElementById('inqDocFile');
+        const files = Array.from(fileInput?.files || []);
+        if (!files.length) { alert('Choose at least one file first'); return; }
+        const maxBytes = 15 * 1024 * 1024;
+        const tooBig = files.filter(f => f.size > maxBytes);
+        if (tooBig.length) { alert('These files exceed 15 MB: ' + tooBig.map(f => f.name).join(', ')); return; }
+        const docType = document.getElementById('inqDocType').value;
+        const notes = document.getElementById('inqDocNotes').value || '';
+        this.disabled = true;
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        let okCount = 0, errMsg = '';
+        try {
+            for (let i = 0; i < files.length; i++) {
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + (i + 1) + '/' + files.length;
+                const fd = tokenBody({ id: inquiryId, docType: docType, notes: notes });
+                fd.append('file', files[i]);
+                const res = await fetch('/Inquiry/UploadDocument', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.ok) okCount++;
+                else errMsg = data.error || 'Upload failed';
+            }
+            if (okCount) {
+                fileInput.value = '';
+                document.getElementById('inqDocNotes').value = '';
+                const preview = document.getElementById('inqDocSelectedPreview');
+                if (preview) { preview.classList.add('d-none'); preview.innerHTML = ''; }
+                await refreshDocs();
+            }
+            if (errMsg && okCount < files.length) alert((okCount ? (okCount + ' uploaded. ') : '') + 'Error: ' + errMsg);
+            else if (!okCount) alert(errMsg || 'Upload failed');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    });
+
+    listEl?.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.inq-doc-del');
+        if (!btn) return;
+        if (!confirm('Delete this file from inquiry?')) return;
+        const fd = tokenBody({ id: inquiryId, documentId: btn.getAttribute('data-id') });
+        await fetch('/Inquiry/DeleteDocument', { method: 'POST', body: fd });
+        await refreshDocs();
+    });
+
+    document.getElementById('inqSendBtn')?.addEventListener('click', async function () {
+        const ids = Array.from(document.querySelectorAll('.inq-doc-check:checked')).map(x => x.value);
+        const fd = tokenBody({
+            id: inquiryId,
+            sendType: document.getElementById('inqSendType').value,
+            channel: document.getElementById('inqSendChannel').value,
+            message: document.getElementById('inqSendMessage').value || ''
+        });
+        ids.forEach(id => fd.append('documentIds', id));
+        this.disabled = true;
+        if (resultEl) resultEl.innerHTML = 'Sending…';
+        try {
+            const res = await fetch('/Inquiry/SendDocuments', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!data.ok) {
+                if (resultEl) resultEl.innerHTML = '<span class="text-danger">' + (data.error || 'Send failed') + '</span>';
+            } else {
+                if (resultEl) resultEl.innerHTML = '<span class="text-success">' + (data.status || 'Done') + '</span>' +
+                    (data.whatsAppUrl ? ' · <a target="_blank" class="fw-semibold" href="' + data.whatsAppUrl + '"><i class="bi bi-whatsapp"></i> Open WhatsApp</a>' : '');
+                await refreshDocs();
+                const modalEl = document.getElementById('inqSendModal');
+                if (modalEl && window.bootstrap?.Modal) {
+                    window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                }
+            }
+        } catch {
+            if (resultEl) resultEl.innerHTML = '<span class="text-danger">Network error</span>';
+        } finally { this.disabled = false; }
+    });
+
+    refreshDocs();
+})();
+</script>
+
+}

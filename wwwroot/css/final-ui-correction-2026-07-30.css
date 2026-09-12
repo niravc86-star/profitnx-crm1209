@@ -1,0 +1,422 @@
+/* =====================================================================
+   ProfitNx CRM — FINAL UI CORRECTION & PROFESSIONAL POLISH (2026-07-30)
+   ---------------------------------------------------------------------
+   Why this file exists:
+   Over many update rounds the project collected 7 stacked CSS files
+   (site.css, professional-ui.css, premium-2026.css, crm-reference-ui.css,
+   corporate-ui-2026.css, crm-polish-2026-07-29.css,
+   new-ui-reference-2026-07-29.css) that each re-declare the same
+   selectors (.side-rail, .form-control, .menu-link, the login screen,
+   etc). Because they disagree with each other, two visible bugs showed
+   up in the live app / APK:
+
+   1) On the Login screen, the left "feature card" showcase panel
+      (.corporate-auth-showcase) had `overflow:hidden` while its content
+      (brand row + heading + 3 feature cards + trust strip) could be
+      taller than the panel on shorter screens — so the bottom cards
+      silently got clipped/"stuck" instead of being reachable.
+
+   2) On narrower / mobile (APK WebView) widths, a leftover mobile
+      override in crm-reference-ui.css re-enlarged every input/select to
+      52px height and 0.92rem font using a more specific selector than
+      the later "shrink it back down" files could beat — so inputs
+      rendered "very very big" specifically on mobile, even though they
+      looked fine on desktop.
+
+   This file is loaded LAST (after all 7 legacy files) and uses
+   selectors that are guaranteed to win the CSS cascade (extra element +
+   class specificity, plus !important) so it can fix both bugs and add
+   one consistent, professional visual language everywhere — without
+   deleting any of the older files (safe / reversible).
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   0. Shared tokens (kept in sync with --pn-* used elsewhere in the app)
+   --------------------------------------------------------------------- */
+:root{
+  --pnf-sidebar-w:266px;
+  --pnf-radius:12px;
+  --pnf-radius-sm:9px;
+  --pnf-blue:#2f5cff;
+  --pnf-blue-dark:#2448cf;
+  --pnf-navy:#07172f;
+  --pnf-navy-2:#10264c;
+  --pnf-border:#dce6f2;
+  --pnf-text:#17324d;
+  --pnf-muted:#6e8197;
+  --pnf-input-h:40px;
+  --pnf-input-font:.875rem;
+}
+
+/* =====================================================================
+   1. LOGIN SCREEN — fix the clipped / "stuck" left feature-card panel
+   ===================================================================== */
+/* Root bug fix: allow the showcase to scroll internally instead of
+   silently cropping its bottom content. overflow-x stays hidden so the
+   decorative glow circles keep their clean rounded edge; overflow-y
+   becomes auto so nothing is ever inaccessible again. */
+html body.corporate-auth-page .corporate-auth-showcase{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  max-height:100%!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:rgba(255,255,255,.28) transparent!important;
+}
+html body.corporate-auth-page .corporate-auth-showcase::-webkit-scrollbar{width:6px!important}
+html body.corporate-auth-page .corporate-auth-showcase::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.28)!important;border-radius:99px!important;
+}
+
+/* Belt-and-braces: also let the whole auth wrapper size to its content
+   instead of a hard viewport-locked height, so on very short windows
+   (e.g. a laptop with browser chrome, or an in-app WebView) the page
+   simply grows and the browser scrolls, rather than clipping anything. */
+html body.corporate-auth-page .corporate-auth-wrapper{
+  min-height:auto!important;
+  align-items:start!important;
+  padding-block:16px!important;
+}
+html body.corporate-auth-page .corporate-auth-showcase,
+html body.corporate-auth-page .corporate-auth-panel{
+  min-height:min(680px,calc(100svh - 32px))!important;
+}
+
+/* Slightly tighten the showcase content so it comfortably fits on one
+   screen on most devices (scroll above is now only a safety net). */
+html body.corporate-auth-page .auth-feature-grid{gap:8px!important;margin-top:16px!important}
+html body.corporate-auth-page .auth-feature-card{padding:10px 12px!important;border-radius:12px!important}
+html body.corporate-auth-page .auth-showcase-copy{margin-top:18px!important}
+html body.corporate-auth-page .auth-showcase-copy h1{font-size:1.7rem!important;margin:10px 0 8px!important}
+html body.corporate-auth-page .auth-trust-strip{margin-top:12px!important}
+
+@media (max-width:1199.98px){
+  html body.corporate-auth-page .corporate-auth-showcase{display:none!important}
+}
+
+/* =====================================================================
+   2. GLOBAL INPUTS & BUTTONS — one compact, professional size, always
+      (this is the fix for "input badhu motu aave che" — the mobile
+      52px/0.92rem override is neutralized at every breakpoint)
+   ===================================================================== */
+html body.crm-app-body .form-control,
+html body.crm-app-body .form-select,
+html body.crm-app-body textarea.form-control,
+html body.crm-app-body .input-group-text,
+html body.auth-page .form-control,
+html body.corporate-auth-page .form-control{
+  min-height:var(--pnf-input-h)!important;
+  height:auto!important;
+  padding:.5rem .75rem!important;
+  font-size:var(--pnf-input-font)!important;
+  border-radius:10px!important;
+  border:1px solid #d3dce8!important;
+  background:#fff!important;
+  color:var(--pnf-text)!important;
+  box-shadow:none!important;
+  line-height:1.35!important;
+}
+html body.crm-app-body textarea.form-control{min-height:92px!important;padding-top:.6rem!important}
+html body.crm-app-body .form-control:focus,
+html body.crm-app-body .form-select:focus,
+html body.crm-app-body textarea.form-control:focus{
+  border-color:#7b9cff!important;
+  box-shadow:0 0 0 3px rgba(47,92,255,.12)!important;
+}
+html body.crm-app-body .form-control-sm,
+html body.crm-app-body .form-select-sm{
+  min-height:34px!important;font-size:.8rem!important;border-radius:8px!important;padding:.32rem .6rem!important;
+}
+html body.crm-app-body .form-label,
+html body.crm-app-body label{
+  font-size:.78rem!important;font-weight:700!important;color:#40536d!important;margin-bottom:5px!important;
+}
+
+html body.crm-app-body .btn,
+html body.auth-page .btn,
+html body.corporate-auth-page .auth-submit{
+  min-height:var(--pnf-input-h)!important;
+  padding:.5rem .9rem!important;
+  font-size:.85rem!important;
+  font-weight:650!important;
+  border-radius:10px!important;
+  box-shadow:none!important;
+}
+html body.crm-app-body .btn-lg{min-height:46px!important;font-size:.92rem!important;padding:.62rem 1.1rem!important}
+html body.crm-app-body .btn-sm{min-height:32px!important;font-size:.76rem!important;padding:.3rem .65rem!important}
+html body.crm-app-body .btn-primary{background:var(--pnf-blue)!important;border-color:var(--pnf-blue)!important}
+html body.crm-app-body .btn-primary:hover{background:var(--pnf-blue-dark)!important;border-color:var(--pnf-blue-dark)!important}
+html body.crm-app-body .btn-outline-primary{color:var(--pnf-blue)!important;border-color:#b9caf2!important}
+html body.crm-app-body .btn-outline-primary:hover{background:#eef2ff!important;color:var(--pnf-blue-dark)!important}
+
+/* This exact rule (extra `html` + `body.crm-app-body`) is what beats the
+   old mobile-only 52px override — it is guaranteed to win at ALL widths,
+   including inside the Android app WebView. */
+@media (max-width:1600px){
+  html body.crm-app-body .form-control,
+  html body.crm-app-body .form-select,
+  html body.crm-app-body .input-group-text{
+    min-height:var(--pnf-input-h)!important;
+    font-size:var(--pnf-input-font)!important;
+  }
+}
+
+/* =====================================================================
+   3. SIDEBAR — never clipped again, one clean scroll behaviour, one
+      clean mobile drawer (replaces the two competing mobile patterns)
+   ===================================================================== */
+html body.crm-app-body .app-shell{
+  display:grid!important;
+  grid-template-columns:var(--pnf-sidebar-w) minmax(0,1fr)!important;
+  gap:0!important;padding:0!important;
+}
+html body.crm-app-body .side-rail{
+  position:sticky!important;
+  top:0!important;
+  height:100vh!important;
+  max-height:100vh!important;
+  display:flex!important;
+  flex-direction:column!important;
+  border-radius:0!important;
+  padding:20px 14px 14px!important;
+  background:linear-gradient(180deg,var(--pnf-navy),var(--pnf-navy-2))!important;
+  border:0!important;box-shadow:none!important;
+  overflow:hidden!important; /* the header never scrolls, only the nav below does */
+}
+html body.crm-app-body .side-rail .brand-block{flex:0 0 auto!important;margin:0 4px 16px!important}
+html body.crm-app-body .side-rail .sidebar-overline{flex:0 0 auto!important;margin:0 6px 10px!important}
+/* THE key fix: the menu itself is the scrollable region, sized with
+   flex + min-height:0 so it can never push content past the viewport —
+   whatever doesn't fit simply scrolls, it's never cropped. */
+html body.crm-app-body .side-rail nav.menu-list{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding-right:4px!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:rgba(255,255,255,.22) transparent!important;
+}
+html body.crm-app-body .side-rail nav.menu-list::-webkit-scrollbar{width:6px!important}
+html body.crm-app-body .side-rail nav.menu-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22)!important;border-radius:99px!important}
+
+/* Consistent, single active/hover treatment (blue, matching the
+   reference screenshot) — replaces the mismatched pink/purple/white
+   variants left over from earlier iterations. */
+html body.crm-app-body .menu-link{
+  border-radius:10px!important;color:#d7e2f5!important;font-weight:600!important;
+  transform:none!important;background:transparent!important;border:1px solid transparent!important;
+}
+html body.crm-app-body .menu-link:hover{background:rgba(255,255,255,.08)!important;color:#fff!important;transform:none!important}
+html body.crm-app-body .menu-link.active,
+html body.crm-app-body .menu-link.highlight,
+html body.crm-app-body .menu-link[aria-current='page']{
+  background:linear-gradient(90deg,var(--pnf-blue),#5677ff)!important;
+  color:#fff!important;border-color:transparent!important;
+  box-shadow:0 8px 20px rgba(47,92,255,.30)!important;
+}
+html body.crm-app-body .menu-link.active .menu-icon,
+html body.crm-app-body .menu-link.highlight .menu-icon,
+html body.crm-app-body .menu-link[aria-current='page'] .menu-icon{
+  background:rgba(255,255,255,.2)!important;color:#fff!important;
+}
+
+/* Main content shifts once, cleanly — no more competing paddings. */
+html body.crm-app-body .main-panel{min-width:0!important;padding:0 24px 28px!important}
+html body.crm-app-body .top-panel{margin:0 -24px 22px!important}
+
+/* ---- One mobile pattern only: off-canvas drawer with backdrop ---- */
+@media (max-width:991.98px){
+  html body.crm-app-body .app-shell{display:block!important;padding:0!important}
+  html body.crm-app-body .side-rail{
+    position:fixed!important;left:0!important;top:0!important;
+    width:min(300px,86vw)!important;height:100dvh!important;max-height:100dvh!important;
+    transform:translateX(-105%)!important;transition:transform .22s ease!important;
+    box-shadow:24px 0 60px rgba(3,14,29,.35)!important;
+    border-radius:0!important;z-index:1050!important;
+  }
+  html body.crm-nav-open .side-rail{transform:translateX(0)!important}
+  html body.crm-app-body .crm-sidebar-backdrop{
+    display:block!important;position:fixed!important;inset:0!important;z-index:1045!important;
+    background:rgba(4,14,28,.5)!important;opacity:0!important;pointer-events:none!important;
+    transition:opacity .2s ease!important;
+  }
+  html body.crm-nav-open .crm-sidebar-backdrop{opacity:1!important;pointer-events:auto!important}
+  html body.crm-nav-open{overflow:hidden!important}
+  html body.crm-app-body .side-rail nav.menu-list{overflow-y:auto!important;overflow-x:hidden!important}
+  html body.crm-app-body .menu-list,
+  html body.crm-app-body .menu-group{display:flex!important;flex-direction:column!important}
+  html body.crm-app-body .menu-link{width:100%!important;min-width:0!important;height:auto!important;flex:initial!important}
+  html body.crm-app-body .menu-text,
+  html body.crm-app-body .menu-group-label,
+  html body.crm-app-body .sidebar-overline,
+  html body.crm-app-body .brand-block{display:flex!important}
+  html body.crm-app-body .mobile-nav-toggle{display:grid!important;place-items:center!important;flex:0 0 40px!important}
+  html body.crm-app-body .main-panel{padding:0 14px 22px!important}
+  html body.crm-app-body .top-panel{margin:0 -14px 16px!important;padding:12px 14px!important}
+}
+@media (min-width:992px){
+  html body.crm-app-body .mobile-nav-toggle{display:none!important}
+  html body.crm-app-body .crm-sidebar-backdrop{display:none!important}
+}
+
+/* =====================================================================
+   4. CARDS, TABLES, MODALS — one consistent, moderate, professional
+      look everywhere (matches the reference screenshot: soft shadow,
+      rounded-12px cards, calm borders, tabular numbers)
+   ===================================================================== */
+html body.crm-app-body :where(.card,.card-soft,.crm-card,.pro-card,.dash-panel,
+  .simple-report-card,.professional-filter-card,.kpi-card,.crm-panel){
+  border-radius:var(--pnf-radius)!important;
+  border-color:var(--pnf-border)!important;
+  box-shadow:0 10px 28px rgba(15,31,56,.07)!important;
+}
+html body.crm-app-body .table thead th{
+  background:#f8fafc!important;color:#53647b!important;font-size:.72rem!important;
+  font-weight:800!important;letter-spacing:.05em!important;text-transform:uppercase!important;
+  border-bottom:1px solid var(--pnf-border)!important;
+}
+html body.crm-app-body .modal-content{border-radius:16px!important;box-shadow:0 26px 70px rgba(15,31,56,.24)!important;border:0!important}
+html body.crm-app-body .status-badge,
+html body.crm-app-body .stat-pill,
+html body.crm-app-body .status-pill{border-radius:999px!important;font-weight:700!important}
+
+/* =====================================================================
+   5. FINAL SAFETY NET — nothing in the app should ever be able to
+      silently clip content the way the login showcase did.
+   ===================================================================== */
+html body.crm-app-body .page-surface,
+html body.crm-app-body .main-panel{overflow:visible!important}
+html body.crm-app-body{overflow-x:hidden!important}
+
+/* =====================================================================
+   6. QUICK FIXES — 2026-07-31
+   ===================================================================== */
+
+/* Change 1: Activity History — fit to screen with its own scroll instead
+   of stretching the whole page taller as records grow. */
+html body.crm-app-body .activity-panel{display:flex!important;flex-direction:column!important;max-height:min(640px, calc(100vh - 180px))!important}
+html body.crm-app-body .activity-list.activity-list-scroll{
+  max-height:min(520px, calc(100vh - 260px))!important;overflow-y:auto!important;padding-right:6px!important;
+}
+html body.crm-app-body .activity-list.activity-list-scroll::-webkit-scrollbar{width:6px}
+html body.crm-app-body .activity-list.activity-list-scroll::-webkit-scrollbar-thumb{background:#c9d4e3;border-radius:999px}
+html body.crm-app-body .activity-list.activity-list-scroll::-webkit-scrollbar-track{background:transparent}
+
+/* Change 2: Stage pill — "Reopened - Action Required" needs a distinct,
+   attention-grabbing background instead of the flat default blue that
+   every other stage also uses. */
+html body.crm-app-body .status-pill[data-stage]{background:#edf4ff;color:#2755de;border:1px solid #d7e4ff}
+html body.crm-app-body .status-pill{white-space:nowrap!important}
+html body.crm-app-body .status-pill[data-stage^="Reopened"]{
+  /* Long label ("Reopened - Action Required") no longer wraps inside a
+     999px pill (which left a broken, half-covered background). Instead
+     it renders as a proper single-line alert badge with its own
+     background covering the full text, plus an icon so it reads as an
+     action item rather than a generic status. */
+  display:inline-flex!important;align-items:center!important;gap:5px!important;
+  white-space:nowrap!important;max-width:none!important;
+  border-radius:8px!important;padding:5px 11px!important;line-height:1.25!important;
+  background:#fff1f1!important;color:#b91c1c!important;border:1px solid #ffc9c9!important;
+  box-shadow:0 1px 3px rgba(185,28,28,.12)!important;font-weight:800!important;
+}
+html body.crm-app-body .status-pill[data-stage^="Reopened"]::before{
+  content:"\26A0";font-size:.85em;line-height:1;
+}
+/* Table cell holding the pill must not force-wrap it either */
+html body.crm-app-body td:has(> .status-pill[data-stage^="Reopened"]){white-space:nowrap!important}
+html body.crm-app-body .status-pill[data-stage="Completed"]{background:#edfff3!important;color:#13804d!important;border:1px solid #bdf0d3!important}
+html body.crm-app-body .status-pill[data-stage="Closed - Training Not Required"]{background:#f2f4f7!important;color:#475467!important;border:1px solid #e3e7ee!important}
+html body.crm-app-body .status-pill[data-stage="Ready to Complete"]{background:#fff8e8!important;color:#946200!important;border:1px solid #ffe3ad!important}
+
+/* Change 3: Inquiry Workspace Help — voice + video controls in the footer. */
+html body.crm-app-body .help-modal-footer{gap:8px!important;flex-wrap:wrap!important}
+html body.crm-app-body .help-modal-footer a.disabled{opacity:.55!important;pointer-events:none!important}
+html body.crm-app-body .help-steps .help-step{display:flex!important;gap:10px!important;align-items:flex-start!important;padding:8px 0!important;border-bottom:1px dashed #e7edf6!important}
+html body.crm-app-body .help-steps .help-step:last-child{border-bottom:none!important}
+html body.crm-app-body .help-steps .help-step.help-step-active{background:#eaf1ff!important;border-radius:12px!important;box-shadow:inset 3px 0 0 #2957dc!important}
+html body.crm-app-body .help-steps .help-step.help-step-active b{background:#2957dc!important;color:#fff!important}
+html body.crm-app-body .help-steps .help-step b{flex:0 0 24px!important;height:24px!important;border-radius:999px!important;background:#eaf1ff!important;color:#2957dc!important;display:grid!important;place-items:center!important;font-size:.72rem!important}
+html body.crm-app-body .help-steps .help-step span{font-size:.84rem!important;line-height:1.5!important;color:var(--pn-text)!important}
+
+/* Change 8: Training Completion Checklist — a clean, single-column,
+   proper list with real, clearly visible checkboxes instead of the
+   2-up card grid with a hidden checkbox. */
+html body.crm-app-body .training-topic-grid{
+  display:flex!important;flex-direction:column!important;gap:8px!important;
+  /* No independent max-height/scroll here anymore — a second, nested
+     scrollbar inside the modal is what made "Other Points Covered" look
+     pushed down / clipped at 100% zoom. The list now flows naturally and
+     the single modal-body scrollbar (from modal-dialog-scrollable)
+     handles everything below the fold. */
+  overflow:visible!important;padding-right:2px!important;
+}
+html body.crm-app-body .training-topic-option{
+  display:flex!important;grid-template-columns:none!important;align-items:flex-start!important;
+  gap:12px!important;padding:10px 13px!important;
+}
+html body.crm-app-body .training-topic-checkbox{
+  position:static!important;opacity:1!important;pointer-events:auto!important;
+  width:19px!important;height:19px!important;flex:0 0 19px!important;margin:2px 0 0!important;
+  accent-color:var(--pn-blue,#2f5cff)!important;cursor:pointer!important;
+}
+html body.crm-app-body .training-topic-check{display:none!important}
+html body.crm-app-body .training-topic-option strong{font-weight:700!important}
+
+/* Change 7/9 (Batch 4): keep the whole checklist modal to one scroll
+   surface, sized safely under a normal 100% zoom laptop viewport, and
+   make sure the Other Points Covered box always renders fully — never
+   squeezed against the footer. */
+html body.crm-app-body #completeTrainingModal .modal-dialog{
+  max-height:calc(100vh - 56px)!important;
+}
+html body.crm-app-body #completeTrainingModal .modal-body{
+  max-height:calc(100vh - 220px)!important;overflow-y:auto!important;
+}
+html body.crm-app-body #completeTrainingModal .other-points-box{
+  margin-bottom:4px!important;
+}
+html body.crm-app-body #completeTrainingModal .other-points-box textarea{
+  min-height:88px!important;
+}
+
+/* =====================================================================
+   Change 5 — Screen Lock overlay. Full-screen, blocks the app until the
+   correct password is entered. Uses the same red-accent brand tone.
+   ===================================================================== */
+.crm-lock-overlay{
+  position:fixed!important;inset:0!important;z-index:20000!important;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(13,20,35,.72)!important;backdrop-filter:blur(6px)!important;
+  -webkit-backdrop-filter:blur(6px)!important;padding:16px;
+}
+.crm-lock-overlay.show{display:flex!important}
+body.crm-locked{overflow:hidden!important}
+.crm-lock-card{
+  width:100%;max-width:380px;background:#fff;border-radius:20px;
+  box-shadow:0 30px 80px rgba(0,0,0,.35);padding:32px 28px;text-align:center;
+}
+.crm-lock-icon{
+  width:56px;height:56px;border-radius:16px;margin:0 auto 14px;
+  background:linear-gradient(135deg,#2f5cff,#1c3fce);color:#fff;
+  display:grid;place-items:center;font-size:1.5rem;
+}
+.crm-lock-card h4{margin:0 0 4px;font-weight:800;color:#111827}
+.crm-lock-card p{margin:0 0 18px;font-size:.82rem;color:#6b7280}
+.crm-lock-card .password-field-wrap{position:relative}
+.crm-lock-card .form-control{padding-right:44px}
+.crm-lock-error{
+  display:flex;align-items:center;gap:6px;color:#b91c1c;background:#fff1f1;
+  border:1px solid #ffc9c9;border-radius:10px;padding:8px 10px;font-size:.78rem;
+  margin-top:12px;text-align:left;
+}
+.crm-lock-error.d-none{display:none}
+.crm-lock-card .btn-brand{border-radius:12px}
+.crm-lock-logout{display:inline-block;margin-top:16px;font-size:.78rem;color:#6b7280;text-decoration:none}
+.crm-lock-logout:hover{color:#2f5cff;text-decoration:underline}
+.crm-lock-card.shake{animation:crmLockShake .35s ease}
+@keyframes crmLockShake{
+  10%,90%{transform:translateX(-1px)}
+  20%,80%{transform:translateX(2px)}
+  30%,50%,70%{transform:translateX(-4px)}
+  40%,60%{transform:translateX(4px)}
+}

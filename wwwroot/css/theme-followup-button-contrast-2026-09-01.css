@@ -1,0 +1,266 @@
+/* ==========================================================================
+   Follow-up reminder action buttons — theme-safe contrast
+   "Today Follow-ups" / "View Today" must remain readable on:
+   - Premium Elite (light surfaces)
+   - Midnight (dark surfaces)
+   Uses existing theme tokens where available; falls back to high-contrast pairs.
+   ========================================================================== */
+
+/* Base (classic / premium / light surfaces) */
+.btn-followup-today,
+a.btn-followup-today {
+  --fu-btn-bg: #0f172a;
+  --fu-btn-fg: #ffffff;
+  --fu-btn-border: #0f172a;
+  --fu-btn-hover-bg: #1e293b;
+  --fu-btn-hover-fg: #ffffff;
+  --fu-btn-hover-border: #1e293b;
+  --fu-btn-active-bg: #020617;
+  --fu-btn-active-fg: #ffffff;
+  --fu-btn-focus-ring: rgba(15, 23, 42, 0.35);
+
+  background-color: var(--fu-btn-bg) !important;
+  color: var(--fu-btn-fg) !important;
+  border: 1px solid var(--fu-btn-border) !important;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  text-decoration: none !important;
+}
+
+.btn-followup-today:hover,
+.btn-followup-today:focus,
+a.btn-followup-today:hover,
+a.btn-followup-today:focus {
+  background-color: var(--fu-btn-hover-bg) !important;
+  color: var(--fu-btn-hover-fg) !important;
+  border-color: var(--fu-btn-hover-border) !important;
+  box-shadow: 0 0 0 0.2rem var(--fu-btn-focus-ring) !important;
+}
+
+.btn-followup-today:active,
+a.btn-followup-today:active {
+  background-color: var(--fu-btn-active-bg) !important;
+  color: var(--fu-btn-active-fg) !important;
+  border-color: var(--fu-btn-active-bg) !important;
+}
+
+.btn-followup-today:disabled,
+.btn-followup-today.disabled,
+a.btn-followup-today.disabled {
+  opacity: 0.65;
+  color: var(--fu-btn-fg) !important;
+  background-color: var(--fu-btn-bg) !important;
+  border-color: var(--fu-btn-border) !important;
+}
+
+/* Premium Elite theme */
+html[data-app-theme="premium"] .btn-followup-today,
+html[data-app-theme="premium"] a.btn-followup-today {
+  --fu-btn-bg: #1d4ed8;
+  --fu-btn-fg: #ffffff;
+  --fu-btn-border: #1d4ed8;
+  --fu-btn-hover-bg: #1e40af;
+  --fu-btn-hover-fg: #ffffff;
+  --fu-btn-hover-border: #1e40af;
+  --fu-btn-active-bg: #1e3a8a;
+  --fu-btn-active-fg: #ffffff;
+  --fu-btn-focus-ring: rgba(29, 78, 216, 0.35);
+}
+
+/* Midnight (Dark) theme — light chip on dark surface for maximum readability */
+html[data-app-theme="midnight"] .btn-followup-today,
+html[data-app-theme="midnight"] a.btn-followup-today {
+  --fu-btn-bg: #f8fafc;
+  --fu-btn-fg: #0f172a;
+  --fu-btn-border: #e2e8f0;
+  --fu-btn-hover-bg: #e2e8f0;
+  --fu-btn-hover-fg: #020617;
+  --fu-btn-hover-border: #cbd5e1;
+  --fu-btn-active-bg: #cbd5e1;
+  --fu-btn-active-fg: #020617;
+  --fu-btn-focus-ring: rgba(248, 250, 252, 0.35);
+}
+
+/* Inside warning alerts (cream/yellow) keep dark solid button for contrast */
+.alert-warning .btn-followup-today,
+.alert.alert-warning a.btn-followup-today {
+  --fu-btn-bg: #0f172a;
+  --fu-btn-fg: #ffffff;
+  --fu-btn-border: #0f172a;
+  --fu-btn-hover-bg: #1e293b;
+  --fu-btn-hover-fg: #ffffff;
+  --fu-btn-hover-border: #1e293b;
+  --fu-btn-active-bg: #020617;
+  --fu-btn-active-fg: #ffffff;
+  --fu-btn-focus-ring: rgba(15, 23, 42, 0.28);
+}
+
+html[data-app-theme="midnight"] .alert-warning .btn-followup-today,
+html[data-app-theme="midnight"] .alert.alert-warning a.btn-followup-today {
+  --fu-btn-bg: #f8fafc;
+  --fu-btn-fg: #0f172a;
+  --fu-btn-border: #e2e8f0;
+  --fu-btn-hover-bg: #e2e8f0;
+  --fu-btn-hover-fg: #020617;
+  --fu-btn-hover-border: #cbd5e1;
+  --fu-btn-active-bg: #cbd5e1;
+  --fu-btn-active-fg: #020617;
+  --fu-btn-focus-ring: rgba(248, 250, 252, 0.3);
+}
+
+html[data-app-theme="premium"] .alert-warning .btn-followup-today,
+html[data-app-theme="premium"] .alert.alert-warning a.btn-followup-today {
+  --fu-btn-bg: #1d4ed8;
+  --fu-btn-fg: #ffffff;
+  --fu-btn-border: #1d4ed8;
+  --fu-btn-hover-bg: #1e40af;
+  --fu-btn-hover-fg: #ffffff;
+  --fu-btn-hover-border: #1e40af;
+  --fu-btn-active-bg: #1e3a8a;
+  --fu-btn-active-fg: #ffffff;
+  --fu-btn-focus-ring: rgba(29, 78, 216, 0.35);
+}
+
+@media (max-width: 576px) {
+  .btn-followup-today,
+  a.btn-followup-today {
+    white-space: nowrap;
+  }
+}
+
+
+/* ==========================================================================
+   Conversion focus strip (Hot Leads / Overdue / Missing Next Action / Negotiation)
+   Must remain readable on Premium Elite + Midnight (user report: washed-out text)
+   ========================================================================== */
+
+/* Premium Elite — stronger contrast on light/premium surfaces */
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item {
+  background: linear-gradient(145deg, #ffffff 0%, #eef4ff 100%) !important;
+  border: 1px solid rgba(29, 78, 216, 0.22) !important;
+  color: #0f172a !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10) !important;
+}
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item span {
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item b {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item small {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item > i {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item.danger > i {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item.warning > i {
+  background: #ffedd5 !important;
+  color: #c2410c !important;
+}
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item.success > i {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+}
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item:hover {
+  border-color: rgba(29, 78, 216, 0.45) !important;
+  color: #0f172a !important;
+}
+
+/* Midnight — light cards on dark canvas need strong dark text (not muted grey) */
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item {
+  background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.55) !important;
+  color: #0f172a !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35) !important;
+}
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item span {
+  color: #1e293b !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item b {
+  color: #020617 !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item small {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item > i {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item.danger > i {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item.warning > i {
+  background: #ffedd5 !important;
+  color: #c2410c !important;
+}
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item.success > i {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+}
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item:hover {
+  border-color: #94a3b8 !important;
+  color: #020617 !important;
+  transform: translateY(-2px);
+}
+
+/* Guard against global theme rules that force light text on these chips */
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item,
+html[data-app-theme="midnight"] .conversion-focus-strip .conversion-focus-item *,
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item,
+html[data-app-theme="premium"] .conversion-focus-strip .conversion-focus-item * {
+  text-shadow: none !important;
+}
+
+/* Remarks compose + expand modal */
+.remarks-compose-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 160px;
+}
+.remarks-compose-wrap .remarks-note-field {
+  min-height: 52px;
+  resize: vertical;
+  width: 100%;
+}
+.remarks-expand-btn {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.remarks-expand-textarea {
+  min-height: 280px;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+html[data-app-theme="midnight"] .remarks-expand-modal-content {
+  background: #1e293b;
+  color: #f8fafc;
+}
+html[data-app-theme="midnight"] .remarks-expand-textarea {
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: #334155;
+}
+html[data-app-theme="premium"] .remarks-expand-modal-content {
+  background: #fff;
+  color: #0f172a;
+}

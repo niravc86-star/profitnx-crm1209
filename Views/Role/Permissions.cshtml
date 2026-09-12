@@ -1,0 +1,59 @@
+@model ProfitNx.CRM.ViewModels.PermissionMatrixViewModel
+@{ ViewData["Title"] = "Role Wise Rights"; ViewData["Subtitle"] = "Control menu, action, and field rights for each role. Changes apply immediately after save."; }
+<div class="alert alert-info border-0 rounded-4">
+    <strong>Role-wise Rights Management:</strong> Check/uncheck permissions for each role. Tick means allowed, untick means denied. Changes apply to all users of that role instantly after saving.
+</div>
+<form method="post">
+@foreach(var group in Model.Groups)
+{
+    var groupItems = Model.Items.Where(x => x.GroupName == group).Select(x => new { x.PermissionKey, x.PermissionLabel }).Distinct().ToList();
+    <div class="card card-soft border-0 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-check text-primary"></i>
+            <strong>@group</strong>
+        </div>
+        <div class="table-responsive px-4 pb-4">
+            <table class="table table-bordered align-middle mb-0 permissions-grid">
+                <thead>
+                    <tr>
+                        <th style="min-width:200px">Permission</th>
+                        @foreach(var role in Model.Roles)
+                        {
+                            <th class="text-center" style="min-width:110px">
+                                <span class="badge rounded-pill bg-primary-subtle text-primary px-3 py-2">@role.Name</span>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach(var item in groupItems)
+                {
+                    <tr>
+                        <td class="fw-semibold text-dark">
+                            @item.PermissionLabel
+                            <span class="ms-2 text-muted" data-bs-toggle="tooltip" data-bs-title="Permission key: @item.PermissionKey"> <i class="bi bi-info-circle"></i></span>
+                        </td>
+                        @foreach(var role in Model.Roles)
+                        {
+                            var key = $"perm_{role.Name}_{item.PermissionKey}".Replace('.', '_').Replace(' ', '_');
+                            var allowed = Model.Items.Any(x => x.RoleName == role.Name && x.PermissionKey == item.PermissionKey && x.Allowed);
+                            <td class="text-center">
+                                <div class="form-check form-switch d-flex justify-content-center">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="@key" value="true" @(allowed ? "checked" : null) />
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+<div class="d-flex gap-2 mt-2">
+    <button class="btn btn-brand px-4"><i class="bi bi-save me-1"></i>Save Rights</button>
+    <a asp-action="Index" class="btn btn-outline-secondary px-4">Back to Roles</a>
+</div>
+</form>
+
+

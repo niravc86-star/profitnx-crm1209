@@ -1,0 +1,138 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- Disable built-in .NET analyzers to avoid missing analyzer DLL errors in some environments -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Controllers/AccountController.cs" />
+    <Compile Include="Controllers/AdminController.cs" />
+    <Compile Include="Controllers/ChatController.cs" />
+    <Compile Include="Controllers/CommissionController.cs" />
+    <Compile Include="Controllers/DashboardController.cs" />
+    <Compile Include="Controllers/DealerController.cs" />
+    <Compile Include="Controllers/FeedbackController.cs" />
+    <Compile Include="Controllers/InquiryController.cs" />
+    <Compile Include="Controllers/ImplementationController.cs" />
+    <Compile Include="Controllers/NotificationsController.cs" />
+    <Compile Include="Controllers/ProductController.cs" />
+    <Compile Include="Controllers/ReportsController.cs" />
+    <Compile Include="Controllers/RoleController.cs" />
+    <Compile Include="Controllers/SchemeController.cs" />
+    <Compile Include="Controllers/SettingsController.cs" />
+    <Compile Include="Controllers/StockController.cs" />
+    <Compile Include="Controllers/PushController.cs" />
+    <Compile Include="Models/AppUser.cs" />
+    <Compile Include="Models/PushSubscriptionRecord.cs" />
+    <Compile Include="Models/ChatMessage.cs" />
+    <Compile Include="Models/ChatClear.cs" />
+    <Compile Include="Models/CommissionRow.cs" />
+    <Compile Include="Models/Dealer.cs" />
+    <Compile Include="Models/Inquiry.cs" />
+    <Compile Include="Models/InquiryUpdate.cs" />
+    <Compile Include="Models/ImplementationCase.cs" />
+    <Compile Include="Models/ImplementationOtpApproval.cs" />
+    <Compile Include="Models/ImplementationSchedule.cs" />
+    <Compile Include="Models/ImplementationActivity.cs" />
+    <Compile Include="Models/NotificationLog.cs" />
+    <Compile Include="Models/PermissionItem.cs" />
+    <Compile Include="Models/Product.cs" />
+    <Compile Include="Models/ReportsDashboardViewModel.cs" />
+    <Compile Include="Models/RoleMaster.cs" />
+    <Compile Include="Models/Scheme.cs" />
+    <Compile Include="Models/SchemeParticipation.cs" />
+    <Compile Include="Models/StockItem.cs" />
+    <Compile Include="Models/UserPermission.cs" />
+    <Compile Include="Models/UserPermissionItem.cs" />
+    <Compile Include="Models/LiveDashboardViewModel.cs" />
+    <Compile Include="Models/LoginLog.cs" />
+    <Compile Include="Services/CommissionService.cs" />
+    <Compile Include="Services/ChatService.cs" />
+    <Compile Include="Services/DashboardService.cs" />
+    <Compile Include="Services/DealerService.cs" />
+    <Compile Include="Services/GoogleSheetsOptions.cs" />
+    <Compile Include="Services/GoogleSheetsService.cs" />
+    <Compile Include="Services/ICommissionService.cs" />
+    <Compile Include="Services/IDashboardService.cs" />
+    <Compile Include="Services/IDealerService.cs" />
+    <Compile Include="Services/IGoogleSheetsService.cs" />
+    <Compile Include="Services/IChatService.cs" />
+    <Compile Include="Services/IInquiryService.cs" />
+    <Compile Include="Services/IImplementationService.cs" />
+    <Compile Include="Services/ImplementationService.cs" />
+    <Compile Include="Services/ImplementationTrainingTopicCatalog.cs" />
+    <Compile Include="Services/ImplementationReminderWorker.cs" />
+    <Compile Include="Services/INotificationService.cs" />
+    <Compile Include="Services/IPermissionService.cs" />
+    <Compile Include="Services/IProductService.cs" />
+    <Compile Include="Services/IRoleService.cs" />
+    <Compile Include="Services/ISchemeService.cs" />
+    <Compile Include="Services/IStockService.cs" />
+    <Compile Include="Services/IUserService.cs" />
+    <Compile Include="Services/InquiryService.cs" />
+    <Compile Include="Services/NotificationService.cs" />
+    <Compile Include="Services/PermissionCatalog.cs" />
+    <Compile Include="Services/PermissionService.cs" />
+    <Compile Include="Services/ProductService.cs" />
+    <Compile Include="Services/RoleService.cs" />
+    <Compile Include="Services/SchemeService.cs" />
+    <Compile Include="Services/SheetValueHelper.cs" />
+    <Compile Include="Services/StockService.cs" />
+    <Compile Include="Services/UserService.cs" />
+    <Compile Include="Services/ILoginSessionService.cs" />
+    <Compile Include="Services/LoginSessionService.cs" />
+    <Compile Include="Services/IInquiryDocumentService.cs" />
+    <Compile Include="Services/InquiryDocumentService.cs" />
+    <Compile Include="Services/IYearlyTargetService.cs" />
+    <Compile Include="Services/YearlyTargetService.cs" />
+    <Compile Include="Services/IWebPushService.cs" />
+    <Compile Include="Services/WebPushService.cs" />
+    <Compile Include="Services/PendingAttentionPushWorker.cs" />
+    <Compile Include="ViewModels/CommissionFilterViewModel.cs" />
+    <Compile Include="ViewModels/ChatContactViewModel.cs" />
+    <Compile Include="ViewModels/DealerFormViewModel.cs" />
+    <Compile Include="ViewModels/InquiryFilterViewModel.cs" />
+    <Compile Include="ViewModels/InquiryFormViewModel.cs" />
+    <Compile Include="ViewModels/ImplementationFormViewModel.cs" />
+    <Compile Include="ViewModels/ImplementationScheduleViewModel.cs" />
+    <Compile Include="ViewModels/ImplementationProgressViewModel.cs" />
+    <Compile Include="ViewModels/ImplementationDashboardViewModel.cs" />
+    <Compile Include="ViewModels/ImplementationCompletionViewModel.cs" />
+    <Compile Include="ViewModels/CustomerFeedbackViewModel.cs" />
+    <Compile Include="ViewModels/LoginViewModel.cs" />
+    <Compile Include="ViewModels/NotificationFormViewModel.cs" />
+    <Compile Include="ViewModels/PermissionMatrixViewModel.cs" />
+    <Compile Include="ViewModels/ProductFormViewModel.cs" />
+    <Compile Include="ViewModels/RoleFormViewModel.cs" />
+    <Compile Include="ViewModels/SchemeFormViewModel.cs" />
+    <Compile Include="ViewModels/SchemeParticipationFormViewModel.cs" />
+    <Compile Include="ViewModels/StockFormViewModel.cs" />
+    <Compile Include="ViewModels/UserFormViewModel.cs" />
+  </ItemGroup>
+  <!-- Keep the old UI backup inside the ZIP, but never compile its Razor views. -->
+  <ItemGroup>
+    <RazorGenerate Remove="UI_BACKUP_FIRST_ORIGINAL_VERSION/**/*.cshtml" />
+    <Content Remove="UI_BACKUP_FIRST_ORIGINAL_VERSION/**/*.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.68.0.3407" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Lib.Net.Http.WebPush" Version="3.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="google-service-account.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="App_Data/google-service-account.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Update="App_Data/README.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Update="App_Data/login-history.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('App_Data/login-history.json')" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1048 @@
+@model ProfitNx.CRM.Models.LiveDashboardViewModel
+@{
+    ViewData["Title"] = "Main Dashboard";
+    ViewData["Subtitle"] = "Live Overview of your CRM Performance";
+    Layout = "_Layout";
+    string Inr(decimal v) => "₹ " + v.ToString("N0");
+    string Pct(decimal v) => v.ToString("0.##") + "%";
+    // Financial year label: TargetYear is the FY's start year (e.g. 2026 → 01/04/2026 to 31/03/2027).
+    string Fy(int y) => $"FY {y}-{(y + 1) % 100:D2}";
+    string SignedPct(decimal v) => (v >= 0 ? "+" : "") + v.ToString("0.#") + "%";
+    var totalOrders = Math.Max(1, Model.TotalOrders);
+    var totalInq = Math.Max(1, Model.TotalInquiries);
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/live-dashboard.css" asp-append-version="true" />
+}
+<div class="live-dash" data-live-dashboard>
+    <div class="ld-header">
+        <div class="ld-title-block">
+            <div class="ld-eyebrow"><i class="bi bi-grid-1x2-fill"></i> MAIN</div>
+            <h1 class="ld-title">Main Dashboard</h1>
+            <p class="ld-subtitle">Live Overview of your CRM Performance · <span class="ld-scope">@Model.ScopeNote</span></p>
+        </div>
+        <div class="ld-header-actions">
+            <form method="get" asp-action="Live" class="ld-filters" id="liveFilterForm">
+                <div class="ld-date-range">
+                    <i class="bi bi-calendar3"></i>
+                    <input type="date" name="fromDate" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="ld-input" />
+                    <span>—</span>
+                    <input type="date" name="toDate" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="ld-input" />
+                </div>
+                @{
+                    var qPeriod = (Context.Request.Query["period"].ToString() ?? "").ToLowerInvariant();
+                    var periodVal = string.IsNullOrWhiteSpace(qPeriod) ? "month" : qPeriod;
+                }
+                <select name="period" class="ld-select" id="livePeriodSelect">
+                    @if (periodVal == "month") { <option value="month" selected>This Month</option> } else { <option value="month">This Month</option> }
+                    @if (periodVal == "week") { <option value="week" selected>This Week</option> } else { <option value="week">This Week</option> }
+                    @if (periodVal == "today") { <option value="today" selected>Today</option> } else { <option value="today">Today</option> }
+                    @if (periodVal == "lastmonth") { <option value="lastmonth" selected>Last Month</option> } else { <option value="lastmonth">Last Month</option> }
+                    @if (periodVal == "custom") { <option value="custom" selected>Custom Range</option> } else { <option value="custom">Custom Range</option> }
+                </select>
+                <button type="submit" class="ld-btn ld-btn-primary"><i class="bi bi-funnel"></i> Apply</button>
+            </form>
+            <div class="ld-live-pill" title="Auto refresh every 60s">
+                <span class="ld-pulse"></span> Auto Refresh Live
+            </div>
+        </div>
+    </div>
+
+    <div class="ld-toolbar">
+        <div class="ld-view-tabs" role="tablist">
+            <button type="button" class="ld-view-tab active" data-ld-view="overview">Overview</button>
+            <button type="button" class="ld-view-tab" data-ld-view="sales">Sales Focus</button>
+            <button type="button" class="ld-view-tab" data-ld-view="pipeline">Pipeline</button>
+            <button type="button" class="ld-view-tab" data-ld-view="stock">Stock &amp; Partners</button>
+        </div>
+        <div class="ld-chart-controls">
+            <label class="ld-mini-label">Sales chart</label>
+            <select id="ldSalesChartType" class="ld-select" title="Sales Performance chart type">
+                <option value="bar">Bar</option>
+                <option value="line">Line</option>
+            </select>
+            <label class="ld-mini-label">Trend chart</label>
+            <select id="ldTrendChartType" class="ld-select" title="Inquiry & Conversion Trend">
+                <option value="line">Line</option>
+                <option value="bar">Bar</option>
+            </select>
+            <button type="button" class="ld-btn ld-btn-ghost" id="ldCustomizeBtn"><i class="bi bi-sliders"></i> Customize</button>
+        </div>
+    </div>
+    <div class="ld-customize-panel" id="ldCustomizePanel" hidden>
+        <div class="ld-customize-head">
+            <div>
+                <strong>Dashboard analytics customization</strong>
+                <div class="ld-customize-sub">Show/hide widgets, density &amp; chart preferences — saved on this browser</div>
+            </div>
+            <button type="button" class="ld-btn ld-btn-ghost" id="ldCustomizeClose">Close</button>
+        </div>
+        <div class="ld-customize-grid">
+            <div>
+                <div class="ld-customize-label">Widgets</div>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="kpi" checked /> KPI cards</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="sales" checked /> Sales Performance</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="target" checked /> Yearly Target Planner</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="orders" checked /> Orders Status</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="inquiryType" checked /> Inquiries by Type</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="stock" checked /> Stock Summary</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="dealers" checked /> Top Dealers / Partners</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="followup" checked /> Follow Up Summary</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="trend" checked /> Inquiry &amp; Conversion Trend</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="pipeline" checked /> Expected Orders Pipeline</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="activity" checked /> Recent Activities</label>
+                <label class="ld-check"><input type="checkbox" data-ld-widget="quick" checked /> Quick summary strip</label>
+            </div>
+            <div>
+                <div class="ld-customize-label">Layout</div>
+                <label class="ld-check"><input type="radio" name="ldDensity" value="comfortable" checked /> Comfortable</label>
+                <label class="ld-check"><input type="radio" name="ldDensity" value="compact" /> Compact</label>
+                <div class="ld-customize-label" style="margin-top:12px">Donut charts</div>
+                <label class="ld-check"><input type="radio" name="ldDonut" value="doughnut" checked /> Doughnut</label>
+                <label class="ld-check"><input type="radio" name="ldDonut" value="pie" /> Pie</label>
+                <div class="ld-customize-actions">
+                    <button type="button" class="ld-btn ld-btn-primary" id="ldCustomizeApply">Apply</button>
+                    <button type="button" class="ld-btn ld-btn-ghost" id="ldCustomizeReset">Reset defaults</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="ld-kpi-row" data-ld-section="overview sales pipeline" data-ld-widget="kpi">
+        <div class="ld-kpi purple">
+            <div class="ld-kpi-top">
+                <div class="ld-kpi-icon"><i class="bi bi-bag-check-fill"></i></div>
+                <div class="ld-kpi-meta">
+                    <div class="ld-kpi-label">Orders Completed</div>
+                    <div class="ld-kpi-value">@Model.OrdersCompleted</div>
+                    <div class="ld-kpi-change @(Model.OrdersCompletedChangePct >= 0 ? "up" : "down")">@SignedPct(Model.OrdersCompletedChangePct) vs Last Month</div>
+                </div>
+            </div>
+            <canvas class="ld-spark" id="sparkOrders" height="40"></canvas>
+        </div>
+        <div class="ld-kpi cyan">
+            <div class="ld-kpi-top">
+                <div class="ld-kpi-icon"><i class="bi bi-people-fill"></i></div>
+                <div class="ld-kpi-meta">
+                    <div class="ld-kpi-label">Live Inquiries</div>
+                    <div class="ld-kpi-value">@Model.LiveInquiries</div>
+                    <div class="ld-kpi-change @(Model.LiveInquiriesChangePct >= 0 ? "up" : "down")">@SignedPct(Model.LiveInquiriesChangePct) vs Last Month</div>
+                </div>
+            </div>
+            <canvas class="ld-spark" id="sparkInquiries" height="40"></canvas>
+        </div>
+        <div class="ld-kpi amber">
+            <div class="ld-kpi-top">
+                <div class="ld-kpi-icon"><i class="bi bi-calendar2-check-fill"></i></div>
+                <div class="ld-kpi-meta">
+                    <div class="ld-kpi-label">Expected Orders</div>
+                    <div class="ld-kpi-value">@Model.ExpectedOrders</div>
+                    <div class="ld-kpi-sub">Est. Value <strong>@Inr(Model.ExpectedOrdersValue)</strong></div>
+                </div>
+            </div>
+            <canvas class="ld-spark" id="sparkExpected" height="40"></canvas>
+        </div>
+        <div class="ld-kpi green">
+            <div class="ld-kpi-top">
+                <div class="ld-kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
+                <div class="ld-kpi-meta">
+                    <div class="ld-kpi-label">Pending Follow Ups</div>
+                    <div class="ld-kpi-value">@Model.PendingFollowUps</div>
+                    <div class="ld-kpi-sub">Due Today: <strong>@Model.DueTodayFollowUps</strong></div>
+                </div>
+            </div>
+            <canvas class="ld-spark" id="sparkFollow" height="40"></canvas>
+        </div>
+        <div class="ld-kpi blue">
+            <div class="ld-kpi-top">
+                <div class="ld-kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="ld-kpi-meta">
+                    <div class="ld-kpi-label">Conversion Rate</div>
+                    <div class="ld-kpi-value">@Pct(Model.ConversionRate)</div>
+                    <div class="ld-kpi-change @(Model.ConversionRateChangePct >= 0 ? "up" : "down")">@SignedPct(Model.ConversionRateChangePct) vs Last Month</div>
+                </div>
+            </div>
+            <canvas class="ld-spark" id="sparkConv" height="40"></canvas>
+        </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="ld-grid">
+        <!-- Sales Performance -->
+        <div class="ld-card ld-span-2" data-ld-section="overview sales" data-ld-widget="sales">
+            <div class="ld-card-head">
+                <h3>Sales Performance Overview <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Total Sales (This Period) = sum of Sold inquiries billed/sold within the selected date range. Target (This Period) is your monthly target split across the range. The bar chart compares actual Sales (₹) vs Target (₹) week by week inside the selected period; the ring shows % of period target achieved."></i></h3>
+                <span class="ld-chip">@Model.PeriodLabel</span>
+            </div>
+            <div class="ld-sales-body">
+                <div class="ld-sales-left">
+                    <div class="ld-metric">
+                        <span class="ld-metric-label">Total Sales (This Period)</span>
+                        <span class="ld-metric-value">@Inr(Model.TotalSalesThisMonth)</span>
+                        <span class="ld-kpi-change @(Model.SalesVsLastMonthPct >= 0 ? "up" : "down")">@SignedPct(Model.SalesVsLastMonthPct) vs Last Month</span>
+                    </div>
+                    <div class="ld-metric muted">
+                        <span class="ld-metric-label">Total Sales (Last Month)</span>
+                        <span class="ld-metric-value sm">@Inr(Model.TotalSalesLastMonth)</span>
+                    </div>
+                    <div class="ld-metric muted">
+                        <span class="ld-metric-label">Target (This Period)</span>
+                        <span class="ld-metric-value sm">@Inr(Model.TargetThisMonth)</span>
+                    </div>
+                    <div class="ld-ring-wrap">
+                        <div class="ld-ring" style="--pct:@Model.TargetAchievedPct.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                            <div class="ld-ring-inner">
+                                <strong>@Pct(Model.TargetAchievedPct)</strong>
+                                <span>Target Achieved</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ld-sales-chart">
+                    <canvas id="salesBarChart" height="220"></canvas>
+                    <div class="ld-legend">
+                        <span><i class="dot sales"></i> Sales (₹)</span>
+                        <span><i class="dot target"></i> Target (₹)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly Target Planner -->
+        <div class="ld-card ld-span-2" data-ld-section="overview sales" data-ld-widget="target">
+            <div class="ld-card-head">
+                <h3>Yearly Target Planner
+                    <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="This year's target is the number Admin sets below. Achieved so far is the real total of every Sold inquiry this financial year (01 Apr - 31 Mar) — whether Admin sold it directly, a Partner sold it, or a User sold it — all added into one company number. Remaining = Target minus Achieved. Sell/Day, Sell/Week and Sell/Month divide Remaining by the days, weeks and months left in the year."></i>
+                    <span class="ld-ai-badge" title="Auto-calculated from CRM sales data"><i class="bi bi-stars"></i> Auto</span>
+                </h3>
+                <span class="ld-chip">@Fy(Model.TargetYear)</span>
+            </div>
+            <form id="ldTargetAntiForgeryForm" style="display:none">@Html.AntiForgeryToken()</form>
+            <div class="ld-target-body">
+                <div class="ld-target-inputs">
+                    <div>
+                        <label class="ld-mini-label" for="ldYearlyTarget">
+                            This year's target (₹)
+                            @if (!Model.CanEditYearlyTarget)
+                            {
+                                <span class="ld-auto-tag">Set by Admin</span>
+                            }
+                        </label>
+                        @if (Model.CanEditYearlyTarget)
+                        {
+                            <div class="ld-target-edit-row">
+                                <input type="number" min="0" step="1000" inputmode="decimal" class="ld-input" id="ldYearlyTarget"
+                                       value="@Model.YearlyTarget.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                       placeholder="e.g. 60,00,000" />
+                                <button type="button" class="ld-btn ld-btn-primary" id="ldSaveTargetBtn"><i class="bi bi-check2"></i> Save</button>
+                            </div>
+                            <div class="ld-target-note" id="ldSaveTargetNote"></div>
+                        }
+                        else
+                        {
+                            <div class="ld-input ld-input-readonly">@Inr(Model.YearlyTarget)</div>
+                        }
+                    </div>
+                    <div>
+                        <label class="ld-mini-label">Achieved so far this year (₹) <span class="ld-auto-tag">@(Model.IsCompanyWideScope ? "Auto · Admin + Partner + User sales" : "Auto · Your Sold sales")</span></label>
+                        <div class="ld-input ld-input-readonly">@Inr(Model.YearlyAchieved)</div>
+                    </div>
+                </div>
+                <div class="ld-target-summary" id="ldTargetSummary">
+                    <div class="ld-metric muted">
+                        <span class="ld-metric-label">Remaining To Reach Target</span>
+                        <span class="ld-metric-value sm" id="ldTargetRemaining">@Inr(Model.YearlyRemaining)</span>
+                    </div>
+                    <div class="ld-target-pace-grid">
+                        <div class="ld-target-pace-item"><span>Sell / Day</span><strong id="ldPaceDay">@Inr(Model.YearlyPaceDay)</strong></div>
+                        <div class="ld-target-pace-item"><span>Sell / Week</span><strong id="ldPaceWeek">@Inr(Model.YearlyPaceWeek)</strong></div>
+                        <div class="ld-target-pace-item"><span>Sell / Month</span><strong id="ldPaceMonth">@Inr(Model.YearlyPaceMonth)</strong></div>
+                    </div>
+                    <div class="ld-target-note" id="ldTargetNote">
+                        @if (Model.YearlyTarget <= 0)
+                        {
+                            if (Model.IsCompanyWideScope)
+                            {
+                                <text>Ask Admin to set this year's target above — Achieved, Remaining and the pace below already update automatically from CRM sales.</text>
+                            }
+                            else
+                            {
+                                <text>Admin hasn't set this year's target yet — once set, your Achieved, Remaining and pace below will update automatically from your CRM sales.</text>
+                            }
+                        }
+                        else if (Model.YearlyRemaining <= 0)
+                        {
+                            <text>Target already achieved for @Fy(Model.TargetYear). 🎉</text>
+                        }
+                        else
+                        {
+                            <text>@(Model.YearlyAchievedPct.ToString("0.#"))% achieved so far — keep this pace for the rest of @Fy(Model.TargetYear) to reach your target.</text>
+                        }
+                    </div>
+                </div>
+                <div class="ld-target-product">
+                    <label class="ld-mini-label">
+                        AI pick — fastest product to close the gap
+                        <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="How this is worked out: for each product, we take its actual Sold revenue this year and divide by the number of days elapsed this year to get its real 'revenue per day' pace. We then check how many days it would take, at that same pace, to sell enough of that product to close the Remaining amount above. The product that closes the gap in the fewest days is picked. This is not a guess — it comes straight from this year's Sold orders, so a product with very little sales history will show a very high day-count simply because its pace so far has been slow."></i>
+                    </label>
+                    @if (Model.BestProductForTarget != null && Model.YearlyRemaining > 0)
+                    {
+                        <div class="ld-target-product-result ai-pick">
+                            @if (Model.BestProductForTarget.IsFarOut)
+                            {
+                                <i class="bi bi-stars"></i>
+                                <text><strong>@(Model.BestProductForTarget.ProductName)</strong> is closest at its current pace</text>
+                                <text>(~@(Inr(Model.BestProductForTarget.RevenuePerDay)) / day), but at that pace closing the remaining</text>
+                                <text>₹@(Model.YearlyRemaining.ToString("N0")) gap would take well over a year. Selling more</text>
+                                <text><strong>@(Model.BestProductForTarget.ProductName)</strong> will not be enough on its own — increase overall</text>
+                                <text>selling pace (more partners or users actively closing, or a push on higher-value products) to realistically</text>
+                                <text>reach this year target.</text>
+                            }
+                            else
+                            {
+                                <i class="bi bi-stars"></i>
+                                <text>Selling about <strong>@(Model.BestProductForTarget.UnitsNeeded)</strong> more unit(s) of</text>
+                                <text><strong>@(Model.BestProductForTarget.ProductName)</strong> at its current sales pace this year</text>
+                                <text>(~@(Inr(Model.BestProductForTarget.RevenuePerDay)) / day) reaches the target in roughly</text>
+                                <text><strong>@(Model.BestProductForTarget.EstimatedDaysToTarget)</strong> day(s).</text>
+                            }
+                        </div>
+                    }
+                    else if (Model.YearlyRemaining > 0)
+                    {
+                        <div class="ld-target-note">Not enough Sold data yet this year to recommend a product — this fills in automatically as sales come in.</div>
+                    }
+                    <label class="ld-mini-label" for="ldTargetProduct">Or check another product</label>
+                    <select class="ld-select" id="ldTargetProduct">
+                        <option value="">Select a product…</option>
+                        @foreach (var p in Model.TopProductsByVelocity)
+                        {
+                            <option value="@p.ProductName"
+                                    data-price="@p.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-perday="@p.RevenuePerDay.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                                @p.ProductName (~@Inr(p.UnitPrice) / unit · ~@Inr(p.RevenuePerDay) / day pace)
+                            </option>
+                        }
+                    </select>
+                    <div class="ld-target-product-result" id="ldTargetProductResult" hidden></div>
+                    <div class="ld-target-note">
+                        @if (Model.IsCompanyWideScope)
+                        {
+                            <text>Sales pace is calculated from this year's actual Sold orders in the CRM (Admin + Partner + User combined) — not a manual estimate.</text>
+                        }
+                        else
+                        {
+                            <text>Sales pace is calculated from this year's actual Sold orders in the CRM — not a manual estimate.</text>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly Target Contribution Breakdown -->
+        <div class="ld-card ld-span-2" data-ld-section="overview sales" data-ld-widget="contribution">
+            <div class="ld-card-head">
+                @if (Model.IsCompanyWideScope)
+                {
+                    <h3>Who's Contributing To The Target
+                        <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="The Yearly Target above is one combined company number. This table splits 'Achieved so far' by who actually closed each Sold inquiry this year: Admin's own direct sales, each Partner's sales, and each User's sales. Percent is each row's share of the total Achieved amount."></i>
+                    </h3>
+                }
+                else
+                {
+                    <h3>Your Contribution This Year
+                        <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Your own Sold inquiries for this year, from CRM data."></i>
+                    </h3>
+                }
+                <span class="ld-chip">@Fy(Model.TargetYear)</span>
+            </div>
+            @if (Model.YearlyContribution.Any(x => x.Amount > 0))
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0 ld-contribution-table">
+                        <thead><tr><th>Name</th><th>Role</th><th class="text-end">Sold</th><th class="text-end">Amount (₹)</th><th class="text-end">% of Achieved</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in Model.YearlyContribution.Where(x => x.Amount > 0 || x.SoldCount > 0))
+                            {
+                                <tr>
+                                    <td>@row.Name</td>
+                                    <td>
+                                        @{
+                                            var badgeClass = row.RoleLabel == "Admin" ? "bg-soft-primary" : row.RoleLabel == "Partner" ? "bg-soft-info" : "bg-soft-success";
+                                        }
+                                        <span class="badge @badgeClass">@row.RoleLabel</span>
+                                    </td>
+                                    <td class="text-end">@row.SoldCount</td>
+                                    <td class="text-end">@Inr(row.Amount)</td>
+                                    <td class="text-end">
+                                        <div class="ld-contribution-bar-wrap">
+                                            <span>@row.PctOfTotal.ToString("0.#")%</span>
+                                            <div class="ld-contribution-bar"><div style="width:@(Math.Min(100, row.PctOfTotal).ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="ld-target-note">
+                    @if (Model.IsCompanyWideScope)
+                    {
+                        <text>No Sold business recorded yet this year — this fills in automatically as Admin, Partners and Users close sales.</text>
+                    }
+                    else
+                    {
+                        <text>No Sold business recorded yet this year — this fills in automatically as you close sales.</text>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (Model.SmartInsights.Any())
+        {
+            <!-- Smart Insights -->
+            <div class="ld-card ld-span-2" data-ld-section="overview" data-ld-widget="insights">
+                <div class="ld-card-head">
+                    <h3>Smart Insights <span class="ld-ai-badge" title="Generated from this page's own CRM data"><i class="bi bi-stars"></i> Auto</span>
+                        <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Short, plain-language callouts computed directly from the same Sold, follow-up and pipeline data shown elsewhere on this page — not a separate guess, just the numbers highlighted for you."></i>
+                    </h3>
+                </div>
+                <ul class="ld-insight-list">
+                    @foreach (var insight in Model.SmartInsights)
+                    {
+                        <li><i class="bi bi-lightbulb-fill"></i> @insight</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.MarketingAdvisor.IsSlowdownDetected)
+        {
+            <!-- Smart Marketing Advisor -->
+            <div class="ld-card ld-span-2" data-ld-section="overview sales" data-ld-widget="marketing-advisor">
+                <div class="ld-card-head">
+                    <h3>Smart Marketing Advisor <span class="ld-ai-badge" title="Generated from this page's own CRM data"><i class="bi bi-stars"></i> Auto</span>
+                        <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Triggers only when this period's sales, conversion or pace show a real slowdown. Suggestions and budget figures are computed directly from your own Sold, inquiry and pipeline data — not a separate guess."></i>
+                    </h3>
+                </div>
+                <p class="ld-marketing-summary"><i class="bi bi-exclamation-triangle-fill text-warning"></i> @Model.MarketingAdvisor.SlowdownSummary</p>
+
+                <div class="ld-marketing-suggestions">
+                    @foreach (var s in Model.MarketingAdvisor.Suggestions)
+                    {
+                        var priorityClass = s.Priority == "High" ? "bg-soft-danger" : "bg-soft-warning";
+                        <div class="ld-marketing-suggestion">
+                            <div class="ld-marketing-suggestion-head">
+                                <strong>@s.MarketingType</strong>
+                                <span class="stat-pill @priorityClass">@s.Priority priority</span>
+                            </div>
+                            <p class="mb-1">@s.Action</p>
+                            <p class="mini-muted mb-0"><i class="bi bi-graph-up"></i> Why: @s.Reason</p>
+                        </div>
+                    }
+                </div>
+
+                @if (Model.MarketingAdvisor.BudgetOptions.Any())
+                {
+                    <div class="ld-marketing-budget mt-3">
+                        <div class="mini-muted mb-2">Approximate marketing budget to consider:</div>
+                        <div class="ld-marketing-budget-grid">
+                            @foreach (var b in Model.MarketingAdvisor.BudgetOptions)
+                            {
+                                <div class="ld-marketing-budget-card">
+                                    <div class="ld-marketing-budget-tier">@b.Tier</div>
+                                    <div class="ld-marketing-budget-amount">@b.BudgetLabel</div>
+                                    <div class="mini-muted">@b.ExpectedOutcome</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Orders Status -->
+        <div class="ld-card" data-ld-section="overview sales" data-ld-widget="orders">
+            <div class="ld-card-head"><h3>Orders Status <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Every visible inquiry bucketed by its current status: Completed = Sold, Processing = Demo Scheduled/Done, Pending = New Inquiry/Follow Up, Cancelled = Close, On Hold = Negotiation. Percentages are each bucket's share of total orders."></i></h3></div>
+            <div class="ld-donut-wrap">
+                <canvas id="ordersDonut" height="180"></canvas>
+                <div class="ld-donut-center">
+                    <strong>@Model.TotalOrders</strong>
+                    <span>Total Orders</span>
+                </div>
+            </div>
+            <ul class="ld-legend-list">
+                <li><i class="swatch" style="background:#22c55e"></i> Completed <b>@Model.StatusCompleted</b> <span>(@((Model.StatusCompleted * 100.0 / totalOrders).ToString("0"))%)</span></li>
+                <li><i class="swatch" style="background:#3b82f6"></i> Processing <b>@Model.StatusProcessing</b> <span>(@((Model.StatusProcessing * 100.0 / totalOrders).ToString("0"))%)</span></li>
+                <li><i class="swatch" style="background:#f59e0b"></i> Pending <b>@Model.StatusPending</b> <span>(@((Model.StatusPending * 100.0 / totalOrders).ToString("0"))%)</span></li>
+                <li><i class="swatch" style="background:#ef4444"></i> Cancelled <b>@Model.StatusCancelled</b> <span>(@((Model.StatusCancelled * 100.0 / totalOrders).ToString("0"))%)</span></li>
+                <li><i class="swatch" style="background:#8b5cf6"></i> On Hold <b>@Model.StatusOnHold</b> <span>(@((Model.StatusOnHold * 100.0 / totalOrders).ToString("0"))%)</span></li>
+            </ul>
+        </div>
+
+        <!-- Inquiries by Type -->
+        <div class="ld-card" data-ld-section="overview pipeline" data-ld-widget="inquiryType">
+            <div class="ld-card-head"><h3>Inquiries by Type <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Visible inquiries grouped by type — New, Repeat, Upgrade, Cloud and Others — based on each inquiry's recorded type. Shows where your lead mix is coming from."></i></h3></div>
+            <div class="ld-donut-wrap">
+                <canvas id="inqDonut" height="180"></canvas>
+                <div class="ld-donut-center">
+                    <strong>@Model.TotalInquiries</strong>
+                    <span>Total Inquiries</span>
+                </div>
+            </div>
+            <ul class="ld-legend-list">
+                <li><i class="swatch" style="background:#22c55e"></i> New <b>@Model.InqNew</b> <span>(@((Model.InqNew * 100.0 / totalInq).ToString("0.0"))%)</span></li>
+                <li><i class="swatch" style="background:#3b82f6"></i> Repeat <b>@Model.InqRepeat</b> <span>(@((Model.InqRepeat * 100.0 / totalInq).ToString("0.0"))%)</span></li>
+                <li><i class="swatch" style="background:#f59e0b"></i> Upgrade <b>@Model.InqUpgrade</b> <span>(@((Model.InqUpgrade * 100.0 / totalInq).ToString("0.0"))%)</span></li>
+                <li><i class="swatch" style="background:#a855f7"></i> Cloud / Full Web <b>@Model.InqCloud</b> <span>(@((Model.InqCloud * 100.0 / totalInq).ToString("0.0"))%)</span></li>
+                <li><i class="swatch" style="background:#ef4444"></i> Others <b>@Model.InqOthers</b> <span>(@((Model.InqOthers * 100.0 / totalInq).ToString("0.0"))%)</span></li>
+            </ul>
+        </div>
+
+        <!-- Available Stock -->
+        <div class="ld-card ld-span-2" data-ld-section="overview stock" data-ld-widget="stock">
+            <div class="ld-card-head">
+                <h3>AVAILABLE STOCK SUMMARY <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Live available quantity and value per product from Stock records. Value uses each product's approx. value where recorded, else quantity × unit price. Sorted by highest stock value first."></i></h3>
+                <a class="ld-link" asp-controller="Stock" asp-action="Index">View All</a>
+            </div>
+            <div class="ld-stock-kpis">
+                <div class="ld-stock-kpi">
+                    <div class="ld-kpi-icon sm purple"><i class="bi bi-box-seam-fill"></i></div>
+                    <div>
+                        <div class="ld-metric-label">Total Items</div>
+                        <div class="ld-metric-value sm">@Model.TotalStockItems.ToString("N0")</div>
+                    </div>
+                </div>
+                <div class="ld-stock-kpi">
+                    <div class="ld-kpi-icon sm green"><i class="bi bi-currency-rupee"></i></div>
+                    <div>
+                        <div class="ld-metric-label">Total Stock Value</div>
+                        <div class="ld-metric-value sm">@Inr(Model.TotalStockValue)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="ld-table-wrap">
+                <table class="ld-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-end">Available Qty</th>
+                            <th class="text-end">Stock Value (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.TopProductsByStock.Any())
+                    {
+                        @foreach (var p in Model.TopProductsByStock)
+                        {
+                            <tr>
+                                <td><span class="ld-prod-dot"></span> @p.ProductName</td>
+                                <td class="text-end">@p.AvailableQty</td>
+                                <td class="text-end">@Inr(p.StockValue)</td>
+                            </tr>
+                        }
+                        <tr class="ld-total-row">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="text-end"><strong>@Model.TopProductsByStock.Sum(x => x.AvailableQty)</strong></td>
+                            <td class="text-end"><strong>@Inr(Model.TopProductsByStock.Sum(x => x.StockValue))</strong></td>
+                        </tr>
+                    }
+                    else
+                    {
+                        <tr><td colspan="3" class="text-center text-muted py-3">No stock data available</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Dealers -->
+        <div class="ld-card ld-span-2" data-ld-section="overview stock sales" data-ld-widget="dealers">
+            <div class="ld-card-head">
+                <h3>Top Dealers / Partners (By Sales) <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Partners ranked by Sold amount within the selected period. Conversion % = that partner's Sold count divided by all inquiries ever forwarded to them (not just this period), so it reflects their overall close rate."></i></h3>
+                <a class="ld-link" asp-controller="Dealer" asp-action="Index">View All</a>
+            </div>
+            <div class="ld-table-wrap">
+                <table class="ld-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Partner Name</th>
+                            <th class="text-end">Sales (₹)</th>
+                            <th class="text-end">Orders</th>
+                            <th class="text-end">Conversion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.TopDealers.Any())
+                    {
+                        @foreach (var d in Model.TopDealers)
+                        {
+                            <tr>
+                                <td>@d.Rank</td>
+                                <td>@d.PartnerName @(!string.IsNullOrWhiteSpace(d.City) ? $"({d.City})" : "")</td>
+                                <td class="text-end">@Inr(d.Sales)</td>
+                                <td class="text-end">@d.Orders</td>
+                                <td class="text-end">@Pct(d.ConversionPct)</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-3">No partner sales in this period</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Follow Up Summary -->
+        <div class="ld-card" data-ld-section="overview pipeline" data-ld-widget="followup">
+            <div class="ld-card-head">
+                <h3>Follow Up Summary <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Overdue = follow-up date already passed and still open. Due Today = follow-up date is today. Upcoming = follow-up due in the next 7 days. Completed = inquiries Sold or Closed within the selected period."></i></h3>
+                <a class="ld-link" asp-controller="Inquiry" asp-action="Index">View All</a>
+            </div>
+            <div class="ld-fu-grid">
+                <div class="ld-fu-card danger">
+                    <div class="ld-fu-label">Overdue Follow Ups</div>
+                    <div class="ld-fu-value">@Model.OverdueFollowUps</div>
+                    <div class="ld-fu-tag"><i class="bi bi-exclamation-triangle-fill"></i> High Priority</div>
+                </div>
+                <div class="ld-fu-card warn">
+                    <div class="ld-fu-label">Due Today</div>
+                    <div class="ld-fu-value">@Model.DueTodayFollowUps</div>
+                    <div class="ld-fu-tag"><i class="bi bi-lightning-fill"></i> Take Action</div>
+                </div>
+                <div class="ld-fu-card info">
+                    <div class="ld-fu-label">Upcoming (Next 7 Days)</div>
+                    <div class="ld-fu-value">@Model.UpcomingFollowUps</div>
+                    <div class="ld-fu-tag"><i class="bi bi-calendar-check"></i> Plan Ahead</div>
+                </div>
+                <div class="ld-fu-card success">
+                    <div class="ld-fu-label">Completed (This Month)</div>
+                    <div class="ld-fu-value">@Model.CompletedFollowUpsThisMonth</div>
+                    <div class="ld-fu-tag"><i class="bi bi-check-circle-fill"></i> Well Done!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inquiry & Conversion Trend -->
+        <div class="ld-card ld-span-2" data-ld-section="overview sales pipeline" data-ld-widget="trend">
+            <div class="ld-card-head">
+                <h3>Inquiry &amp; Conversion Trend <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="Weekly count of new inquiries created vs. how many of those converted (Sold) within the selected period, plus the resulting conversion % per week — shows whether conversion is improving or slipping over time."></i></h3>
+                <span class="ld-chip">@Model.PeriodLabel</span>
+            </div>
+            <canvas id="trendChart" height="200"></canvas>
+        </div>
+
+        <!-- Expected Orders Pipeline -->
+        <div class="ld-card" data-ld-section="overview pipeline" data-ld-widget="pipeline">
+            <div class="ld-card-head"><h3>Expected Orders Pipeline <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="A funnel of inquiries still in progress: Qualified → Proposal Sent → Negotiation → Expected Orders (Demo Done/Negotiation/Proposal Sent/Qualified). Est. Value estimates what these could be worth if converted, based on typical order value."></i></h3></div>
+            <div class="ld-funnel">
+                <div class="ld-funnel-stats">
+                    <div><span>Total Inquiries</span><b>@Model.PipelineTotalInquiries</b></div>
+                    <div><span>Qualified</span><b>@Model.PipelineQualified <small>(@(Model.PipelineTotalInquiries == 0 ? 0 : Math.Round(Model.PipelineQualified * 100m / Model.PipelineTotalInquiries, 1))%)</small></b></div>
+                    <div><span>Proposal Sent</span><b>@Model.PipelineProposalSent <small>(@(Model.PipelineTotalInquiries == 0 ? 0 : Math.Round(Model.PipelineProposalSent * 100m / Model.PipelineTotalInquiries, 1))%)</small></b></div>
+                    <div><span>Negotiation</span><b>@Model.PipelineNegotiation <small>(@(Model.PipelineTotalInquiries == 0 ? 0 : Math.Round(Model.PipelineNegotiation * 100m / Model.PipelineTotalInquiries, 1))%)</small></b></div>
+                    <div><span>Expected Orders</span><b>@Model.PipelineExpectedOrders <small>(@(Model.PipelineTotalInquiries == 0 ? 0 : Math.Round(Model.PipelineExpectedOrders * 100m / Model.PipelineTotalInquiries, 1))%)</small></b></div>
+                </div>
+                <div class="ld-funnel-visual">
+                    <div class="ld-funnel-bar f1"></div>
+                    <div class="ld-funnel-bar f2"></div>
+                    <div class="ld-funnel-bar f3"></div>
+                    <div class="ld-funnel-bar f4"></div>
+                    <div class="ld-funnel-bar f5"></div>
+                </div>
+                <div class="ld-funnel-footer">
+                    <div>Est. Value <strong>@Inr(Model.PipelineEstValue)</strong></div>
+                    <div>Weighted Conversion <strong>@Pct(Model.PipelineWeightedConversion)</strong></div>
+                    <a class="ld-btn ld-btn-ghost" asp-controller="Inquiry" asp-action="Index">View Pipeline →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="ld-card" data-ld-section="overview" data-ld-widget="activity">
+            <div class="ld-card-head">
+                <h3>Recent Activities <i class="bi bi-info-circle ld-info-icon" data-bs-toggle="tooltip" data-bs-title="A live feed of the most recently updated inquiries — new leads, follow-ups logged, and payments/amounts recorded — newest first, so you can see what changed without opening each inquiry."></i></h3>
+                <a class="ld-link" asp-controller="Inquiry" asp-action="Index">View All</a>
+            </div>
+            <ul class="ld-activity">
+            @foreach (var a in Model.RecentActivities)
+            {
+                <li>
+                    <div class="ld-act-icon @a.ColorClass"><i class="bi @a.Icon"></i></div>
+                    <div class="ld-act-body">
+                        <div class="ld-act-title">@a.Title</div>
+                        <div class="ld-act-sub">@a.Subtitle</div>
+                    </div>
+                    <div class="ld-act-time">@a.TimeLabel</div>
+                </li>
+            }
+            @if (!Model.RecentActivities.Any())
+            {
+                <li class="text-muted">No recent activity</li>
+            }
+            </ul>
+        </div>
+    </div>
+
+    <!-- Quick summary strip -->
+    <div class="ld-quick">
+        <a class="ld-quick-item ld-quick-link" asp-controller="Dealer" asp-action="Index" title="View partner records"><i class="bi bi-people"></i> Total Partners <b>@Model.TotalPartners</b> <i class="bi bi-zoom-in ld-quick-zoom"></i></a>
+        <a class="ld-quick-item ld-quick-link" asp-controller="Inquiry" asp-action="Index" title="View customer records"><i class="bi bi-building"></i> Total Customers <b>@Model.TotalCustomers</b> <i class="bi bi-zoom-in ld-quick-zoom"></i></a>
+        <a class="ld-quick-item ld-quick-link" asp-controller="Admin" asp-action="Users" title="View user login records"><i class="bi bi-person-badge"></i> Total Users <b>@Model.TotalUsers</b> <i class="bi bi-zoom-in ld-quick-zoom"></i></a>
+        <a class="ld-quick-item ld-quick-link" asp-controller="Product" asp-action="Index" title="View product records"><i class="bi bi-box"></i> Total Products <b>@Model.TotalProducts</b> <i class="bi bi-zoom-in ld-quick-zoom"></i></a>
+        <a class="ld-quick-item ld-quick-link" asp-controller="Inquiry" asp-action="Index" title="View support tickets"><i class="bi bi-headset"></i> Support Tickets <b>@Model.SupportTickets</b> <i class="bi bi-zoom-in ld-quick-zoom"></i></a>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const weekLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeekLabels));
+    const weeklySales = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklySales));
+    const weeklyTargets = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklyTargets));
+    const weeklyInquiries = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklyInquiries));
+    const weeklyConversions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklyConversions));
+    const weeklyConvPct = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklyConversionPct));
+
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--ld-text') || '#e2e8f0';
+    const gridColor = 'rgba(148,163,184,0.15)';
+    Chart.defaults.color = textColor.trim() || '#94a3b8';
+    Chart.defaults.borderColor = gridColor;
+    Chart.defaults.font.family = "'Inter', 'Segoe UI', system-ui, sans-serif";
+
+    function spark(id, data, color) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        new Chart(el, {
+            type: 'line',
+            data: { labels: data.map((_, i) => i), datasets: [{ data, borderColor: color, backgroundColor: color + '33', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } } }
+        });
+    }
+    const sparkData = weeklySales.length ? weeklySales : [12, 18, 14, 22, 19, 28, 24];
+    spark('sparkOrders', sparkData, '#a78bfa');
+    spark('sparkInquiries', weeklyInquiries.length ? weeklyInquiries : [40, 55, 48, 62, 70, 66], '#22d3ee');
+    spark('sparkExpected', weeklyConversions.length ? weeklyConversions : [8, 12, 10, 15, 14, 18], '#fbbf24');
+    spark('sparkFollow', [20, 18, 22, 16, 14, 12, 10], '#34d399');
+    spark('sparkConv', weeklyConvPct.length ? weeklyConvPct : [18, 22, 24, 26, 30], '#60a5fa');
+
+    // Sales bar
+    window.__ldSalesChart = new Chart(document.getElementById('salesBarChart'), {
+        type: 'bar',
+        data: {
+            labels: weekLabels.length ? weekLabels : ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [
+                { label: 'Sales (₹)', data: weeklySales.length ? weeklySales : [280000, 320000, 290000, 350000], backgroundColor: '#7c3aed', borderRadius: 8, barPercentage: 0.55 },
+                { label: 'Target (₹)', data: weeklyTargets.length ? weeklyTargets : [300000, 300000, 300000, 300000], backgroundColor: '#6366f1', borderRadius: 8, barPercentage: 0.55 }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { color: gridColor }, ticks: { callback: v => (v >= 100000 ? (v / 100000) + 'L' : v) } }
+            }
+        }
+    });
+
+    // Orders donut
+    new Chart(document.getElementById('ordersDonut'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'Processing', 'Pending', 'Cancelled', 'On Hold'],
+            datasets: [{ data: [@Model.StatusCompleted, @Model.StatusProcessing, @Model.StatusPending, @Model.StatusCancelled, @Model.StatusOnHold], backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 0, hoverOffset: 6 }]
+        },
+        options: { cutout: '68%', plugins: { legend: { display: false } } }
+    });
+
+    // Inquiries donut
+    new Chart(document.getElementById('inqDonut'), {
+        type: 'doughnut',
+        data: {
+            labels: ['New', 'Repeat', 'Upgrade', 'Cloud', 'Others'],
+            datasets: [{ data: [@Model.InqNew, @Model.InqRepeat, @Model.InqUpgrade, @Model.InqCloud, @Model.InqOthers], backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#a855f7', '#ef4444'], borderWidth: 0, hoverOffset: 6 }]
+        },
+        options: { cutout: '68%', plugins: { legend: { display: false } } }
+    });
+
+    // Trend
+    new Chart(document.getElementById('trendChart'), {
+        type: 'bar',
+        data: {
+            labels: weekLabels.length ? weekLabels : ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'],
+            datasets: [
+                { type: 'bar', label: 'Inquiries', data: weeklyInquiries.length ? weeklyInquiries : [120, 150, 160, 180, 210], backgroundColor: '#3b82f6', borderRadius: 6, yAxisID: 'y' },
+                { type: 'bar', label: 'Conversions', data: weeklyConversions.length ? weeklyConversions : [22, 34, 40, 48, 64], backgroundColor: '#22c55e', borderRadius: 6, yAxisID: 'y' },
+                { type: 'line', label: 'Conversion %', data: weeklyConvPct.length ? weeklyConvPct : [18.2, 22.7, 24.6, 26.1, 30.4], borderColor: '#fbbf24', backgroundColor: '#fbbf24', tension: 0.35, yAxisID: 'y1', pointRadius: 4, pointBackgroundColor: '#fbbf24' }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true } } },
+            scales: {
+                y: { position: 'left', grid: { color: gridColor }, title: { display: true, text: 'Count' } },
+                y1: { position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 50, title: { display: true, text: 'Conversion %' } }
+            }
+        }
+    });
+
+    // Auto refresh every 60s — keep period/dates in URL
+    setTimeout(function () {
+        var url = new URL(window.location.href);
+        var periodEl = document.getElementById('livePeriodSelect');
+        if (periodEl && periodEl.value && periodEl.value !== 'custom') {
+            url.searchParams.set('period', periodEl.value);
+        }
+        window.location.replace(url.pathname + url.search);
+    }, 60000);
+
+    var periodEl = document.getElementById('livePeriodSelect');
+    var form = document.getElementById('liveFilterForm');
+    if (periodEl && form) {
+        periodEl.addEventListener('change', function () {
+            if (periodEl.value !== 'custom') {
+                var fd = form.querySelector('[name="fromDate"]');
+                var td = form.querySelector('[name="toDate"]');
+                if (fd) fd.disabled = true;
+                if (td) td.disabled = true;
+            }
+            form.submit();
+        });
+    }
+
+    (function initLdViews() {
+        var KEY_VIEW = 'profitnx.liveDash.view';
+        var KEY_SALES = 'profitnx.liveDash.salesChart';
+        var KEY_TREND = 'profitnx.liveDash.trendChart';
+        var KEY_PREF = 'profitnx.liveDash.prefs';
+        var root = document.querySelector('[data-live-dashboard]');
+        if (!root) return;
+        var defaultPrefs = {
+            widgets: { kpi:true, sales:true, target:true, orders:true, inquiryType:true, stock:true, dealers:true, followup:true, trend:true, pipeline:true, activity:true, quick:true },
+            density: 'comfortable',
+            donut: 'doughnut'
+        };
+        function loadPrefs() {
+            try {
+                var raw = localStorage.getItem(KEY_PREF);
+                if (!raw) return JSON.parse(JSON.stringify(defaultPrefs));
+                var p = JSON.parse(raw);
+                p.widgets = Object.assign({}, defaultPrefs.widgets, p.widgets || {});
+                p.density = p.density || 'comfortable';
+                p.donut = p.donut || 'doughnut';
+                return p;
+            } catch (e) { return JSON.parse(JSON.stringify(defaultPrefs)); }
+        }
+        function savePrefs(prefs) {
+            try { localStorage.setItem(KEY_PREF, JSON.stringify(prefs)); } catch (e) {}
+        }
+        var prefs = loadPrefs();
+
+        function applyWidgets() {
+            document.querySelectorAll('[data-ld-widget]').forEach(function (el) {
+                var key = el.getAttribute('data-ld-widget');
+                var on = prefs.widgets[key] !== false;
+                el.classList.toggle('ld-widget-hidden', !on);
+            });
+        }
+        function applyDensity() {
+            root.setAttribute('data-ld-density', prefs.density || 'comfortable');
+        }
+        function applyDonutType() {
+            var t = prefs.donut === 'pie' ? 'pie' : 'doughnut';
+            [window.__ldOrdersChart, window.__ldInquiryTypeChart].forEach(function (ch) {
+                if (!ch) return;
+                ch.config.type = t;
+                ch.update();
+            });
+        }
+        function applyView(view) {
+            root.setAttribute('data-ld-view', view);
+            document.querySelectorAll('.ld-view-tab').forEach(function (btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-ld-view') === view);
+            });
+            document.querySelectorAll('[data-ld-section]').forEach(function (el) {
+                var sections = (el.getAttribute('data-ld-section') || '').split(/\s+/);
+                if (view === 'overview') el.style.display = '';
+                else el.style.display = sections.indexOf(view) >= 0 ? '' : 'none';
+            });
+            applyWidgets();
+            try { localStorage.setItem(KEY_VIEW, view); } catch (e) {}
+        }
+        document.querySelectorAll('.ld-view-tab').forEach(function (btn) {
+            btn.addEventListener('click', function () { applyView(btn.getAttribute('data-ld-view') || 'overview'); });
+        });
+        var saved = 'overview';
+        try { saved = localStorage.getItem(KEY_VIEW) || 'overview'; } catch (e) {}
+        applyView(saved);
+        applyDensity();
+        applyDonutType();
+
+        function setChartType(chart, type) {
+            if (!chart) return;
+            chart.config.type = type;
+            chart.update();
+        }
+        var salesType = document.getElementById('ldSalesChartType');
+        var trendType = document.getElementById('ldTrendChartType');
+        try {
+            if (salesType) salesType.value = localStorage.getItem(KEY_SALES) || 'bar';
+            if (trendType) trendType.value = localStorage.getItem(KEY_TREND) || 'line';
+        } catch (e) {}
+        if (salesType) {
+            salesType.addEventListener('change', function () {
+                try { localStorage.setItem(KEY_SALES, salesType.value); } catch (e) {}
+                setChartType(window.__ldSalesChart, salesType.value === 'line' ? 'line' : 'bar');
+            });
+            if (salesType.value === 'line') setChartType(window.__ldSalesChart, 'line');
+        }
+        if (trendType) {
+            trendType.addEventListener('change', function () {
+                try { localStorage.setItem(KEY_TREND, trendType.value); } catch (e) {}
+                setChartType(window.__ldTrendChart, trendType.value === 'bar' ? 'bar' : 'line');
+            });
+            if (trendType.value === 'bar') setChartType(window.__ldTrendChart, 'bar');
+        }
+
+        // Customize panel
+        var panel = document.getElementById('ldCustomizePanel');
+        var btn = document.getElementById('ldCustomizeBtn');
+        var closeBtn = document.getElementById('ldCustomizeClose');
+        function syncPanelFromPrefs() {
+            document.querySelectorAll('[data-ld-widget-check], input[data-ld-widget]').forEach(function () {});
+            document.querySelectorAll('#ldCustomizePanel input[data-ld-widget]').forEach(function (cb) {
+                var key = cb.getAttribute('data-ld-widget');
+                cb.checked = prefs.widgets[key] !== false;
+            });
+            document.querySelectorAll('input[name="ldDensity"]').forEach(function (r) {
+                r.checked = r.value === (prefs.density || 'comfortable');
+            });
+            document.querySelectorAll('input[name="ldDonut"]').forEach(function (r) {
+                r.checked = r.value === (prefs.donut || 'doughnut');
+            });
+        }
+        function openPanel() {
+            syncPanelFromPrefs();
+            if (panel) panel.hidden = false;
+        }
+        function closePanel() { if (panel) panel.hidden = true; }
+        if (btn) btn.addEventListener('click', openPanel);
+        if (closeBtn) closeBtn.addEventListener('click', closePanel);
+        var applyBtn = document.getElementById('ldCustomizeApply');
+        if (applyBtn) applyBtn.addEventListener('click', function () {
+            document.querySelectorAll('#ldCustomizePanel input[data-ld-widget]').forEach(function (cb) {
+                prefs.widgets[cb.getAttribute('data-ld-widget')] = !!cb.checked;
+            });
+            var dens = document.querySelector('input[name="ldDensity"]:checked');
+            var don = document.querySelector('input[name="ldDonut"]:checked');
+            prefs.density = dens ? dens.value : 'comfortable';
+            prefs.donut = don ? don.value : 'doughnut';
+            savePrefs(prefs);
+            applyWidgets();
+            applyDensity();
+            applyDonutType();
+            closePanel();
+        });
+        var resetBtn = document.getElementById('ldCustomizeReset');
+        if (resetBtn) resetBtn.addEventListener('click', function () {
+            prefs = JSON.parse(JSON.stringify(defaultPrefs));
+            savePrefs(prefs);
+            try {
+                localStorage.removeItem(KEY_SALES);
+                localStorage.removeItem(KEY_TREND);
+            } catch (e) {}
+            if (salesType) { salesType.value = 'bar'; setChartType(window.__ldSalesChart, 'bar'); }
+            if (trendType) { trendType.value = 'line'; setChartType(window.__ldTrendChart, 'line'); }
+            syncPanelFromPrefs();
+            applyWidgets();
+            applyDensity();
+            applyDonutType();
+        });
+    })();
+
+    // Yearly Target Planner — fully automatic now:
+    // "Achieved so far", "Remaining" and the Daily/Weekly/Monthly pace are
+    // all rendered server-side (@Model.YearlyAchieved / @Model.YearlyRemaining
+    // / @Model.YearlyPaceDay etc.) straight from CRM Sold data joining
+    // Admin + Partner + User sales, so there is no client-side recalculation
+    // left to do for those. This script only handles (1) the Admin's Save
+    // button for the target amount, and (2) the "check another product"
+    // dropdown, using each product's real sales pace from this year.
+    (function initLdTargetPlanner() {
+        var saveBtn = document.getElementById('ldSaveTargetBtn');
+        var targetInput = document.getElementById('ldYearlyTarget');
+        var saveNote = document.getElementById('ldSaveTargetNote');
+        if (saveBtn && targetInput) {
+            saveBtn.addEventListener('click', function () {
+                var amount = parseFloat(targetInput.value);
+                if (!isFinite(amount) || amount < 0) {
+                    if (saveNote) saveNote.textContent = 'Enter a valid target amount.';
+                    return;
+                }
+                var tokenInput = document.querySelector('#ldTargetAntiForgeryForm input[name="__RequestVerificationToken"]');
+                var body = new URLSearchParams();
+                body.set('amount', amount);
+                body.set('year', '@Model.TargetYear');
+                if (tokenInput) body.set('__RequestVerificationToken', tokenInput.value);
+                saveBtn.disabled = true;
+                if (saveNote) saveNote.textContent = 'Saving…';
+                fetch('@Url.Action("SetYearlyTarget", "Dashboard")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                }).then(function (res) {
+                    if (!res.ok) throw new Error('save failed');
+                    if (saveNote) saveNote.textContent = 'Target saved. Refreshing…';
+                    setTimeout(function () { window.location.reload(); }, 400);
+                }).catch(function () {
+                    if (saveNote) saveNote.textContent = 'Could not save the target. Please try again.';
+                    saveBtn.disabled = false;
+                });
+            });
+        }
+
+        var productSelect = document.getElementById('ldTargetProduct');
+        var productResultEl = document.getElementById('ldTargetProductResult');
+        if (productSelect && productResultEl) {
+            var remaining = @Model.YearlyRemaining.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            function fmtInr(n) {
+                if (!isFinite(n)) n = 0;
+                return '₹ ' + Math.round(Math.max(0, n)).toLocaleString('en-IN');
+            }
+
+            function updateProductResult() {
+                var opt = productSelect.options[productSelect.selectedIndex];
+                var price = opt ? parseFloat(opt.getAttribute('data-price')) : NaN;
+                var perDay = opt ? parseFloat(opt.getAttribute('data-perday')) : NaN;
+                if (!productSelect.value || !isFinite(price) || price <= 0 || remaining <= 0) {
+                    productResultEl.hidden = true;
+                    return;
+                }
+                var units = remaining / price;
+                var label = opt.text;
+                productResultEl.hidden = false;
+                var html = 'Sell about <strong>' + Math.ceil(units) + '</strong> more unit(s) of <strong>' + label +
+                    '</strong> to close the gap (~' + fmtInr(price) + '/unit).';
+                if (isFinite(perDay) && perDay > 0) {
+                    html += ' At its current sales pace that\u2019s roughly <strong>' + Math.ceil(remaining / perDay) + '</strong> day(s).';
+                }
+                productResultEl.innerHTML = html;
+            }
+
+            productSelect.addEventListener('change', updateProductResult);
+        }
+    })();
+})();
+</script>
+}

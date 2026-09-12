@@ -1,0 +1,107 @@
+/* =====================================================================
+   Quick Fix - 2026-08-05 (Change 1)
+   Combined "pending task" flash message. One card lists every pending
+   task for the logged-in user (see initPendingTaskFlash in
+   Views/Shared/_Layout.cshtml). Loaded last so it reliably wins the
+   cascade over the older layered stylesheets.
+   ===================================================================== */
+
+.task-flash-stack {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 2000;
+    width: min(360px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.task-flash-stack.show { pointer-events: auto; }
+
+.task-flash-card {
+    background: #fff;
+    border-left: 4px solid #d97706;
+    border-radius: 12px;
+    box-shadow: 0 10px 32px rgba(15, 23, 42, .18), 0 2px 8px rgba(15, 23, 42, .08);
+    overflow: hidden;
+    animation: taskFlashIn .22s ease;
+}
+
+@keyframes taskFlashIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.task-flash-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 10px 10px 14px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-weight: 700;
+    font-size: .86rem;
+}
+
+.task-flash-head i.bi-bell-fill { margin-right: 6px; color: #d97706; }
+
+.task-flash-close {
+    border: none;
+    background: transparent;
+    color: #9a3412;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+.task-flash-close:hover { background: rgba(154, 52, 18, .12); }
+
+.task-flash-body {
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.task-flash-item {
+    display: block;
+    padding: 10px 14px;
+    text-decoration: none;
+    border-top: 1px solid #f1f5f9;
+    color: #1f2937;
+}
+.task-flash-item:first-child { border-top: none; }
+.task-flash-item:hover { background: #f8fafc; }
+
+.task-flash-item-msg {
+    display: block;
+    font-size: .84rem;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.35;
+}
+
+.task-flash-item-meta {
+    display: block;
+    margin-top: 3px;
+    font-size: .72rem;
+    color: #6b7280;
+}
+
+.task-flash-footer {
+    display: block;
+    text-align: center;
+    padding: 9px;
+    font-size: .8rem;
+    font-weight: 700;
+    color: #1d4ed8;
+    text-decoration: none;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+}
+.task-flash-footer:hover { background: #eff6ff; }
+
+@media (max-width: 576px) {
+    .task-flash-stack { right: 10px; bottom: 10px; left: 10px; width: auto; }
+}

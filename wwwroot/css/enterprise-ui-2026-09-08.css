@@ -1,0 +1,1792 @@
+/* ==========================================================================
+   ProfitNx CRM — Enterprise UI fixes (2026-09-08)
+   - Sticky Action column hardening (all themes)
+   - Attention / Pending Inquiry phone number contrast (Midnight + Premium)
+   - Icon-only logout
+   - Collapsible sidebar (Gmail-style)
+   - Table toolbar / sticky helpers for shared report grids
+   ========================================================================== */
+
+/* ---- 1) Sticky Action column — global hardening ---- */
+.inquiry-action-table,
+.crm-data-table,
+.enterprise-data-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.inquiry-action-table thead th.col-action,
+.inquiry-action-table thead th:last-child,
+.inquiry-action-table tbody td.col-action,
+.inquiry-action-table tbody td.inquiry-action-td,
+.inquiry-action-table tbody td:last-child,
+.crm-data-table thead th.col-action,
+.crm-data-table tbody td.col-action,
+.enterprise-data-table thead th.col-action,
+.enterprise-data-table tbody td.col-action {
+  position: sticky !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 8;
+  background-clip: padding-box;
+}
+
+.inquiry-action-table thead th.col-action,
+.inquiry-action-table thead th:last-child,
+.crm-data-table thead th.col-action,
+.enterprise-data-table thead th.col-action {
+  z-index: 12;
+}
+
+/* Ensure scroll containers don't clip sticky */
+.table-responsive.inquiry-grid,
+.inquiry-grid.table-responsive,
+.table-responsive.crm-data-table-wrap,
+.enterprise-table-scroll {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* Opaque sticky backgrounds so scrolled cells never show through */
+html:not([data-app-theme]) .inquiry-action-table thead th.col-action,
+html:not([data-app-theme]) .inquiry-action-table tbody td.col-action,
+html:not([data-app-theme]) .inquiry-action-table tbody td.inquiry-action-td,
+html:not([data-app-theme]) .inquiry-action-table thead th:last-child,
+html:not([data-app-theme]) .inquiry-action-table tbody td:last-child {
+  background: #ffffff !important;
+  box-shadow: -10px 0 16px -8px rgba(15, 23, 42, 0.18);
+  border-left: 1px solid rgba(15, 23, 42, 0.10);
+}
+
+html[data-app-theme="midnight"] .inquiry-action-table thead th.col-action,
+html[data-app-theme="midnight"] .inquiry-action-table tbody td.col-action,
+html[data-app-theme="midnight"] .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="midnight"] .inquiry-action-table thead th:last-child,
+html[data-app-theme="midnight"] .inquiry-action-table tbody td:last-child {
+  background: #1e293b !important;
+  box-shadow: -12px 0 20px -6px rgba(0, 0, 0, 0.55);
+  border-left: 1px solid rgba(148, 163, 184, 0.18);
+  color: #e2e8f0 !important;
+}
+
+html[data-app-theme="premium"] .inquiry-action-table thead th.col-action,
+html[data-app-theme="premium"] .inquiry-action-table tbody td.col-action,
+html[data-app-theme="premium"] .inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="premium"] .inquiry-action-table thead th:last-child,
+html[data-app-theme="premium"] .inquiry-action-table tbody td:last-child {
+  background: #1a1330 !important;
+  box-shadow: -12px 0 20px -6px rgba(0, 0, 0, 0.5);
+  border-left: 1px solid rgba(202, 161, 74, 0.22);
+  color: #f3ecff !important;
+}
+
+/* ---- 2) Pending Inquiry Attention — phone number readability ---- */
+.attention-call {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 4px 12px 4px 10px;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+
+.attention-call i {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Light (default) — keep existing teal pill */
+html:not([data-app-theme]) .attention-call,
+html[data-app-theme="classic"] .attention-call,
+html[data-app-theme="saas"] .attention-call,
+html[data-app-theme="dompet"] .attention-call,
+html[data-app-theme="emerald"] .attention-call,
+html[data-app-theme="rosegold"] .attention-call {
+  color: #0d9488 !important;
+  background: #e6faf7 !important;
+  border: 1px solid #b6ede4 !important;
+}
+
+html:not([data-app-theme]) .attention-call:hover,
+html[data-app-theme="classic"] .attention-call:hover {
+  background: #d3f5ee !important;
+  color: #0f766e !important;
+}
+
+/* Midnight Dark — high contrast cyan on dark slate */
+html[data-app-theme="midnight"] .attention-modal-card .modal-content {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+html[data-app-theme="midnight"] .attention-modal-card .modal-header {
+  background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+  border-bottom-color: #334155 !important;
+}
+html[data-app-theme="midnight"] .attention-modal-card .modal-title,
+html[data-app-theme="midnight"] .attention-modal-card .crm-modal-eyebrow {
+  color: #f8fafc !important;
+}
+html[data-app-theme="midnight"] .attention-modal-card .modal-body > p.text-muted {
+  color: #94a3b8 !important;
+}
+html[data-app-theme="midnight"] .attention-item {
+  background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+  border: 1px solid #334155 !important;
+  color: #e2e8f0 !important;
+}
+html[data-app-theme="midnight"] .attention-item:hover {
+  border-color: #475569 !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35) !important;
+}
+html[data-app-theme="midnight"] .attention-item b {
+  color: #f8fafc !important;
+}
+html[data-app-theme="midnight"] .attention-item span,
+html[data-app-theme="midnight"] .attention-item .attention-meta {
+  color: #94a3b8 !important;
+}
+html[data-app-theme="midnight"] .attention-item small,
+html[data-app-theme="midnight"] .attention-item .attention-last {
+  color: #fbbf24 !important;
+}
+html[data-app-theme="midnight"] .attention-icon {
+  background: #334155 !important;
+  color: #fbbf24 !important;
+}
+html[data-app-theme="midnight"] .attention-call {
+  color: #67e8f9 !important;
+  background: #164e63 !important;
+  border: 1px solid #22d3ee !important;
+}
+html[data-app-theme="midnight"] .attention-call:hover {
+  background: #155e75 !important;
+  color: #a5f3fc !important;
+}
+
+/* Premium Elite — gold accent on deep purple */
+html[data-app-theme="premium"] .attention-modal-card .modal-content {
+  background: #1a1330 !important;
+  color: #f3ecff !important;
+  border-color: #3d2f66 !important;
+}
+html[data-app-theme="premium"] .attention-modal-card .modal-header {
+  background: linear-gradient(135deg, #2a1f4a, #1a1330) !important;
+  border-bottom-color: #3d2f66 !important;
+}
+html[data-app-theme="premium"] .attention-modal-card .modal-title,
+html[data-app-theme="premium"] .attention-modal-card .crm-modal-eyebrow {
+  color: #f8f0d8 !important;
+}
+html[data-app-theme="premium"] .attention-modal-card .modal-body > p.text-muted {
+  color: #b8a9d4 !important;
+}
+html[data-app-theme="premium"] .attention-item {
+  background: linear-gradient(135deg, #241a40, #1a1330) !important;
+  border: 1px solid #3d2f66 !important;
+  color: #f3ecff !important;
+}
+html[data-app-theme="premium"] .attention-item:hover {
+  border-color: #caa14a !important;
+  box-shadow: 0 12px 28px rgba(202, 161, 74, 0.15) !important;
+}
+html[data-app-theme="premium"] .attention-item b {
+  color: #fef9ef !important;
+}
+html[data-app-theme="premium"] .attention-item span,
+html[data-app-theme="premium"] .attention-item .attention-meta {
+  color: #b8a9d4 !important;
+}
+html[data-app-theme="premium"] .attention-item small,
+html[data-app-theme="premium"] .attention-item .attention-last {
+  color: #e9d9a8 !important;
+}
+html[data-app-theme="premium"] .attention-icon {
+  background: #3d2f66 !important;
+  color: #caa14a !important;
+}
+html[data-app-theme="premium"] .attention-call {
+  color: #f5e6b8 !important;
+  background: #3d2f1a !important;
+  border: 1px solid #caa14a !important;
+}
+html[data-app-theme="premium"] .attention-call:hover {
+  background: #4a3820 !important;
+  color: #fff8e0 !important;
+}
+
+/* ---- 3) Logout = same shape as other top icons ---- */
+.crm-app-body .top-logout-button,
+a.top-logout-button {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  height: 48px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: 0 !important;
+  border-radius: 17px !important;
+  background: rgba(248, 251, 255, 0.92) !important;
+  color: #173c67 !important;
+  box-shadow: 0 8px 20px rgba(42, 94, 157, 0.07) !important;
+  text-decoration: none !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  transform: none !important;
+}
+.crm-app-body .top-logout-button span,
+a.top-logout-button span { display: none !important; }
+.crm-app-body .top-logout-button i,
+a.top-logout-button i {
+  font-size: 1.15rem !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+}
+.crm-app-body .top-logout-button:hover,
+.crm-app-body .top-logout-button:focus,
+a.top-logout-button:hover {
+  background: #fff !important;
+  color: #dc2626 !important;
+  border: 0 !important;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.12) !important;
+  transform: none !important;
+  text-decoration: none !important;
+}
+
+html[data-app-theme="midnight"] .crm-app-body .top-logout-button,
+html[data-app-theme="midnight"] a.top-logout-button {
+  background: #1b2140 !important;
+  color: #c8d3f0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+html[data-app-theme="midnight"] .crm-app-body .top-logout-button:hover {
+  background: #2a3358 !important;
+  color: #fca5a5 !important;
+}
+
+html[data-app-theme="premium"] .crm-app-body .top-logout-button,
+html[data-app-theme="premium"] a.top-logout-button {
+  background: rgba(202, 161, 74, 0.14) !important;
+  color: #e9d9a8 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+html[data-app-theme="premium"] .crm-app-body .top-logout-button:hover {
+  background: rgba(202, 161, 74, 0.28) !important;
+  color: #fecaca !important;
+}
+
+html[data-app-theme="saas"] .crm-app-body .top-logout-button { background: #f1f0fb !important; color: #4f46e5 !important; }
+html[data-app-theme="dompet"] .crm-app-body .top-logout-button { background: #f4f7fc !important; color: #2f6fed !important; }
+html[data-app-theme="emerald"] .crm-app-body .top-logout-button { background: #eefaf5 !important; color: #0f766e !important; }
+html[data-app-theme="rosegold"] .crm-app-body .top-logout-button { background: #fdf2f7 !important; color: #9d174d !important; }
+
+/* Profile summary after role-removal: tight spacing */
+.crm-app-body .top-profile-summary {
+  gap: 10px !important;
+  padding: 0 2px !important;
+}
+.crm-app-body .profile-copy small { display: none !important; }
+
+/* ---- 4) Collapsible sidebar (desktop Gmail-style) ---- */
+.app-shell {
+  transition: none;
+}
+.side-rail {
+  transition: width 0.22s ease, min-width 0.22s ease, padding 0.22s ease;
+}
+.main-panel {
+  transition: margin 0.22s ease;
+}
+
+/* Collapsed state — icons only */
+body.crm-app-body.sidebar-collapsed .side-rail {
+  width: 72px !important;
+  min-width: 72px !important;
+  max-width: 72px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+body.crm-app-body.sidebar-collapsed .side-rail .brand-block > div:last-child,
+body.crm-app-body.sidebar-collapsed .side-rail .sidebar-overline,
+body.crm-app-body.sidebar-collapsed .side-rail .sidebar-search-box,
+body.crm-app-body.sidebar-collapsed .side-rail .menu-group-label span,
+body.crm-app-body.sidebar-collapsed .side-rail .menu-link .menu-text,
+body.crm-app-body.sidebar-collapsed .side-rail .menu-link .menu-shortcut,
+body.crm-app-body.sidebar-collapsed .side-rail .menu-live-badge,
+body.crm-app-body.sidebar-collapsed .side-rail .menu-mini-badge,
+body.crm-app-body.sidebar-collapsed .side-rail .sidebar-status-card {
+  display: none !important;
+}
+body.crm-app-body.sidebar-collapsed .side-rail .menu-group-label {
+  justify-content: center;
+  padding: 8px 0;
+}
+body.crm-app-body.sidebar-collapsed .side-rail .menu-link {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+body.crm-app-body.sidebar-collapsed .side-rail .menu-link .menu-icon {
+  margin: 0;
+}
+body.crm-app-body.sidebar-collapsed .side-rail .brand-block {
+  justify-content: center;
+}
+body.crm-app-body.sidebar-collapsed .side-rail .notify-badge,
+body.crm-app-body.sidebar-collapsed .side-rail .menu-link.with-badge .notify-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  transform: scale(0.85);
+}
+
+/* Desktop collapse toggle button */
+.sidebar-collapse-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  color: #475569;
+  cursor: pointer;
+  margin: 8px auto 4px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.2s ease;
+}
+.sidebar-collapse-toggle:hover {
+  background: #eef2ff;
+  color: #1e40af;
+}
+.sidebar-collapse-toggle i {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+body.crm-app-body.sidebar-collapsed .sidebar-collapse-toggle i {
+  transform: rotate(180deg);
+}
+html[data-app-theme="midnight"] .sidebar-collapse-toggle {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+html[data-app-theme="midnight"] .sidebar-collapse-toggle:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+html[data-app-theme="premium"] .sidebar-collapse-toggle {
+  background: rgba(36, 26, 64, 0.9);
+  border-color: rgba(202, 161, 74, 0.25);
+  color: #e9d9a8;
+}
+html[data-app-theme="premium"] .sidebar-collapse-toggle:hover {
+  background: #3d2f66;
+  color: #fff8e0;
+}
+
+@media (min-width: 992px) {
+  .sidebar-collapse-toggle {
+    display: inline-flex;
+  }
+  /* Keep mobile drawer behavior on small screens — collapse class is desktop-only */
+  body.crm-app-body.sidebar-collapsed .crm-sidebar-backdrop {
+    display: none !important;
+  }
+}
+
+/* On mobile, never apply collapsed icon-rail styles from desktop preference */
+@media (max-width: 991.98px) {
+  body.crm-app-body.sidebar-collapsed .side-rail {
+    width: auto !important;
+    min-width: unset !important;
+    max-width: none !important;
+  }
+  body.crm-app-body.sidebar-collapsed .side-rail .brand-block > div:last-child,
+  body.crm-app-body.sidebar-collapsed .side-rail .menu-link .menu-text {
+    display: revert !important;
+  }
+}
+
+/* ---- 5) Enterprise table toolbar helpers ---- */
+.enterprise-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.enterprise-table-toolbar .toolbar-left,
+.enterprise-table-toolbar .toolbar-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.enterprise-table-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+.enterprise-table-pagination .page-size-select {
+  width: auto;
+  min-width: 90px;
+}
+.enterprise-col-filter-btn {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  padding: 0 2px;
+  line-height: 1;
+  cursor: pointer;
+}
+.enterprise-col-filter-btn.active {
+  color: #2563eb;
+}
+html[data-app-theme="midnight"] .enterprise-col-filter-btn { color: #94a3b8; }
+html[data-app-theme="midnight"] .enterprise-col-filter-btn.active { color: #60a5fa; }
+html[data-app-theme="premium"] .enterprise-col-filter-btn { color: #b8a9d4; }
+html[data-app-theme="premium"] .enterprise-col-filter-btn.active { color: #caa14a; }
+
+.th-filter-active {
+  box-shadow: inset 0 -2px 0 #2563eb;
+}
+html[data-app-theme="midnight"] .th-filter-active {
+  box-shadow: inset 0 -2px 0 #60a5fa;
+}
+html[data-app-theme="premium"] .th-filter-active {
+  box-shadow: inset 0 -2px 0 #caa14a;
+}
+
+
+/* ---- Page header: no role eyebrow residue ---- */
+.top-panel.clean-top-panel > div > .eyebrow { display: none !important; }
+
+/* ---- Profile: single name, no stacked role ---- */
+.top-profile-summary .profile-copy small { display: none !important; }
+.top-profile-summary .profile-copy strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* ---- Attention modal / cards: force readable on dark themes ---- */
+html[data-app-theme="midnight"] .attention-modal-card .modal-content,
+html[data-app-theme="midnight"] #crmAttentionModal .modal-content {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #334155 !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-header {
+  background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+  border-bottom: 1px solid #334155 !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-title,
+html[data-app-theme="midnight"] #crmAttentionModal .crm-modal-eyebrow {
+  color: #f8fafc !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-body > p,
+html[data-app-theme="midnight"] #crmAttentionModal .text-muted {
+  color: #94a3b8 !important;
+}
+html[data-app-theme="midnight"] .attention-item {
+  background: #1e293b !important;
+  border: 1px solid #475569 !important;
+  color: #f1f5f9 !important;
+}
+html[data-app-theme="midnight"] .attention-item b { color: #ffffff !important; }
+html[data-app-theme="midnight"] .attention-item span,
+html[data-app-theme="midnight"] .attention-item .attention-meta { color: #cbd5e1 !important; }
+html[data-app-theme="midnight"] .attention-item small,
+html[data-app-theme="midnight"] .attention-item .attention-last { color: #fbbf24 !important; }
+html[data-app-theme="midnight"] .attention-call {
+  color: #a5f3fc !important;
+  background: #0e7490 !important;
+  border: 1px solid #22d3ee !important;
+}
+html[data-app-theme="midnight"] .attention-icon {
+  background: #334155 !important;
+  color: #fbbf24 !important;
+}
+
+html[data-app-theme="premium"] .attention-modal-card .modal-content,
+html[data-app-theme="premium"] #crmAttentionModal .modal-content {
+  background: #1a1330 !important;
+  color: #f3ecff !important;
+  border: 1px solid #3d2f66 !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-header {
+  background: linear-gradient(135deg, #2a1f4a, #1a1330) !important;
+  border-bottom: 1px solid #3d2f66 !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-title,
+html[data-app-theme="premium"] #crmAttentionModal .crm-modal-eyebrow {
+  color: #f8f0d8 !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-body > p,
+html[data-app-theme="premium"] #crmAttentionModal .text-muted {
+  color: #b8a9d4 !important;
+}
+html[data-app-theme="premium"] .attention-item {
+  background: #241a40 !important;
+  border: 1px solid #4a3a78 !important;
+  color: #f3ecff !important;
+}
+html[data-app-theme="premium"] .attention-item b { color: #fff8e8 !important; }
+html[data-app-theme="premium"] .attention-item span,
+html[data-app-theme="premium"] .attention-item .attention-meta { color: #d4c4f0 !important; }
+html[data-app-theme="premium"] .attention-item small,
+html[data-app-theme="premium"] .attention-item .attention-last { color: #e9d9a8 !important; }
+html[data-app-theme="premium"] .attention-call {
+  color: #fff8e0 !important;
+  background: #5c4a1a !important;
+  border: 1px solid #caa14a !important;
+}
+html[data-app-theme="premium"] .attention-icon {
+  background: #3d2f66 !important;
+  color: #caa14a !important;
+}
+
+/* Task flash cards on dark themes */
+html[data-app-theme="midnight"] .task-flash-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+html[data-app-theme="premium"] .task-flash-card {
+  background: #1a1330 !important;
+  border-color: #3d2f66 !important;
+  color: #f3ecff !important;
+}
+
+
+/* ========== ATTENTION NOTIFICATION — Midnight / Premium (force readable) ========== */
+html[data-app-theme="midnight"] .attention-item,
+html[data-app-theme="midnight"] a.attention-item,
+html[data-app-theme="midnight"] #crmAttentionModal .attention-item {
+  background: #1e293b !important;
+  border: 1px solid #475569 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35) !important;
+}
+html[data-app-theme="midnight"] .attention-item b,
+html[data-app-theme="midnight"] .attention-item strong {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="midnight"] .attention-item span,
+html[data-app-theme="midnight"] .attention-item .attention-meta,
+html[data-app-theme="midnight"] .attention-item > div > span {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .attention-item small,
+html[data-app-theme="midnight"] .attention-item .attention-last {
+  color: #fbbf24 !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+html[data-app-theme="midnight"] .attention-item .attention-call,
+html[data-app-theme="midnight"] a.attention-call {
+  color: #ecfeff !important;
+  background: #0e7490 !important;
+  border: 1px solid #22d3ee !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="midnight"] .attention-icon {
+  background: #334155 !important;
+  color: #fbbf24 !important;
+}
+html[data-app-theme="midnight"] .attention-item > i.bi-arrow-right-circle {
+  color: #94a3b8 !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-content {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-header {
+  background: #1e293b !important;
+  border-bottom-color: #334155 !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-title,
+html[data-app-theme="midnight"] #crmAttentionModal .crm-modal-eyebrow {
+  color: #f8fafc !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-body p,
+html[data-app-theme="midnight"] #crmAttentionModal .text-muted {
+  color: #94a3b8 !important;
+}
+
+html[data-app-theme="premium"] .attention-item,
+html[data-app-theme="premium"] a.attention-item,
+html[data-app-theme="premium"] #crmAttentionModal .attention-item {
+  background: #241a40 !important;
+  border: 1px solid #5b4a8a !important;
+  color: #fef9ef !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4) !important;
+}
+html[data-app-theme="premium"] .attention-item b,
+html[data-app-theme="premium"] .attention-item strong {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="premium"] .attention-item span,
+html[data-app-theme="premium"] .attention-item .attention-meta,
+html[data-app-theme="premium"] .attention-item > div > span {
+  color: #e9dff8 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .attention-item small,
+html[data-app-theme="premium"] .attention-item .attention-last {
+  color: #f5e6b8 !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+html[data-app-theme="premium"] .attention-item .attention-call,
+html[data-app-theme="premium"] a.attention-call {
+  color: #1a1330 !important;
+  background: #e9d9a8 !important;
+  border: 1px solid #caa14a !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="premium"] .attention-icon {
+  background: #3d2f66 !important;
+  color: #caa14a !important;
+}
+html[data-app-theme="premium"] .attention-item > i.bi-arrow-right-circle {
+  color: #caa14a !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-content {
+  background: #1a1330 !important;
+  color: #f3ecff !important;
+  border-color: #3d2f66 !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-header {
+  background: #241a40 !important;
+  border-bottom-color: #3d2f66 !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-title,
+html[data-app-theme="premium"] #crmAttentionModal .crm-modal-eyebrow {
+  color: #f8f0d8 !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-body p,
+html[data-app-theme="premium"] #crmAttentionModal .text-muted {
+  color: #b8a9d4 !important;
+}
+
+/* Column filter row: compact, aligned under headers */
+.enterprise-filter-row th {
+  background: transparent !important;
+  border-top: 0 !important;
+  padding: 4px 6px 8px !important;
+  vertical-align: top !important;
+}
+.enterprise-col-filter {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  font-size: 0.72rem !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  height: 30px !important;
+}
+html[data-app-theme="midnight"] .enterprise-col-filter {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+html[data-app-theme="premium"] .enterprise-col-filter {
+  background: #1a1330 !important;
+  border-color: #3d2f66 !important;
+  color: #f3ecff !important;
+}
+
+/* Sticky Action — never scroll away; hide nested scrollbars on action cell */
+.inquiry-action-table thead th.col-action,
+.inquiry-action-table tbody td.col-action,
+.inquiry-action-table tbody td.inquiry-action-td {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 12 !important;
+}
+.inquiry-action-table tbody td.inquiry-action-td {
+  overflow: visible !important;
+}
+.inquiry-action-table tbody td.inquiry-action-td .qs-panel,
+.inquiry-action-table tbody td.inquiry-action-td .qs-panel-scroll {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+}
+/* scrollbar under action column from table-responsive should not cover sticky cell */
+.table-responsive.inquiry-grid {
+  overflow-x: auto !important;
+}
+
+
+/* Semantic classes from attention renderer */
+html[data-app-theme="midnight"] .attention-title { color: #ffffff !important; }
+html[data-app-theme="midnight"] .attention-status,
+html[data-app-theme="midnight"] .attention-meta { color: #cbd5e1 !important; }
+html[data-app-theme="midnight"] .attention-pending,
+html[data-app-theme="midnight"] .attention-last { color: #fbbf24 !important; }
+html[data-app-theme="midnight"] .attention-arrow { color: #94a3b8 !important; }
+
+html[data-app-theme="premium"] .attention-title { color: #ffffff !important; }
+html[data-app-theme="premium"] .attention-status,
+html[data-app-theme="premium"] .attention-meta { color: #e9dff8 !important; }
+html[data-app-theme="premium"] .attention-pending,
+html[data-app-theme="premium"] .attention-last { color: #f5e6b8 !important; }
+html[data-app-theme="premium"] .attention-arrow { color: #caa14a !important; }
+
+.enterprise-th-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.enterprise-th-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.enterprise-data-table thead th {
+  vertical-align: bottom !important;
+}
+/* Do not put filter on sticky action header */
+.enterprise-data-table thead th.col-action .enterprise-col-filter {
+  display: none !important;
+}
+
+/* Allow sticky Action: ancestors must not clip overflow */
+.crm-app-body .page-surface:has(.inquiry-action-table),
+.crm-app-body .page-surface:has(.enterprise-data-table) {
+  overflow-x: visible !important;
+}
+.crm-app-body .card-soft:has(.inquiry-action-table),
+.crm-app-body .inquiry-card {
+  overflow: visible !important;
+}
+
+/* ==========================================================================
+   2026-09-08 (follow-up) — Action column MUST stay fixed during horizontal scroll
+   Architecture hardening: force sticky on every known table pattern + isolate
+   the scroll container so only data columns move.
+   ========================================================================== */
+
+/* Isolate horizontal scroll to the table wrapper only */
+.table-responsive.inquiry-grid,
+.inquiry-grid.table-responsive,
+.table-responsive.crm-data-table-wrap,
+.enterprise-table-scroll,
+.compact-table-wrap.table-responsive {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  position: relative !important;
+  contain: layout style !important;
+}
+
+/* Force sticky on every Action cell — highest priority */
+table.inquiry-action-table thead th.col-action,
+table.inquiry-action-table thead th:last-child,
+table.inquiry-action-table tbody td.col-action,
+table.inquiry-action-table tbody td.inquiry-action-td,
+table.inquiry-action-table tbody td:last-child,
+table.crm-data-table thead th.col-action,
+table.crm-data-table tbody td.col-action,
+table.enterprise-data-table thead th.col-action,
+table.enterprise-data-table tbody td.col-action,
+table.compact-crm-table thead th.col-action,
+table.compact-crm-table tbody td.col-action {
+  position: sticky !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 20 !important;
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+table.inquiry-action-table thead th.col-action,
+table.inquiry-action-table thead th:last-child,
+table.crm-data-table thead th.col-action,
+table.enterprise-data-table thead th.col-action,
+table.compact-crm-table thead th.col-action {
+  z-index: 25 !important;
+}
+
+/* Opaque theme backgrounds so content never bleeds under sticky Action */
+html:not([data-app-theme]) table.inquiry-action-table thead th.col-action,
+html:not([data-app-theme]) table.inquiry-action-table tbody td.col-action,
+html:not([data-app-theme]) table.inquiry-action-table tbody td.inquiry-action-td,
+html:not([data-app-theme]) table.inquiry-action-table thead th:last-child,
+html:not([data-app-theme]) table.inquiry-action-table tbody td:last-child,
+html[data-app-theme="classic"] table.inquiry-action-table thead th.col-action,
+html[data-app-theme="classic"] table.inquiry-action-table tbody td.col-action,
+html[data-app-theme="classic"] table.inquiry-action-table tbody td.inquiry-action-td {
+  background: #ffffff !important;
+  box-shadow: -12px 0 18px -8px rgba(15, 23, 42, 0.22) !important;
+  border-left: 1px solid rgba(15, 23, 42, 0.12) !important;
+}
+
+html[data-app-theme="midnight"] table.inquiry-action-table thead th.col-action,
+html[data-app-theme="midnight"] table.inquiry-action-table tbody td.col-action,
+html[data-app-theme="midnight"] table.inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="midnight"] table.inquiry-action-table thead th:last-child,
+html[data-app-theme="midnight"] table.inquiry-action-table tbody td:last-child {
+  background: #1e293b !important;
+  box-shadow: -14px 0 22px -6px rgba(0, 0, 0, 0.65) !important;
+  border-left: 1px solid rgba(148, 163, 184, 0.22) !important;
+  color: #e2e8f0 !important;
+}
+
+html[data-app-theme="premium"] table.inquiry-action-table thead th.col-action,
+html[data-app-theme="premium"] table.inquiry-action-table tbody td.col-action,
+html[data-app-theme="premium"] table.inquiry-action-table tbody td.inquiry-action-td,
+html[data-app-theme="premium"] table.inquiry-action-table thead th:last-child,
+html[data-app-theme="premium"] table.inquiry-action-table tbody td:last-child {
+  background: #1a1330 !important;
+  box-shadow: -14px 0 22px -6px rgba(0, 0, 0, 0.55) !important;
+  border-left: 1px solid rgba(202, 161, 74, 0.28) !important;
+  color: #f3ecff !important;
+}
+
+/* Prevent any parent from creating a containing block that breaks sticky */
+.page-surface,
+.inquiry-card,
+.card-soft,
+.enterprise-table-scroll,
+.compact-table-wrap {
+  transform: none !important;
+  perspective: none !important;
+  filter: none !important;
+}
+
+/* Column filters must live inside their th (under header text) */
+th .enterprise-col-filter,
+th .col-filter,
+th input.enterprise-col-filter {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: 6px !important;
+  font-size: 0.72rem !important;
+  padding: 3px 6px !important;
+  box-sizing: border-box !important;
+}
+
+/* Header alignment after username removal */
+.crm-app-body .top-panel.clean-top-panel {
+  gap: 12px !important;
+  align-items: center !important;
+}
+.crm-app-body .profile-area {
+  gap: 8px !important;
+  margin-left: auto !important;
+}
+.crm-app-body .top-profile-summary {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+.crm-app-body .top-profile-summary .profile-copy {
+  display: none !important;
+}
+
+/* Notification tree + attention cards — full readability in Midnight + Premium */
+html[data-app-theme="midnight"] .notification-tree-list,
+html[data-app-theme="premium"] .notification-tree-list,
+html[data-app-theme="midnight"] .notification-date-group,
+html[data-app-theme="premium"] .notification-date-group,
+html[data-app-theme="midnight"] .notification-tree-item,
+html[data-app-theme="premium"] .notification-tree-item {
+  color: var(--dm-text-primary, #e8ecf8) !important;
+}
+html[data-app-theme="midnight"] .notification-tree-item summary,
+html[data-app-theme="premium"] .notification-tree-item summary,
+html[data-app-theme="midnight"] .date-tree-summary,
+html[data-app-theme="premium"] .date-tree-summary {
+  background: var(--dm-bg-card, #151c3a) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.12)) !important;
+}
+html[data-app-theme="midnight"] .tree-title b,
+html[data-app-theme="premium"] .tree-title b,
+html[data-app-theme="midnight"] .tree-title,
+html[data-app-theme="premium"] .tree-title {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .tree-summary-meta,
+html[data-app-theme="premium"] .tree-summary-meta,
+html[data-app-theme="midnight"] .mini-muted,
+html[data-app-theme="premium"] .mini-muted {
+  color: var(--dm-text-muted, #94a3b8) !important;
+}
+html[data-app-theme="midnight"] .tree-updates,
+html[data-app-theme="premium"] .tree-updates,
+html[data-app-theme="midnight"] .tree-update-row,
+html[data-app-theme="premium"] .tree-update-row {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #e8ecf8) !important;
+  border-color: var(--dm-border-primary, rgba(255,255,255,.10)) !important;
+}
+html[data-app-theme="midnight"] .latest-update-block,
+html[data-app-theme="premium"] .latest-update-block {
+  background: rgba(79, 110, 247, 0.12) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-left: 3px solid #4f6ef7 !important;
+}
+html[data-app-theme="midnight"] .badge-count,
+html[data-app-theme="premium"] .badge-count {
+  background: rgba(255,255,255,0.08) !important;
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  border-color: rgba(255,255,255,0.14) !important;
+}
+
+/* Attention / pending card (the purple card in screenshots) */
+html[data-app-theme="midnight"] .attention-item,
+html[data-app-theme="premium"] .attention-item {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1px solid #334155 !important;
+  color: #e2e8f0 !important;
+}
+html[data-app-theme="premium"] .attention-item {
+  background: linear-gradient(135deg, #1a1330 0%, #120c24 100%) !important;
+  border-color: rgba(202, 161, 74, 0.25) !important;
+  color: #f3ecff !important;
+}
+html[data-app-theme="midnight"] .attention-item .attention-title,
+html[data-app-theme="premium"] .attention-item .attention-title,
+html[data-app-theme="midnight"] .attention-item strong,
+html[data-app-theme="premium"] .attention-item strong {
+  color: #f8fafc !important;
+}
+html[data-app-theme="midnight"] .attention-item .text-muted,
+html[data-app-theme="premium"] .attention-item .text-muted {
+  color: #94a3b8 !important;
+}
+
+/* ==========================================================================
+   Logout button — Premium redesign (visible on white / light / all themes)
+   ========================================================================== */
+.crm-app-body .top-logout-button,
+a.top-logout-button {
+  width: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
+  height: 46px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  border: 1.5px solid rgba(15, 23, 42, 0.12) !important;
+  background: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%) !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.9) !important;
+  text-decoration: none !important;
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease, border-color .18s ease !important;
+}
+.crm-app-body .top-logout-button i,
+a.top-logout-button i {
+  font-size: 1.2rem !important;
+  line-height: 1 !important;
+  color: inherit !important;
+}
+.crm-app-body .top-logout-button:hover,
+.crm-app-body .top-logout-button:focus,
+a.top-logout-button:hover,
+a.top-logout-button:focus {
+  background: linear-gradient(145deg, #fef2f2 0%, #fee2e2 100%) !important;
+  color: #dc2626 !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.15), inset 0 1px 0 rgba(255,255,255,0.8) !important;
+  outline: none !important;
+}
+.crm-app-body .top-logout-button:active {
+  transform: scale(0.96) !important;
+}
+
+/* Light / classic / default — ensure never blank */
+html:not([data-app-theme]) .crm-app-body .top-logout-button,
+html[data-app-theme="classic"] .crm-app-body .top-logout-button,
+html[data-app-theme="saas"] .crm-app-body .top-logout-button,
+html[data-app-theme="dompet"] .crm-app-body .top-logout-button,
+html[data-app-theme="emerald"] .crm-app-body .top-logout-button,
+html[data-app-theme="rosegold"] .crm-app-body .top-logout-button {
+  background: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%) !important;
+  color: #0f172a !important;
+  border: 1.5px solid rgba(15, 23, 42, 0.14) !important;
+}
+
+/* Midnight */
+html[data-app-theme="midnight"] .crm-app-body .top-logout-button,
+html[data-app-theme="midnight"] a.top-logout-button {
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%) !important;
+  color: #e2e8f0 !important;
+  border: 1.5px solid rgba(148, 163, 184, 0.28) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35) !important;
+}
+html[data-app-theme="midnight"] .crm-app-body .top-logout-button:hover {
+  background: linear-gradient(145deg, #334155 0%, #1e293b 100%) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(248, 113, 113, 0.45) !important;
+}
+
+/* Premium Elite */
+html[data-app-theme="premium"] .crm-app-body .top-logout-button,
+html[data-app-theme="premium"] a.top-logout-button {
+  background: linear-gradient(145deg, #2a1f4a 0%, #1a1330 100%) !important;
+  color: #f0e6c8 !important;
+  border: 1.5px solid rgba(202, 161, 74, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4) !important;
+}
+html[data-app-theme="premium"] .crm-app-body .top-logout-button:hover {
+  background: linear-gradient(145deg, #3d2f1a 0%, #2a1f4a 100%) !important;
+  color: #fecaca !important;
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
+
+/* ==========================================================================
+   Attention / Pending Notification popup — full customer details readability
+   Midnight + Premium Elite (and base)
+   ========================================================================== */
+.attention-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  padding: 14px 16px !important;
+  border-radius: 16px !important;
+  text-decoration: none !important;
+  margin-bottom: 10px !important;
+  transition: border-color .15s ease, background .15s ease !important;
+}
+.attention-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+.attention-title {
+  font-size: 0.98rem !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+  display: block !important;
+}
+.attention-meta {
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  display: block !important;
+  opacity: 0.95 !important;
+}
+.attention-status {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  display: block !important;
+}
+.attention-pending {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  display: block !important;
+  margin-top: 2px !important;
+}
+.attention-last {
+  font-size: 0.75rem !important;
+  display: block !important;
+}
+.attention-icon {
+  flex-shrink: 0 !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 12px !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 1rem !important;
+}
+.attention-arrow {
+  flex-shrink: 0 !important;
+  font-size: 1.15rem !important;
+  opacity: 0.7 !important;
+  margin-top: 8px !important;
+}
+
+/* Midnight — high contrast customer details */
+html[data-app-theme="midnight"] .attention-item {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1px solid #334155 !important;
+  color: #e2e8f0 !important;
+}
+html[data-app-theme="midnight"] .attention-item:hover {
+  border-color: #64748b !important;
+  background: linear-gradient(135deg, #243047 0%, #152033 100%) !important;
+}
+html[data-app-theme="midnight"] .attention-title,
+html[data-app-theme="midnight"] .attention-item b.attention-title,
+html[data-app-theme="midnight"] .attention-item b {
+  color: #f8fafc !important;
+}
+html[data-app-theme="midnight"] .attention-meta,
+html[data-app-theme="midnight"] .attention-item .attention-meta {
+  color: #94a3b8 !important;
+}
+html[data-app-theme="midnight"] .attention-status,
+html[data-app-theme="midnight"] .attention-item .attention-status {
+  color: #cbd5e1 !important;
+}
+html[data-app-theme="midnight"] .attention-pending,
+html[data-app-theme="midnight"] .attention-item .attention-pending,
+html[data-app-theme="midnight"] .attention-item small.attention-pending {
+  color: #fbbf24 !important;
+}
+html[data-app-theme="midnight"] .attention-last,
+html[data-app-theme="midnight"] .attention-item .attention-last {
+  color: #94a3b8 !important;
+}
+html[data-app-theme="midnight"] .attention-icon {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important;
+}
+html[data-app-theme="midnight"] .attention-arrow {
+  color: #94a3b8 !important;
+}
+html[data-app-theme="midnight"] .attention-call {
+  color: #22d3ee !important;
+  background: rgba(34, 211, 238, 0.12) !important;
+  border: 1px solid rgba(34, 211, 238, 0.35) !important;
+}
+html[data-app-theme="midnight"] .attention-call:hover {
+  background: rgba(34, 211, 238, 0.22) !important;
+  color: #a5f3fc !important;
+}
+
+/* Premium Elite — high contrast customer details */
+html[data-app-theme="premium"] .attention-item {
+  background: linear-gradient(135deg, #1f1738 0%, #120c24 100%) !important;
+  border: 1px solid rgba(202, 161, 74, 0.28) !important;
+  color: #f3ecff !important;
+}
+html[data-app-theme="premium"] .attention-item:hover {
+  border-color: rgba(202, 161, 74, 0.5) !important;
+  background: linear-gradient(135deg, #2a1f4a 0%, #1a1330 100%) !important;
+}
+html[data-app-theme="premium"] .attention-title,
+html[data-app-theme="premium"] .attention-item b.attention-title,
+html[data-app-theme="premium"] .attention-item b {
+  color: #fff8e8 !important;
+}
+html[data-app-theme="premium"] .attention-meta,
+html[data-app-theme="premium"] .attention-item .attention-meta {
+  color: #c4b5e0 !important;
+}
+html[data-app-theme="premium"] .attention-status,
+html[data-app-theme="premium"] .attention-item .attention-status {
+  color: #d4c4f0 !important;
+}
+html[data-app-theme="premium"] .attention-pending,
+html[data-app-theme="premium"] .attention-item .attention-pending,
+html[data-app-theme="premium"] .attention-item small.attention-pending {
+  color: #fbbf24 !important;
+}
+html[data-app-theme="premium"] .attention-last,
+html[data-app-theme="premium"] .attention-item .attention-last {
+  color: #a78bfa !important;
+}
+html[data-app-theme="premium"] .attention-icon {
+  background: rgba(202, 161, 74, 0.18) !important;
+  color: #caa14a !important;
+}
+html[data-app-theme="premium"] .attention-arrow {
+  color: #c4b5e0 !important;
+}
+html[data-app-theme="premium"] .attention-call {
+  color: #f5e6b8 !important;
+  background: #3d2f1a !important;
+  border: 1px solid #caa14a !important;
+}
+html[data-app-theme="premium"] .attention-call:hover {
+  background: #4a3820 !important;
+  color: #fff8e0 !important;
+}
+
+/* Modal shell for attention */
+html[data-app-theme="midnight"] #crmAttentionModal .modal-content,
+html[data-app-theme="midnight"] .attention-modal-card .modal-content {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #334155 !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-content,
+html[data-app-theme="premium"] .attention-modal-card .modal-content {
+  background: #120c24 !important;
+  color: #f3ecff !important;
+  border: 1px solid rgba(202, 161, 74, 0.3) !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-header,
+html[data-app-theme="premium"] #crmAttentionModal .modal-header {
+  border-bottom-color: rgba(255,255,255,0.1) !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-title,
+html[data-app-theme="premium"] #crmAttentionModal .modal-title,
+html[data-app-theme="midnight"] #crmAttentionModal .crm-modal-eyebrow,
+html[data-app-theme="premium"] #crmAttentionModal .crm-modal-eyebrow {
+  color: #f8fafc !important;
+}
+
+/* ==========================================================================
+   CRITICAL FIX — Attention card text contrast (Midnight + Premium Elite)
+   Overrides site.css light-theme hard-codes that were still winning.
+   ========================================================================== */
+
+/* --- Midnight --- */
+html[data-app-theme="midnight"] .attention-item,
+html[data-app-theme="midnight"] a.attention-item,
+html[data-app-theme="midnight"] .attention-list .attention-item {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  border: 1px solid #475569 !important;
+  color: #f1f5f9 !important;
+}
+html[data-app-theme="midnight"] .attention-item:hover,
+html[data-app-theme="midnight"] a.attention-item:hover {
+  background: linear-gradient(135deg, #243047 0%, #152033 100%) !important;
+  border-color: #64748b !important;
+  color: #f8fafc !important;
+}
+html[data-app-theme="midnight"] .attention-item b,
+html[data-app-theme="midnight"] .attention-item b.attention-title,
+html[data-app-theme="midnight"] .attention-item .attention-title,
+html[data-app-theme="midnight"] .attention-item strong {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .attention-item span,
+html[data-app-theme="midnight"] .attention-item .attention-meta,
+html[data-app-theme="midnight"] .attention-item .attention-status,
+html[data-app-theme="midnight"] .attention-item span.attention-meta,
+html[data-app-theme="midnight"] .attention-item span.attention-status {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .attention-item small,
+html[data-app-theme="midnight"] .attention-item .attention-pending,
+html[data-app-theme="midnight"] .attention-item small.attention-pending {
+  color: #fbbf24 !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="midnight"] .attention-item .attention-last,
+html[data-app-theme="midnight"] .attention-item span.attention-last {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .attention-item .attention-icon,
+html[data-app-theme="midnight"] .attention-item .attention-icon i {
+  background: rgba(251, 191, 36, 0.18) !important;
+  color: #fbbf24 !important;
+}
+html[data-app-theme="midnight"] .attention-item .attention-arrow,
+html[data-app-theme="midnight"] .attention-item i.attention-arrow {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .attention-item .attention-call,
+html[data-app-theme="midnight"] .attention-item a.attention-call {
+  color: #0f172a !important;
+  background: #fde68a !important;
+  border: 1px solid #fbbf24 !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="midnight"] .attention-item .attention-call:hover {
+  background: #fcd34d !important;
+  color: #0f172a !important;
+}
+
+/* --- Premium Elite --- */
+html[data-app-theme="premium"] .attention-item,
+html[data-app-theme="premium"] a.attention-item,
+html[data-app-theme="premium"] .attention-list .attention-item {
+  background: linear-gradient(135deg, #1f1738 0%, #120c24 100%) !important;
+  border: 1px solid rgba(202, 161, 74, 0.35) !important;
+  color: #f3ecff !important;
+}
+html[data-app-theme="premium"] .attention-item:hover,
+html[data-app-theme="premium"] a.attention-item:hover {
+  background: linear-gradient(135deg, #2a1f4a 0%, #1a1330 100%) !important;
+  border-color: rgba(202, 161, 74, 0.55) !important;
+  color: #fff8e8 !important;
+}
+html[data-app-theme="premium"] .attention-item b,
+html[data-app-theme="premium"] .attention-item b.attention-title,
+html[data-app-theme="premium"] .attention-item .attention-title,
+html[data-app-theme="premium"] .attention-item strong {
+  color: #fff8e8 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .attention-item span,
+html[data-app-theme="premium"] .attention-item .attention-meta,
+html[data-app-theme="premium"] .attention-item .attention-status,
+html[data-app-theme="premium"] .attention-item span.attention-meta,
+html[data-app-theme="premium"] .attention-item span.attention-status {
+  color: #d4c4f0 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .attention-item small,
+html[data-app-theme="premium"] .attention-item .attention-pending,
+html[data-app-theme="premium"] .attention-item small.attention-pending {
+  color: #fbbf24 !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="premium"] .attention-item .attention-last,
+html[data-app-theme="premium"] .attention-item span.attention-last {
+  color: #c4b5e0 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .attention-item .attention-icon,
+html[data-app-theme="premium"] .attention-item .attention-icon i {
+  background: rgba(202, 161, 74, 0.2) !important;
+  color: #caa14a !important;
+}
+html[data-app-theme="premium"] .attention-item .attention-arrow,
+html[data-app-theme="premium"] .attention-item i.attention-arrow {
+  color: #c4b5e0 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .attention-item .attention-call,
+html[data-app-theme="premium"] .attention-item a.attention-call {
+  color: #1a1330 !important;
+  background: #fde68a !important;
+  border: 1px solid #caa14a !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="premium"] .attention-item .attention-call:hover {
+  background: #fcd34d !important;
+  color: #1a1330 !important;
+}
+
+/* Modal body text under the list */
+html[data-app-theme="midnight"] #crmAttentionModal .modal-body,
+html[data-app-theme="premium"] #crmAttentionModal .modal-body,
+html[data-app-theme="midnight"] #crmAttentionModal .modal-body p,
+html[data-app-theme="premium"] #crmAttentionModal .modal-body p,
+html[data-app-theme="midnight"] #crmAttentionModal .modal-body .text-muted,
+html[data-app-theme="premium"] #crmAttentionModal .modal-body .text-muted {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] #crmAttentionModal .modal-content,
+html[data-app-theme="premium"] #crmAttentionModal .modal-content {
+  background: #0f172a !important;
+}
+html[data-app-theme="premium"] #crmAttentionModal .modal-content {
+  background: #120c24 !important;
+}
+
+/* ==========================================================================
+   2026-09-10 — Pagination page numbers + Inquiry max-rows + sticky hardening
+   ========================================================================== */
+
+/* Page number buttons in pagination bar */
+.enterprise-page-numbers {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-left: 6px;
+}
+.enterprise-page-numbers .btn {
+  min-width: 32px;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+/* Column filter under header: ensure clean layout */
+.enterprise-th-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+.enterprise-th-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.filter-row th {
+  padding: 4px 6px 8px !important;
+  vertical-align: top !important;
+  background: transparent !important;
+  border-top: 0 !important;
+}
+.filter-row .col-filter,
+.filter-row .enterprise-col-filter {
+  width: 100% !important;
+  min-width: 0 !important;
+  font-size: 0.72rem !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  height: 30px !important;
+}
+
+/* Inquiry Pipeline — maximize visible rows (compact + scroll viewport) */
+.inquiry-grid.table-responsive,
+.table-responsive.inquiry-grid {
+  max-height: calc(100vh - 280px);
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+@media (max-width: 991.98px) {
+  .inquiry-grid.table-responsive,
+  .table-responsive.inquiry-grid {
+    max-height: calc(100vh - 320px);
+  }
+}
+
+/* Compact row density for inquiry action table */
+.inquiry-action-table.compact-crm-table > tbody > tr > td {
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+  vertical-align: top !important;
+}
+.inquiry-action-table.compact-crm-table > thead > tr > th {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.35rem !important;
+}
+.inquiry-action-table .mini-muted {
+  font-size: 0.7rem !important;
+  line-height: 1.25 !important;
+}
+.inquiry-action-table .qs-action-panel {
+  gap: 4px !important;
+}
+.inquiry-action-table .qs-action-row {
+  gap: 4px !important;
+  margin: 0 !important;
+}
+.inquiry-action-table .qs-pill-btn {
+  padding: 0.2rem 0.45rem !important;
+  font-size: 0.72rem !important;
+}
+.inquiry-action-table .qs-control,
+.inquiry-action-table .form-select-sm,
+.inquiry-action-table .form-control-sm {
+  min-height: 28px !important;
+  padding-top: 0.15rem !important;
+  padding-bottom: 0.15rem !important;
+  font-size: 0.75rem !important;
+}
+.inquiry-action-table .qs-save-status-btn {
+  padding: 0.3rem 0.6rem !important;
+  font-size: 0.78rem !important;
+}
+
+/* Sticky Action — enterprise + pg-table + report-table */
+.enterprise-data-table thead th.col-action,
+.enterprise-data-table tbody td.col-action,
+.enterprise-data-table tbody td.inquiry-action-td,
+.pg-table thead th.col-action,
+.pg-table tbody td.col-action,
+.crm-data-table thead th.col-action,
+.crm-data-table tbody td.col-action {
+  position: sticky !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 10 !important;
+  background-clip: padding-box;
+}
+.enterprise-data-table thead th.col-action,
+.pg-table thead th.col-action,
+.crm-data-table thead th.col-action {
+  z-index: 14 !important;
+}
+
+html:not([data-app-theme]) .enterprise-data-table thead th.col-action,
+html:not([data-app-theme]) .enterprise-data-table tbody td.col-action,
+html:not([data-app-theme]) .enterprise-data-table tbody td.inquiry-action-td {
+  background: #ffffff !important;
+  box-shadow: -10px 0 16px -8px rgba(15, 23, 42, 0.18);
+  border-left: 1px solid rgba(15, 23, 42, 0.10);
+}
+html[data-app-theme="midnight"] .enterprise-data-table thead th.col-action,
+html[data-app-theme="midnight"] .enterprise-data-table tbody td.col-action,
+html[data-app-theme="midnight"] .enterprise-data-table tbody td.inquiry-action-td {
+  background: #1e293b !important;
+  box-shadow: -12px 0 20px -6px rgba(0, 0, 0, 0.55);
+  border-left: 1px solid rgba(148, 163, 184, 0.18);
+  color: #e2e8f0 !important;
+}
+html[data-app-theme="premium"] .enterprise-data-table thead th.col-action,
+html[data-app-theme="premium"] .enterprise-data-table tbody td.col-action,
+html[data-app-theme="premium"] .enterprise-data-table tbody td.inquiry-action-td {
+  background: #1a1330 !important;
+  box-shadow: -12px 0 20px -6px rgba(0, 0, 0, 0.5);
+  border-left: 1px solid rgba(202, 161, 74, 0.22);
+  color: #f3ecff !important;
+}
+
+/* Report grids: enable enterprise filters/pagination styling */
+.report-table.enterprise-data-table thead th,
+.pg-table.enterprise-data-table thead th {
+  vertical-align: bottom !important;
+}
+
+/* Pagination bar polish */
+.enterprise-table-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.25rem;
+}
+
+/* =========================================================
+   2026-09-10 HARD FIX
+   - True Excel-style freeze of Action column (right)
+   - Compact icon-only Action cell → more rows visible
+   - Status update moved to modal
+   ========================================================= */
+
+/* Parents must NOT create a scroll/clipping context */
+.crm-app-body .card-soft,
+.crm-app-body .inquiry-card,
+.crm-app-body .page-surface,
+.crm-app-body .compact-table-wrap,
+.crm-app-body .card,
+.crm-app-body .pro-card,
+#inquiryReport,
+#inquiryReport.card-soft {
+  overflow: visible !important;
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
+  contain: none !important;
+}
+
+/* Only the table wrapper scrolls horizontally */
+.crm-app-body .table-responsive.inquiry-grid,
+.crm-app-body .inquiry-grid.table-responsive,
+.crm-app-body .enterprise-table-scroll,
+.table-responsive.inquiry-grid {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  position: relative !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Table must allow sticky cells */
+.inquiry-action-table,
+table.inquiry-action-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* ===== FREEZE Action column (right edge) ===== */
+.inquiry-action-table thead th.col-action,
+.inquiry-action-table tbody td.col-action,
+.inquiry-action-table tbody td.inquiry-action-td {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 50 !important;
+  background-clip: padding-box !important;
+  box-shadow: -12px 0 20px -8px rgba(15, 23, 42, 0.22) !important;
+  border-left: 1px solid rgba(15, 23, 42, 0.12) !important;
+  vertical-align: middle !important;
+}
+
+/* Compact width – icon buttons only */
+.inquiry-action-table thead th.col-action,
+.inquiry-action-table tbody td.col-action,
+.inquiry-action-table tbody td.inquiry-action-td {
+  min-width: 112px !important;
+  max-width: 128px !important;
+  width: 120px !important;
+  padding: 6px 6px !important;
+}
+
+/* Opaque theme backgrounds so scrolled content never shows through */
+html:not([data-app-theme]) .inquiry-action-table thead th.col-action,
+html:not([data-app-theme]) .inquiry-action-table tbody td.col-action,
+html:not([data-app-theme]) .inquiry-action-table tbody td.inquiry-action-td {
+  background: #ffffff !important;
+}
+html[data-app-theme="midnight"] .inquiry-action-table thead th.col-action,
+html[data-app-theme="midnight"] .inquiry-action-table tbody td.col-action,
+html[data-app-theme="midnight"] .inquiry-action-table tbody td.inquiry-action-td {
+  background: #1e293b !important;
+  box-shadow: -12px 0 20px -6px rgba(0, 0, 0, 0.55) !important;
+  border-left-color: rgba(148, 163, 184, 0.2) !important;
+}
+html[data-app-theme="premium"] .inquiry-action-table thead th.col-action,
+html[data-app-theme="premium"] .inquiry-action-table tbody td.col-action,
+html[data-app-theme="premium"] .inquiry-action-table tbody td.inquiry-action-td {
+  background: #1a1330 !important;
+  box-shadow: -12px 0 20px -6px rgba(0, 0, 0, 0.5) !important;
+  border-left-color: rgba(202, 161, 74, 0.25) !important;
+}
+
+/* Compact icon button row */
+.qs-action-compact {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+}
+.qs-icon-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.1s ease;
+}
+.qs-icon-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.2);
+  transform: translateY(-1px);
+}
+.qs-icon-btn.qs-icon-edit {
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.25);
+  background: #eff6ff;
+}
+.qs-icon-btn.qs-icon-edit:hover {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.qs-icon-btn.qs-icon-delete {
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.25);
+  background: #fef2f2;
+}
+.qs-icon-btn.qs-icon-delete:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.qs-icon-btn.qs-icon-status {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.25);
+}
+.qs-icon-btn.qs-icon-status:hover {
+  filter: brightness(1.06);
+  color: #fff;
+}
+
+html[data-app-theme="midnight"] .qs-icon-btn {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+}
+html[data-app-theme="midnight"] .qs-icon-btn:hover {
+  background: #1e293b;
+  color: #f8fafc;
+}
+html[data-app-theme="premium"] .qs-icon-btn {
+  background: #120c22;
+  border-color: rgba(202, 161, 74, 0.28);
+  color: #f3ecff;
+}
+html[data-app-theme="premium"] .qs-icon-btn:hover {
+  background: #1a1330;
+}
+
+/* Status modal form – stack cleanly */
+.qs-status-modal .modal-body.qs-action-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.qs-status-modal .qs-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.qs-status-modal .qs-control,
+.qs-status-modal .form-select,
+.qs-status-modal .form-control {
+  min-width: 0;
+  flex: 1 1 140px;
+}
+.qs-status-modal .qs-save-status-btn {
+  width: 100%;
+  margin-top: 4px;
+}
+.qs-status-modal .qs-extra-field {
+  flex: 1 1 100%;
+}
+
+/* Slightly tighter table rows so more records fit */
+.inquiry-action-table.compact-crm-table > tbody > tr > td {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+}
+.inquiry-action-table.compact-crm-table > thead > tr > th {
+  padding-top: 0.55rem !important;
+  padding-bottom: 0.55rem !important;
+}
+
+/* Support role compact cell also stays sticky-friendly */
+.inquiry-action-table td.col-action .qs-action-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}

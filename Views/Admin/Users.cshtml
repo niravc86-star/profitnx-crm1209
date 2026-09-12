@@ -1,0 +1,114 @@
+@model List<ProfitNx.CRM.Models.AppUser>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    ViewData["Title"] = "Users & Partners";
+    var totalUsers = Model.Count(x => x.Role == "User");
+    var totalPartners = Model.Count(x => x.Role == "Partner");
+    var totalAdmins = Model.Count(x => x.Role == "Admin");
+    var totalSupport = Model.Count(x => x.Role == "Support");
+    var totalSupportHeads = Model.Count(x => x.Role == "SupportHead");
+    var canManageUsers = await PermissionService.HasPermissionAsync(User, "users.manage");
+    var canViewPartners = await PermissionService.HasPermissionAsync(User, "dealer.view");
+}
+<div class="row g-4 mb-4">
+    <div class="col-md-4"><div class="kpi-card small"><div class="kpi-label">Admins</div><p class="kpi-value">@totalAdmins</p></div></div>
+    <div class="col-md-4"><div class="kpi-card small"><div class="kpi-label">Users</div><p class="kpi-value">@totalUsers</p></div></div>
+    <div class="col-md-4"><div class="kpi-card small"><div class="kpi-label">Partner Logins</div><p class="kpi-value">@totalPartners</p></div></div>
+    <div class="col-md-4"><div class="kpi-card small"><div class="kpi-label">Support Users</div><p class="kpi-value">@totalSupport</p></div></div>
+    <div class="col-md-4"><div class="kpi-card small"><div class="kpi-label">Support Heads</div><p class="kpi-value">@totalSupportHeads</p></div></div>
+</div>
+
+<div class="page-actions mb-4">
+    @if (canManageUsers)
+    {
+        <a asp-action="Create" asp-route-role="User" class="btn btn-brand"><i class="bi bi-person-plus"></i><span>Add User Login</span></a>
+        <a asp-action="Create" asp-route-role="Partner" class="btn btn-brand"><i class="bi bi-person-plus"></i><span>Add Partner Login</span></a>
+        <a asp-action="Create" asp-route-role="Admin" class="btn btn-brand"><i class="bi bi-person-plus"></i><span>Add Admin Login</span></a>
+    }
+    @if (canViewPartners) { <a asp-controller="Dealer" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-building"></i><span>Partner Master</span></a> }
+</div>
+
+<div class="card card-soft border-0">
+    <div class="card-header bg-white border-0 pt-4 px-4">
+        <strong>User Login Master</strong>
+        <div class="text-muted small">Contact, city, margin and target details are maintained in Partner Master.</div>
+    </div>
+    <div class="enterprise-table-toolbar no-print px-2 px-md-4">
+        <div class="toolbar-left">
+            <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="usersTable" aria-label="Search" />
+            <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="usersTable" aria-label="Rows">
+                <option value="20" selected>20 records</option>
+                <option value="40">40 records</option>
+                <option value="100">100 records</option>
+            </select>
+        </div>
+        <div class="toolbar-right">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="usersTable"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+        </div>
+    </div>
+    <div class="table-responsive px-2 px-md-4 pb-4 enterprise-table-scroll">
+        <table class="table table-hover align-middle mb-0 enterprise-data-table" id="usersTable" data-table-id="usersTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    @if (canManageUsers) { <th class="text-end col-action">Actions</th> }
+                </tr>
+                <tr class="filter-row">
+                    <th><input type="text" class="form-control form-control-sm col-filter" data-col="0" placeholder="Filter Name" /></th>
+                    <th><input type="text" class="form-control form-control-sm col-filter" data-col="1" placeholder="Filter Username" /></th>
+                    <th>
+                        <select class="form-select form-select-sm col-filter" data-col="2">
+                            <option value="">All Roles</option>
+                            @foreach (var role in Model.Select(x => x.Role).Distinct().OrderBy(x => x))
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                    </th>
+                    <th>
+                        <select class="form-select form-select-sm col-filter" data-col="3">
+                            <option value="">All Status</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </th>
+                    @if (canManageUsers) { <th></th> }
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model)
+            {
+                var statusClass = item.IsActive ? "bg-soft-success" : "bg-soft-danger";
+                <tr>
+                    <td><div class="fw-semibold">@item.FullName</div></td>
+                    <td>@item.Username</td>
+                    <td><span class="stat-pill bg-soft-primary">@item.Role</span></td>
+                    <td><span class="stat-pill @statusClass">@(item.IsActive ? "Active" : "Inactive")</span></td>
+                    @if (canManageUsers)
+                    {
+                        <td class="text-end col-action">
+                            <div class="table-actions">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i><span>Edit</span></a>
+                                <form asp-action="ToggleActive" method="post" class="d-inline"><input type="hidden" name="id" value="@item.Id" /><input type="hidden" name="isActive" value="@(!item.IsActive)" /><button type="submit" class="btn btn-sm @(item.IsActive ? "btn-outline-warning" : "btn-outline-success")"><i class="bi @(item.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i><span>@(item.IsActive ? "Deactivate" : "Activate")</span></button></form>
+                                <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Delete this login user permanently?');"><input type="hidden" name="id" value="@item.Id" /><button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i><span>Delete</span></button></form>
+                            </div>
+                        </td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="enterprise-table-pagination no-print px-2 px-md-4 pb-3">
+        <div class="mini-muted" data-table-info="usersTable"></div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="usersTable"><i class="bi bi-chevron-left"></i></button>
+            <span class="small" data-table-page="usersTable">1 / 1</span>
+            <div class="d-flex align-items-center gap-1 flex-wrap enterprise-page-numbers" data-table-pages="usersTable"></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="usersTable"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </div>
+</div>

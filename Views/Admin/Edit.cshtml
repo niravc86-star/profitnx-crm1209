@@ -1,0 +1,91 @@
+@model ProfitNx.CRM.ViewModels.UserFormViewModel
+@{
+    ViewData["Title"] = Model.Id == null ? $"Add {Model.Role}" : $"Edit {Model.Role}";
+    var roleOptions = (ViewBag.RoleOptions as List<string>) ?? new List<string>();
+    var partnerMasters = (ViewBag.PartnerMasters as List<ProfitNx.CRM.Models.Dealer>) ?? new List<ProfitNx.CRM.Models.Dealer>();
+}
+<div class="row justify-content-center">
+    <div class="col-xl-8">
+        <div class="card card-soft border-0">
+            <div class="card-body p-4 p-lg-5">
+                <div class="mb-4">
+                    <h5 class="mb-1">Login User</h5>
+                    @if (Model.Role.Equals("Partner", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <div class="text-muted small">Partner business detail, margin and yearly target are maintained from Partner Master only.</div>
+                    }
+                </div>
+                <form asp-action="@(Model.Id == null ? "Create" : "Edit")" method="post" class="row g-4">
+                    <input asp-for="Id" type="hidden" />
+                    <input asp-for="City" type="hidden" />
+                    <input asp-for="TargetAmount" type="hidden" value="0" />
+                    <input asp-for="MarginPercent" type="hidden" value="0" />
+                    <input asp-for="TargetFromDate" type="hidden" />
+                    <input asp-for="TargetToDate" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="col-md-6"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" /></div>
+                    <div class="col-md-6"><label asp-for="Username" class="form-label"></label><input asp-for="Username" class="form-control" /><span asp-validation-for="Username" class="text-danger"></span></div>
+                    <div class="col-md-6">
+                        <label asp-for="Password" class="form-label"></label>
+                        <div class="pw-toggle-wrap">
+                            <input asp-for="Password" type="password" id="userPasswordField" class="form-control" value="@Model.Password" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore />
+                            <button type="button" class="password-eye-button" id="toggleUserPassword" aria-label="Show password" aria-pressed="false" title="Show password">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">@(Model.Id == null ? "Minimum 6 characters with letters and numbers." : "This is the current password. Change it to reset the login, or leave it as-is to keep it unchanged.")</small>
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6"><label asp-for="Role" class="form-label"></label><select asp-for="Role" class="form-select" id="roleSelect">@foreach(var role in roleOptions){<option value="@role">@role</option>}</select><span asp-validation-for="Role" class="text-danger"></span></div>
+                    <div class="col-md-6 partner-link"><label class="form-label">Linked Partner Master</label><select asp-for="PartnerCode" class="form-select" id="partnerCodeSelect"><option value="">-- Select Partner --</option>@foreach(var partner in partnerMasters){<option value="@partner.Id">@partner.DealerName (@partner.City)</option>}</select><small class="text-muted">Reports, dashboard, stock and inquiry partner details will be taken from Partner Master.</small></div>
+                    <div class="col-12"><div class="form-check form-switch"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+                    <div class="col-md-6 user-contact-field"><label asp-for="Mobile" class="form-label"></label><input asp-for="Mobile" class="form-control" placeholder="Mobile number (for WhatsApp notifications)" /></div>
+                    <div class="col-md-6 user-contact-field"><label asp-for="Email" class="form-label"></label><input asp-for="Email" type="email" class="form-control" placeholder="Notification email id (optional)" /><small class="text-muted">Notification email. For an Admin user, enter SMTP below to send customer training feedback-response emails from this address and receive replies in the same mailbox.</small></div>
+                    <div class="col-12 user-smtp-field">
+                        <div class="alert alert-info rounded-4 mb-0"><strong>Email SMTP Setup:</strong> Configure sender SMTP for Admin or Support users. Training feedback-response emails prefer the first active Admin user with SMTP configured. These fields are optional when global SMTP is used.</div>
+                    </div>
+                    <div class="col-md-6 user-smtp-field"><label asp-for="SmtpHost" class="form-label"></label><input asp-for="SmtpHost" class="form-control" placeholder="smtp.gmail.com (optional)" /></div>
+                    <div class="col-md-3 user-smtp-field"><label asp-for="SmtpPort" class="form-label"></label><input asp-for="SmtpPort" type="number" class="form-control" placeholder="587 (optional)" /></div>
+                    <div class="col-md-3 user-smtp-field d-flex align-items-end"><div class="form-check form-switch mb-2"><input asp-for="SmtpEnableSsl" class="form-check-input" /><label asp-for="SmtpEnableSsl" class="form-check-label">SMTP SSL</label></div></div>
+                    <div class="col-md-6 user-smtp-field"><label asp-for="SmtpUsername" class="form-label"></label><input asp-for="SmtpUsername" class="form-control" placeholder="SMTP login / email (optional)" /></div>
+                    <div class="col-md-6 user-smtp-field"><label asp-for="SmtpPassword" class="form-label"></label><input asp-for="SmtpPassword" type="password" class="form-control" autocomplete="new-password" placeholder="Leave blank to keep existing SMTP password" /></div>
+                    <div class="col-12"><label asp-for="Notes" class="form-label"></label><textarea asp-for="Notes" class="form-control" rows="3"></textarea></div>
+                    <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-brand px-4">Save Login</button><a asp-action="Users" class="btn btn-outline-secondary px-4">Back</a></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+<style>
+    .pw-toggle-wrap{position:relative}
+    .pw-toggle-wrap .form-control{padding-right:44px}
+</style>
+<script>
+(function(){
+ const role=document.getElementById('roleSelect');
+ const partnerSelect=document.getElementById('partnerCodeSelect');
+ function sync(){
+   const isPartner=(role?.value||'').toLowerCase()==='partner';
+   document.querySelectorAll('.partner-link').forEach(x=>x.style.display=isPartner?'block':'none');
+   if(!isPartner && partnerSelect){ partnerSelect.value=''; }
+ }
+ role?.addEventListener('change', sync); sync();
+})();
+(function(){
+ const password=document.getElementById('userPasswordField');
+ const toggle=document.getElementById('toggleUserPassword');
+ if(!password||!toggle) return;
+ toggle.addEventListener('click', function(){
+   const showing = password.type === 'password';
+   password.type = showing ? 'text' : 'password';
+   toggle.setAttribute('aria-pressed', String(showing));
+   toggle.setAttribute('aria-label', showing ? 'Hide password' : 'Show password');
+   toggle.title = showing ? 'Hide password' : 'Show password';
+   const icon = toggle.querySelector('i');
+   if (icon) icon.className = showing ? 'bi bi-eye-slash' : 'bi bi-eye';
+   password.focus({ preventScroll:true });
+ });
+})();
+</script>
+}

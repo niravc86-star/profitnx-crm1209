@@ -1,0 +1,905 @@
+@model List<Inquiry>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    var filter = ViewBag.Filter as InquiryFilterViewModel ?? new InquiryFilterViewModel();
+    var partners = ViewBag.Partners as List<AppUser> ?? new();
+    var partnerMargins = ViewBag.PartnerMargins as Dictionary<string, decimal> ?? new();
+    var users = ViewBag.Users as List<AppUser> ?? new();
+    var supportUsers = ViewBag.SupportUsers as List<AppUser> ?? new();
+    var products = ViewBag.Products as List<Product> ?? new();
+    var statuses = ViewBag.Statuses as string[] ?? Array.Empty<string>();
+    var qualityOptions = ViewBag.QualityOptions as string[] ?? Array.Empty<string>();
+    var roleName = ViewBag.RoleName as string ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+    var updateMap = ViewBag.UpdateMap as Dictionary<string, List<InquiryUpdate>> ?? new();
+    var isAdmin = roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+    var isSupport = roleName.Equals("Support", StringComparison.OrdinalIgnoreCase);
+    var isSupportHead = roleName.Equals("SupportHead", StringComparison.OrdinalIgnoreCase);
+    var isPartner = roleName.Equals("Partner", StringComparison.OrdinalIgnoreCase);
+    var isUser = roleName.Equals("User", StringComparison.OrdinalIgnoreCase);
+    ViewData["Title"] = isSupportHead ? "Support Team Inquiry Status" : isSupport ? "My Submitted Inquiry Status" : isPartner ? "Forwarded Work Queue" : isUser ? "My Work Queue" : "Inquiry Pipeline";
+    ViewData["Subtitle"] = isSupportHead ? "Monitor support team wise inquiry progress." : isSupport ? "Status of inquiries submitted by your login." : isPartner ? "Work on forwarded and self-submitted inquiries." : isUser ? "Assigned inquiry work queue." : "Track, update and close inquiries from one compact screen.";
+    var total = Model.Count;
+    var sold = Model.Count(x => x.Status == "Sold");
+    var pending = Model.Count(x => x.Status != "Sold" && x.Status != "Close");
+    var closed = Model.Count(x => x.Status == "Close");
+    var genuine = Model.Count(x => x.InquiryQuality == "Genuine");
+    var notGenuine = Model.Count(x => x.InquiryQuality == "Not Genuine");
+    var follow = Model.Count(x => x.Status == "Follow Up");
+    var demoScheduled = Model.Count(x => x.Status == "Demo Scheduled");
+    var demoDone = Model.Count(x => x.Status == "Demo Done");
+    var todayFollowUps = Model.Where(x => x.NextFollowUpDate.HasValue && x.NextFollowUpDate.Value.Date == DateTime.Today && x.Status != "Sold" && x.Status != "Close").OrderBy(x => x.NextFollowUpDate).ToList();
+    var overdueFollowUps = Model.Where(x => x.NextFollowUpDate.HasValue && x.NextFollowUpDate.Value.Date < DateTime.Today && x.Status != "Sold" && x.Status != "Close").OrderBy(x => x.NextFollowUpDate).ToList();
+    var productJson = System.Text.Json.JsonSerializer.Serialize(products.Select(p => new { name = p.Name, version = p.Version, directWithoutGst = p.PriceWithoutGst, directWithGst = p.PriceWithGst, partnerWithoutGst = p.PartnerPriceWithoutGst, partnerWithGst = p.PartnerPriceWithGst }));
+    var partnerMarginJson = System.Text.Json.JsonSerializer.Serialize(partnerMargins);
+    string DisplayDate(DateTime date) => date == default ? "-" : date.ToString("dd/MM/yyyy");
+    string DisplayTime(DateTime date) => date == default ? "" : date.ToString("hh:mm tt");
+    string DateValue(DateTime? date) => date.HasValue ? date.Value.ToString("yyyy-MM-dd") : string.Empty;
+    // Action rights are resolved by the controller from the permission matrix.
+    // Fallback calls keep the view compatible when rendered from another action.
+    var canEdit = ViewBag.CanEditInquiry as bool? ?? await PermissionService.HasPermissionAsync(User, "inquiry.edit");
+    var canDelete = ViewBag.CanDeleteInquiry as bool? ?? await PermissionService.HasPermissionAsync(User, "inquiry.delete");
+    var canStatus = ViewBag.CanUpdateInquiryStatus as bool? ?? await PermissionService.HasPermissionAsync(User, "inquiry.status");
+    var canViewInquiryReport = ViewBag.CanViewInquiryReport as bool? ?? await PermissionService.HasPermissionAsync(User, "inquiry.report.view");
+    var canViewFollowupReminder = ViewBag.CanViewFollowupReminder as bool? ?? await PermissionService.HasPermissionAsync(User, "inquiry.followup.reminder.view");
+    var canViewSmartFilters = ViewBag.CanViewSmartFilters as bool? ?? await PermissionService.HasPermissionAsync(User, "inquiry.smartfilters.view");
+    var canViewTimeline = ViewBag.CanViewTimeline as bool? ?? await PermissionService.HasPermissionAsync(User, "inquiry.timeline.view");
+    var canManageFollowup = ViewBag.CanManageFollowup as bool? ?? await PermissionService.HasPermissionAsync(User, "inquiry.followup.manage");
+    var canSetupImplementationFromSold = ViewBag.CanSetupImplementationFromSold as bool? ?? await PermissionService.HasPermissionAsync(User, "implementation.sold.setup");
+    var canForwardAdmin = ViewBag.CanForwardAdmin as bool? ?? false;
+    var canForwardPartner = ViewBag.CanForwardPartner as bool? ?? false;
+    var canForwardUser = ViewBag.CanForwardUser as bool? ?? false;
+    var visibleStatuses = statuses.Where(x =>
+        !x.Equals("Forwarded to Admin", StringComparison.OrdinalIgnoreCase) || canForwardAdmin)
+        .Where(x => !x.Equals("Forwarded to Partner", StringComparison.OrdinalIgnoreCase) || canForwardPartner)
+        .Where(x => !x.Equals("Forwarded to User", StringComparison.OrdinalIgnoreCase) || canForwardUser)
+        .ToArray();
+    var canCreateFull = await PermissionService.HasPermissionAsync(User, "inquiry.create");
+    var canCreateQuick = await PermissionService.HasPermissionAsync(User, "inquiry.create.support");
+    var supportActionCol = canViewInquiryReport && (canCreateQuick || canCreateFull) ? "6" : "12";
+    var hotLeads = Model.Count(x => x.InquiryQuality == "Genuine" && (x.Status == "Demo Done" || x.Status == "Negotiation"));
+    var missingNextAction = Model.Count(x => x.Status != "Sold" && x.Status != "Close" && x.InquiryQuality != "Not Genuine" && !x.NextFollowUpDate.HasValue);
+    var negotiationLeads = Model.Count(x => x.Status == "Negotiation");
+    var canCardTotal = await PermissionService.HasPermissionAsync(User, "inquiry.card.total");
+    var canCardNew = await PermissionService.HasPermissionAsync(User, "inquiry.card.new");
+    var canCardGenuine = await PermissionService.HasPermissionAsync(User, "inquiry.card.genuine");
+    var canCardNotGenuine = await PermissionService.HasPermissionAsync(User, "inquiry.card.notgenuine");
+    var canCardFollowup = await PermissionService.HasPermissionAsync(User, "inquiry.card.followup");
+    var canCardDemoScheduled = await PermissionService.HasPermissionAsync(User, "inquiry.card.demo.scheduled");
+    var canCardDemoDone = await PermissionService.HasPermissionAsync(User, "inquiry.card.demo.done");
+    var canCardSold = await PermissionService.HasPermissionAsync(User, "inquiry.card.sold");
+    var canCardClosed = await PermissionService.HasPermissionAsync(User, "inquiry.card.closed");
+}
+
+
+@* Support Head does not receive inquiry follow-up reminders — only Implementation/Training reminders. *@
+@if (canViewFollowupReminder && !isSupportHead && (todayFollowUps.Any() || overdueFollowUps.Any()))
+{
+    <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <strong>Today Follow-up Reminder</strong>
+                <div>Today @todayFollowUps.Count follow-up(s) are due. Overdue @overdueFollowUps.Count follow-up(s) need attention.</div>
+            </div>
+            <a asp-action="Index" asp-route-TodayFollowUps="true" asp-fragment="inquiryReport" class="btn btn-sm btn-followup-today js-view-today">View Today</a>
+        </div>
+    </div>
+    <div class="card-soft p-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h5 class="mb-0">My Follow-up List</h5>
+            <span class="mini-muted">Day wise pending follow-ups</span>
+        </div>
+        <div class="table-responsive compact-table-wrap">
+            <table class="table align-middle compact-crm-table mb-0">
+                <thead><tr><th>Date</th><th>Customer</th><th>Product</th><th>Status</th><th>Owner</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var fup in overdueFollowUps.Concat(todayFollowUps).Take(10))
+                {
+                    <tr>
+                        <td><strong>@fup.NextFollowUpDate?.ToString("dd/MM/yyyy")</strong><div class="mini-muted">@(fup.NextFollowUpDate!.Value.Date < DateTime.Today ? "Overdue" : "Today")</div></td>
+                        <td><strong>@(string.IsNullOrWhiteSpace(fup.FirmName) ? fup.PersonName : fup.FirmName)</strong><div class="mini-muted">@fup.Mobile1</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(fup.ProductName) ? "-" : fup.ProductName)<div class="mini-muted">@fup.VersionType</div></td>
+                        <td><span class="status-badge bg-soft-primary">@fup.Status</span></td>
+                        <td>@(string.IsNullOrWhiteSpace(fup.ForwardedToPartnerName) ? fup.AssignedUserName : fup.ForwardedToPartnerName)</td>
+                        <td>
+                            @if (canEdit)
+                            {
+                                <a asp-action="Edit" asp-route-id="@fup.Id" class="btn btn-sm btn-brand">Update</a>
+                            }
+                            else if (canViewTimeline)
+                            {
+                                <a asp-action="Details" asp-route-id="@fup.Id" class="btn btn-sm btn-outline-secondary">View</a>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (!(isSupport || isSupportHead))
+{
+    <div class="dashboard-grid compact mb-4">
+        @if (canCardTotal) { <a asp-action="Index" class="dash-card accent-purple"><span>Total</span><strong>@total</strong></a> }
+        @if (canCardFollowup) { <a asp-action="Index" asp-route-Status="Follow Up" class="dash-card accent-coral"><span>Follow Up</span><strong>@follow</strong></a> }
+        @if (canCardDemoScheduled) { <a asp-action="Index" asp-route-Status="Demo Scheduled" class="dash-card accent-cyan"><span>Demo Scheduled</span><strong>@demoScheduled</strong></a> }
+        @if (canCardDemoDone) { <a asp-action="Index" asp-route-Status="Demo Done" class="dash-card accent-blue"><span>Demo Done</span><strong>@demoDone</strong></a> }
+        @if (canCardSold) { <a asp-action="Index" asp-route-Status="Sold" class="dash-card accent-green"><span>Sold</span><strong>@sold</strong></a> }
+        @if (canCardClosed) { <a asp-action="Index" asp-route-Status="Close" class="dash-card accent-dark"><span>Close</span><strong>@closed</strong></a> }
+    </div>
+}
+
+@if (isSupport && ((canCreateQuick || canCreateFull) || canViewInquiryReport))
+{
+    <div class="row g-3 mb-4">
+        @if (canCreateQuick || canCreateFull)
+        {
+            <div class="col-lg-@supportActionCol"><a asp-action="Create" class="support-action-card"><div class="action-icon"><i class="bi bi-send-plus-fill"></i></div><div><h4>Send New Inquiry</h4><p>Submit customer inquiry directly to admin.</p></div><i class="bi bi-arrow-right-circle-fill action-arrow"></i></a></div>
+        }
+        @if (canViewInquiryReport)
+        {
+            <div class="col-lg-@supportActionCol"><a href="#inquiryReport" class="support-action-card js-inquiry-report-link"><div class="action-icon"><i class="bi bi-clipboard-data-fill"></i></div><div><h4>My Inquiry Report</h4><p>Check status, handler, result and remarks.</p></div><i class="bi bi-eye-fill action-arrow"></i></a></div>
+        }
+    </div>
+}
+
+@if (isSupport || isSupportHead)
+{
+    <div class="dashboard-grid compact mb-4">
+        @if (canCardTotal) { <a asp-action="Index" class="dash-card accent-purple"><span>Total</span><strong>@total</strong></a> }
+        @if (canCardNew) { <a asp-action="Index" asp-route-Status="New Inquiry" class="dash-card accent-cyan"><span>New Inquiry</span><strong>@Model.Count(x => x.Status == "New Inquiry")</strong></a> }
+        @if (canCardGenuine) { <a asp-action="Index" asp-route-InquiryQuality="Genuine" class="dash-card accent-green"><span>Genuine</span><strong>@genuine</strong></a> }
+        @if (canCardNotGenuine) { <a asp-action="Index" asp-route-InquiryQuality="Not Genuine" class="dash-card accent-coral"><span>Not Genuine</span><strong>@notGenuine</strong></a> }
+        @if (canCardSold) { <a asp-action="Index" asp-route-Status="Sold" class="dash-card accent-blue"><span>Sold</span><strong>@sold</strong></a> }
+        @if (canCardClosed) { <a asp-action="Index" asp-route-Status="Close" class="dash-card accent-dark"><span>Close</span><strong>@closed</strong></a> }
+    </div>
+    @if (isSupportHead)
+    {
+        var memberRows = Model.GroupBy(x => string.IsNullOrWhiteSpace(x.SupportExecutiveName) ? "Unassigned" : x.SupportExecutiveName)
+            .Select(g => new { Name = g.Key, Total = g.Count(), New = g.Count(x => x.Status == "New Inquiry"), GenuineCount = g.Count(x => x.InquiryQuality == "Genuine"), NotGenuineCount = g.Count(x => x.InquiryQuality == "Not Genuine"), FollowUps = g.Count(x => x.Status == "Follow Up"), SoldCount = g.Count(x => x.Status == "Sold"), ClosedCount = g.Count(x => x.Status == "Close") })
+            .OrderByDescending(x => x.Total).ToList();
+        <div class="card-soft p-3 mb-4 report-print-section">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 class="mb-0">Support Team Status List</h5>
+                <span class="mini-muted">Status wise summary by support team</span>
+            </div>
+            <div class="table-responsive compact-table-wrap">
+                <table class="table align-middle compact-crm-table mb-0">
+                    <thead><tr><th>Support Member</th><th>Total</th><th>New</th><th>Genuine</th><th>Not Genuine</th><th>Follow Up</th><th>Sold</th><th>Closed</th></tr></thead>
+                    <tbody>
+                    @foreach (var m in memberRows)
+                    {
+                        <tr><td><strong>@m.Name</strong></td><td>@m.Total</td><td>@m.New</td><td>@m.GenuineCount</td><td>@m.NotGenuineCount</td><td>@m.FollowUps</td><td>@m.SoldCount</td><td>@m.ClosedCount</td></tr>
+                    }
+                    @if (!memberRows.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">No support member status found.</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+
+@if (canViewSmartFilters && canViewInquiryReport)
+{
+<div class="conversion-focus-strip mb-4" aria-label="Conversion focus">
+    <a asp-action="Index" asp-route-Focus="Hot" asp-fragment="inquiryReport" class="conversion-focus-item">
+        <i class="bi bi-fire"></i><div><span>Hot Leads</span><b>@hotLeads</b><small>Genuine + demo/negotiation</small></div>
+    </a>
+    <a asp-action="Index" asp-route-FollowUpToDate="@DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd")" asp-fragment="inquiryReport" class="conversion-focus-item danger">
+        <i class="bi bi-alarm"></i><div><span>Overdue Follow-up</span><b>@overdueFollowUps.Count</b><small>Needs action today</small></div>
+    </a>
+    <a asp-action="Index" asp-route-Focus="MissingNextAction" asp-fragment="inquiryReport" class="conversion-focus-item warning">
+        <i class="bi bi-calendar-x"></i><div><span>Missing Next Action</span><b>@missingNextAction</b><small>Add follow-up date</small></div>
+    </a>
+    <a asp-action="Index" asp-route-Status="Negotiation" asp-fragment="inquiryReport" class="conversion-focus-item success">
+        <i class="bi bi-graph-up-arrow"></i><div><span>Negotiation</span><b>@negotiationLeads</b><small>Priority closing queue</small></div>
+    </a>
+</div>
+}
+
+@if (canViewInquiryReport)
+{
+@if (!isSupportHead)
+{
+<div class="card-soft p-3 mb-4 professional-filter-card">
+    <form method="get" class="professional-filter-grid compact-filter-grid">
+        <div class="filter-cell search-cell"><label class="form-label small">Search</label><input name="SearchText" value="@filter.SearchText" class="form-control" placeholder="Customer, mobile, city, product..." /></div>
+        <div class="filter-cell"><label class="form-label small">Status</label><select name="Status" class="form-select"><option value="">All Status</option>@foreach (var s in statuses){<option value="@s" selected="@(filter.Status==s)">@s</option>}</select></div>
+        <div class="filter-cell"><label class="form-label small">Genuine Status</label><select name="InquiryQuality" class="form-select"><option value="">All</option><option value="Genuine" selected='@(filter.InquiryQuality=="Genuine")'>Genuine</option><option value="Not Genuine" selected='@(filter.InquiryQuality=="Not Genuine")'>Not Genuine</option></select></div>
+        @if (isSupportHead)
+        {
+            <div class="filter-cell"><label class="form-label small">Support Member</label><select name="SupportUser" class="form-select"><option value="">All Support Members</option>@foreach(var u in supportUsers){<option value="@u.FullName" selected="@(filter.SupportUser==u.FullName)">@u.FullName</option>}</select></div>
+        }
+        @if (isAdmin)
+        {
+            <div class="filter-cell"><label class="form-label small">Partner</label><select name="PartnerId" class="form-select"><option value="">All Partners</option>@foreach(var p in partners){<option value="@p.Id" selected="@(filter.PartnerId==p.Id)">@p.FullName</option>}</select></div>
+            <div class="filter-cell"><label class="form-label small">Product</label><select name="ProductName" class="form-select"><option value="">All Products</option>@foreach(var p in products){<option value="@p.Name" selected="@(filter.ProductName==p.Name)">@p.Name</option>}</select></div>
+        }
+        @if (isPartner || isUser)
+        {
+            <div class="filter-cell"><label class="form-label small">Product</label><select name="ProductName" class="form-select"><option value="">All Products</option>@foreach(var p in products){<option value="@p.Name" selected="@(filter.ProductName==p.Name)">@p.Name</option>}</select></div>
+        }
+        <div class="filter-cell date-cell"><label class="form-label small">From</label><input type="text" name="FromDate" value="@DateValue(filter.FromDate)" class="form-control crm-date-picker" placeholder="dd/MM/yyyy" autocomplete="off" /></div>
+        <div class="filter-cell date-cell"><label class="form-label small">To</label><input type="text" name="ToDate" value="@DateValue(filter.ToDate)" class="form-control crm-date-picker" placeholder="dd/MM/yyyy" autocomplete="off" /></div>
+        <div class="filter-cell date-cell"><label class="form-label small">Follow-up From</label><input type="text" name="FollowUpFromDate" value="@DateValue(filter.FollowUpFromDate)" class="form-control crm-date-picker" placeholder="dd/MM/yyyy" autocomplete="off" /></div>
+        <div class="filter-cell date-cell"><label class="form-label small">Follow-up To</label><input type="text" name="FollowUpToDate" value="@DateValue(filter.FollowUpToDate)" class="form-control crm-date-picker" placeholder="dd/MM/yyyy" autocomplete="off" /></div>
+        <div class="filter-actions"><button class="btn btn-brand w-100">Go</button><a asp-action="Index" class="btn btn-outline-secondary w-100">Clear</a></div>
+    </form>
+</div>
+}
+
+<div id="inquiryReport" class="card-soft p-3 inquiry-card inquiry-report-target" tabindex="-1">
+    <form id="remarksAntiForgeryForm" class="d-none">@Html.AntiForgeryToken()</form>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+            <h5 class="mb-0">@(isSupportHead ? "Support Team Inquiry Status" : isSupport ? "My Submitted Inquiry Status" : isPartner ? "Forwarded Inquiry List" : isUser ? "My Inquiry List" : "All Inquiry Pipeline")</h5>
+            @if (filter.TodayFollowUps)
+            {
+                <span class="mini-muted">Showing today follow-ups only · @DateTime.Today.ToString("dd/MM/yyyy")</span>
+            }
+            else if (!string.IsNullOrWhiteSpace(filter.Focus))
+            {
+                <span class="mini-muted">Smart focus: @(filter.Focus == "Hot" ? "Hot Leads" : "Missing Next Action")</span>
+            }
+        </div>
+        @{ var canReports = await PermissionService.HasPermissionAsync(User, "reports.view") || await PermissionService.HasPermissionAsync(User, "reports.product") || await PermissionService.HasPermissionAsync(User, "reports.partner") || await PermissionService.HasPermissionAsync(User, "reports.user") || await PermissionService.HasPermissionAsync(User, "reports.support") || await PermissionService.HasPermissionAsync(User, "reports.admin") || await PermissionService.HasPermissionAsync(User, "reports.detailed"); }
+        <div class="d-flex gap-2 flex-wrap">
+            @* Show quick create for Support/Partner when allowed; show full New Inquiry to any user with inquiry.create permission *@
+            @if ((canCreateQuick || canCreateFull) && (isSupport || isPartner)) { <a asp-action="Create" class="btn btn-brand btn-lg btn-icon"><i class="bi bi-send"></i> @(isPartner ? "Submit Inquiry" : "Send Inquiry")</a> }
+            else if (canCreateFull) { <a asp-action="Create" class="btn btn-brand btn-lg btn-icon"><i class="bi bi-plus-circle"></i> New Inquiry</a> }
+            @if (!isSupportHead && canReports) { <a asp-controller="Reports" asp-action="Index" class="btn btn-outline-primary btn-lg btn-icon"><i class="bi bi-bar-chart-line"></i> @(isAdmin ? "Reports" : "My Report")</a> }
+        </div>
+    </div>
+    <div class="enterprise-table-toolbar no-print">
+        <div class="toolbar-left">
+            <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:200px;max-width:280px"
+                   placeholder="Quick search in table..." data-table-search="inquiryGrid" aria-label="Quick search in table" />
+            <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="inquiryGrid" aria-label="Rows per page">
+                <option value="25">25 records</option>
+                <option value="50">50 records</option>
+                <option value="100" selected>100 records</option>
+                <option value="200">200 records</option>
+                <option value="500">500 records</option>
+                <option value="1000">1000 records</option>
+                <option value="5000">All (virtual scroll)</option>
+            </select>
+        </div>
+        <div class="toolbar-right">
+            <div class="dropdown" data-table-chooser="inquiryGrid">
+                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-layout-three-columns"></i> Columns
+                </button>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="inquiryGrid" title="Reset columns and page size">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset
+            </button>
+        </div>
+    </div>
+    <div class="table-responsive inquiry-grid clean-grid compact-table-wrap enterprise-table-scroll">
+        <table class="table table-hover align-middle mb-0 compact-crm-table inquiry-action-table enterprise-data-table"
+               id="inquiryGrid" data-table-id="inquiryGrid">
+            <thead>
+                @if (isSupport || isSupportHead)
+                {
+                    <tr><th>#</th><th>Date / Time</th><th>Customer</th><th>Product</th><th>Support Member</th><th>Genuine</th><th class="col-status">Status</th><th>Handled By</th><th>Sold By</th><th class="col-result">Result</th><th class="col-action">Action</th></tr>
+                }
+                else
+                {
+                    <tr><th>Inquiry Date</th><th>Customer</th><th>Product</th><th>Owner</th><th>Genuine</th><th class="col-status">Status</th><th>Next Action</th><th class="col-result">Result</th><th>Docs Sent</th><th class="col-action">Action</th></tr>
+                }
+            </thead>
+            <tbody>
+            @{
+                var rowNo = 0;
+                // Point 2 fix: "Docs Sent" column so the pipeline list itself
+                // shows what was already sent to each customer.
+                var docSummary = ViewBag.DocSendSummary as Dictionary<string, (int SentCount, string LastSentAt, string LastSendType)>
+                    ?? new Dictionary<string, (int SentCount, string LastSentAt, string LastSendType)>();
+            }
+            @foreach (var item in Model)
+            {
+                rowNo++;
+                var history = updateMap.ContainsKey(item.Id) ? updateMap[item.Id] : new List<InquiryUpdate>();
+                var latestHistoryNote = history.OrderByDescending(x => x.UpdateDate).FirstOrDefault()?.Note;
+                var latestStatusRemark = !string.IsNullOrWhiteSpace(item.StatusReason)
+                    ? item.StatusReason
+                    : !string.IsNullOrWhiteSpace(latestHistoryNote)
+                        ? latestHistoryNote
+                        : item.Remarks;
+                var soldBy = !string.IsNullOrWhiteSpace(item.SoldByName) ? $"{item.SoldByName} ({item.SoldByRole})" : (item.Status == "Sold" ? "Not recorded" : "-");
+                var handledByName = !string.IsNullOrWhiteSpace(item.ForwardedToUserName) ? item.ForwardedToUserName : !string.IsNullOrWhiteSpace(item.ForwardedToPartnerName) ? item.ForwardedToPartnerName : !string.IsNullOrWhiteSpace(item.AssignedUserName) ? item.AssignedUserName : !string.IsNullOrWhiteSpace(item.AttendedByRole) ? item.AttendedByRole : "Admin";
+                var handledByRole = !string.IsNullOrWhiteSpace(item.ForwardedToRole) ? item.ForwardedToRole : !string.IsNullOrWhiteSpace(item.ForwardedToPartnerName) ? "Partner" : !string.IsNullOrWhiteSpace(item.AssignedUserName) ? "User" : item.AttendedByRole;
+                var nextText = item.Status == "Sold" ? $"Bill {item.BillNo}" : item.Status == "Close" ? "Closed" : item.NextFollowUpDate.HasValue ? $"Follow up {item.NextFollowUpDate:dd/MM/yyyy}" : item.Status == "Demo Scheduled" && item.DemoScheduledDate.HasValue ? $"Demo {item.DemoScheduledDate:dd/MM/yyyy}" : "-";
+                var resultText = item.Status == "Sold"
+                    ? $"{latestStatusRemark} · Sold by {soldBy} · License: {item.LicenseNumber}"
+                    : item.Status == "Close"
+                        ? $"{latestStatusRemark} · Close: {item.CloseReason}"
+                        : latestStatusRemark;
+                if (isSupport || isSupportHead)
+                {
+                    <tr>
+                        <td><strong>@rowNo</strong></td>
+                        <td><strong>@DisplayDate(item.CreatedDate)</strong><div class="mini-muted">@DisplayTime(item.CreatedDate)</div></td>
+                        <td><strong>@(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)</strong><div class="mini-muted">@item.City · @item.Mobile1</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(item.ProductName) ? "-" : item.ProductName)<div class="mini-muted">@item.VersionType</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(item.SupportExecutiveName) ? "-" : item.SupportExecutiveName)</td>
+                        <td><span class="badge status-badge @(item.InquiryQuality=="Genuine"?"bg-soft-success":item.InquiryQuality=="Not Genuine"?"bg-soft-danger":"bg-soft-primary")">@(string.IsNullOrWhiteSpace(item.InquiryQuality)?"-":item.InquiryQuality)</span></td>
+                        <td class="col-status">@if (canViewTimeline) { <button type="button" class="badge status-badge border-0" data-bs-toggle="modal" data-bs-target="#history_@rowNo">@item.Status</button> } else { <span class="badge status-badge bg-soft-primary">@item.Status</span> }</td>
+                        <td>@handledByName<div class="mini-muted">@handledByRole</div></td>
+                        <td>@soldBy</td>
+                        <td class="remark-cell col-result">@(string.IsNullOrWhiteSpace(resultText) ? "-" : resultText)</td>
+                        <td class="col-action">
+                            <div class="qs-action-cell">
+                                @if (canViewTimeline)
+                                {
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="qs-icon-btn" title="View / Timeline" aria-label="View / Timeline">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                }
+                                @if (canEdit)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="qs-icon-btn qs-icon-edit" title="Edit" aria-label="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                }
+                                @if (canDelete)
+                                {
+                                    <form asp-action="Delete" method="post" class="d-inline-flex m-0" onsubmit="return confirm('Delete this inquiry?');">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="qs-icon-btn qs-icon-delete" title="Delete" aria-label="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    <tr>
+                        <td><strong>@DisplayDate(item.CreatedDate)</strong><div class="mini-muted">Updated: @DisplayDate(item.LastUpdated)</div></td>
+                        <td><strong>@(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)</strong><div class="mini-muted">@item.City · @item.Mobile1</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(item.ProductName) ? "-" : item.ProductName)<div class="mini-muted">@item.VersionType</div></td>
+                        <td>@handledByName<div class="mini-muted">Partner: @(string.IsNullOrWhiteSpace(item.ForwardedToPartnerName) ? "Not Forwarded" : item.ForwardedToPartnerName)</div><div class="mini-muted">Support: @(string.IsNullOrWhiteSpace(item.SupportExecutiveName) ? "-" : item.SupportExecutiveName)</div></td>
+                        <td><span class="badge status-badge @(item.InquiryQuality=="Genuine"?"bg-soft-success":item.InquiryQuality=="Not Genuine"?"bg-soft-danger":"bg-soft-primary")">@(string.IsNullOrWhiteSpace(item.InquiryQuality)?"Pending":item.InquiryQuality)</span></td>
+                        <td class="col-status">@if (canViewTimeline) { <button type="button" class="badge status-badge border-0" data-bs-toggle="modal" data-bs-target="#history_@rowNo">@item.Status</button> } else { <span class="badge status-badge bg-soft-primary">@item.Status</span> }<div class="mini-muted mt-1 status-remark">@(string.IsNullOrWhiteSpace(latestStatusRemark) ? "-" : latestStatusRemark)</div></td>
+                        <td>@nextText</td>
+                        <td class="col-result"><span class="mini-muted result-text">@resultText</span></td>
+                        <td>
+                            @if (docSummary.TryGetValue(item.Id, out var ds))
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id" asp-fragment="inquiryDocumentsPanel" class="badge status-badge bg-soft-success" title="Last sent: @ds.LastSendType on @ds.LastSentAt">
+                                    <i class="bi bi-send-check"></i> Sent × @ds.SentCount
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="badge status-badge bg-soft-secondary" title="No quotation/documents sent yet">
+                                    <i class="bi bi-dash-circle"></i> Not sent
+                                </span>
+                            }
+                        </td>
+                        <td class="inquiry-action-td col-action">
+                            <div class="qs-action-cell qs-action-compact">
+                                @if (canViewTimeline)
+                                {
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="qs-icon-btn" title="View / Timeline" aria-label="View / Timeline">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                }
+                                @if (canEdit)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="qs-icon-btn qs-icon-edit" title="Edit" aria-label="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                }
+                                @if (canDelete)
+                                {
+                                    <form asp-action="Delete" method="post" class="d-inline-flex m-0" onsubmit="return confirm('Delete this inquiry?');">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="qs-icon-btn qs-icon-delete" title="Delete" aria-label="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                                @if (canStatus)
+                                {
+                                    <button type="button" class="qs-icon-btn qs-icon-status" title="Update Status"
+                                            data-bs-toggle="modal" data-bs-target="#statusModal_@item.Id" aria-label="Update Status">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="10" class="text-center text-muted py-4">No inquiries found for selected filter.</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="enterprise-table-pagination no-print" data-table-id="inquiryGrid">
+        <div class="mini-muted" data-table-info="inquiryGrid">Loading…</div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="inquiryGrid" aria-label="Previous page"><i class="bi bi-chevron-left"></i></button>
+            <span class="small" data-table-page="inquiryGrid">1 / 1</span>
+            <div class="d-flex align-items-center gap-1 flex-wrap enterprise-page-numbers" data-table-pages="inquiryGrid"></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="inquiryGrid" aria-label="Next page"><i class="bi bi-chevron-right"></i></button>
+        </div>
+    </div>
+</div>
+}
+
+@if (canViewTimeline && canViewInquiryReport)
+{
+var modalNo = 0;
+@foreach (var item in Model)
+{
+    modalNo++;
+    var history = updateMap.ContainsKey(item.Id) ? updateMap[item.Id] : new List<InquiryUpdate>();
+    <div class="modal fade crm-history-modal" id="history_@modalNo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Status Timeline - @(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    @if(history.Any()){
+                        <div class="timeline-list timeline-list-scroll">@foreach(var h in history){<div class="timeline-row"><strong>@h.Status</strong><span>@h.UpdateDate.ToString("dd/MM/yyyy hh:mm tt") · @h.UserName</span><p>@h.Note</p>@if(!string.IsNullOrWhiteSpace(h.BillNo)){<span>Bill: @h.BillNo / @(h.BillDate?.ToString("dd/MM/yyyy") ?? "-")</span>}@if(!string.IsNullOrWhiteSpace(h.CloseReason)){<span>Close: @h.CloseReason</span>}</div>}</div>
+                    } else { <div class="text-muted">No history available.</div> }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+}
+
+@section Scripts{
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+flatpickr('.crm-date-picker', { altInput: true, altFormat: 'd/m/Y', dateFormat: 'Y-m-d', allowInput: true });
+function focusInquiryReport(){
+    const report = document.getElementById('inquiryReport');
+    if(!report) return;
+    report.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    report.classList.remove('report-target-pulse');
+    void report.offsetWidth;
+    report.classList.add('report-target-pulse');
+    window.setTimeout(() => report.classList.remove('report-target-pulse'), 1700);
+}
+document.querySelectorAll('.js-inquiry-report-link').forEach(link => link.addEventListener('click', function(e){
+    if(this.getAttribute('href') === '#inquiryReport'){
+        e.preventDefault();
+        history.replaceState(null, '', '#inquiryReport');
+        focusInquiryReport();
+    }
+}));
+if(window.location.hash === '#inquiryReport') window.setTimeout(focusInquiryReport, 120);
+const productPrices = @Html.Raw(productJson);
+const partnerMargins = @Html.Raw(partnerMarginJson);
+function syncQuickStatus(form){
+    const status = form.querySelector('.quick-status')?.value || '';
+    form.querySelectorAll('.sold-quick').forEach(x => x.style.display = status === 'Sold' ? '' : 'none');
+    form.querySelectorAll('.sold-required').forEach(x => { x.required = status === 'Sold'; });
+    // Close reason separate textbox removed — note field is enough for Close.
+    form.querySelectorAll('.forward-partner').forEach(x => { x.style.display = status === 'Forwarded to Partner' ? '' : 'none'; x.required = status === 'Forwarded to Partner'; });
+    form.querySelectorAll('.forward-user').forEach(x => { x.style.display = status === 'Forwarded to User' ? '' : 'none'; x.required = status === 'Forwarded to User'; });
+    const dateInput = form.querySelector('.action-date');
+    if(dateInput){ dateInput.required = status !== 'Sold' && status !== 'Close' && !status.startsWith('Forwarded to '); }
+    if(status === 'Sold'){
+        const pname = form.querySelector('.sold-product')?.value || form.querySelector('.product-name')?.value || '';
+        const p = productPrices.find(x => x.name === pname);
+        if(p){
+            const selectedPartnerId = form.querySelector('.forward-partner')?.value || form.querySelector('input[name="existingPartnerId"]')?.value || '';
+            const hasPartner = !!selectedPartnerId;
+            const margin = hasPartner ? Number(partnerMargins[selectedPartnerId] || form.querySelector('.forward-partner option:checked')?.dataset.margin || 0) : 0;
+            const qty = Math.max(1, Number(form.querySelector('.sold-qty')?.value || 1));
+            const multiplier = hasPartner ? (1 - Math.min(100, Math.max(0, margin)) / 100) : 1;
+            const amountWithout = (hasPartner ? (p.partnerWithoutGst || 0) : (p.directWithoutGst || 0)) * qty * multiplier;
+            const amountWith = (hasPartner ? (p.partnerWithGst || 0) : (p.directWithGst || 0)) * qty * multiplier;
+            form.querySelector('.auto-without').value = amountWithout.toFixed(2);
+            form.querySelector('.auto-with').value = amountWith.toFixed(2);
+            const preview = form.querySelector('.price-source-preview');
+            if(preview) preview.textContent = hasPartner
+                ? `Partner net price after ${margin.toFixed(2)}% margin: ${amountWithout.toFixed(2)} + GST total ${amountWith.toFixed(2)}`
+                : `Direct customer price: ${amountWithout.toFixed(2)} + GST total ${amountWith.toFixed(2)}`;
+        }
+    }
+}
+/* Event delegation — works for status forms rendered later in modals */
+function bindQuickStatusForm(f){
+    if(!f || f.dataset.qsBound === '1') return;
+    f.dataset.qsBound = '1';
+    f.querySelector('.quick-status')?.addEventListener('change', () => syncQuickStatus(f));
+    f.querySelector('.sold-product')?.addEventListener('change', () => syncQuickStatus(f));
+    f.querySelector('.sold-qty')?.addEventListener('input', () => syncQuickStatus(f));
+    f.querySelector('.forward-partner')?.addEventListener('change', () => syncQuickStatus(f));
+    syncQuickStatus(f);
+}
+function validateQuickStatusSubmit(f, e){
+    const note = f.querySelector('.required-note');
+    const status = f.querySelector('.quick-status')?.value || '';
+    const actionDate = f.querySelector('.action-date');
+    // Smart single-save: if note empty, auto-fill a short note from status so user
+    // does not need a second click through the Update Note popup.
+    if(note && !note.value.trim()){
+        var autoNote = '';
+        if(status === 'Close') autoNote = 'Closed';
+        else if(status === 'Sold') autoNote = 'Sold';
+        else if(status && status.indexOf('Forwarded') === 0) autoNote = status;
+        else if(status) autoNote = 'Status: ' + status;
+        else if(f.querySelector('.quality-status') && f.querySelector('.quality-status').value){
+            autoNote = 'Quality: ' + f.querySelector('.quality-status').value;
+        }
+        if(autoNote){
+            note.value = autoNote;
+            var trigger = f.querySelector('.qs-note-trigger');
+            if(trigger){ trigger.value = autoNote; trigger.classList.remove('is-invalid'); }
+            note.classList.remove('is-invalid');
+        } else {
+            e.preventDefault();
+            note.classList.add('is-invalid');
+            var trigger2 = f.querySelector('.qs-note-trigger');
+            if(trigger2){ trigger2.classList.add('is-invalid'); trigger2.focus(); }
+            else note.focus();
+            alert('Please select a Status (or write an Update note) before saving.');
+            return false;
+        }
+    }
+    // Keep closeReason in sync with note when closing (no separate textbox)
+    var closeReasonField = f.querySelector('.close-quick, input[name="closeReason"]');
+    if(status === 'Close' && closeReasonField && note){
+        closeReasonField.value = note.value.trim();
+    }
+    if(status === 'Sold'){
+        const soldProduct = f.querySelector('.sold-product');
+        if(soldProduct && !soldProduct.value.trim()){
+            e.preventDefault(); soldProduct.classList.add('is-invalid'); soldProduct.focus(); alert('Product name is required for Sold status.'); return false;
+        }
+    }
+    const qualityEl = f.querySelector('.quality-status');
+    const quality = qualityEl ? (qualityEl.value || '') : '';
+    if(!status && qualityEl && !quality){
+        e.preventDefault(); alert('Please select Status or Genuine Status before saving.'); return false;
+    }
+    if(!status && !qualityEl){
+        e.preventDefault(); alert('Please select Status before saving.'); return false;
+    }
+    // Action date is mandatory whenever the field is present (except Sold / Close / Forwarded / Not Genuine)
+    if(actionDate){
+        var dateNeeded = status && status !== 'Sold' && status !== 'Close' && !status.startsWith('Forwarded to ') && quality !== 'Not Genuine';
+        // Also require when status not yet chosen but user is trying to save with empty date and a note-only path
+        if(dateNeeded && !actionDate.value.trim()){
+            e.preventDefault();
+            actionDate.classList.add('is-invalid');
+            actionDate.focus();
+            alert('Action date is required. Please select an Action date before saving.');
+            return false;
+        }
+    }
+    if(status === 'Sold' && f.dataset.canImplementationSetup === 'true' && !f.dataset.implementationDecision){
+        e.preventDefault();
+        const selectedProduct = f.querySelector('.sold-product')?.value || f.dataset.product || '';
+        window.ProfitNxCRM?.confirmImplementationSetup({ customer: f.dataset.customer || 'Customer', product: selectedProduct })
+            .then(function(decision){
+                if(decision === null || typeof decision === 'undefined') return;
+                const setupField = f.querySelector('.setup-implementation-value');
+                if(setupField) setupField.value = decision ? 'true' : 'false';
+                f.dataset.implementationDecision = decision ? 'yes' : 'no';
+                // Single save path after implementation decision
+                if(typeof f.requestSubmit === 'function') f.requestSubmit();
+                else f.submit();
+            });
+        return false;
+    }
+    // Single-save: disable button immediately to prevent double submit
+    var btn = f.querySelector('.qs-save-status-btn, button[type="submit"]');
+    if(btn){
+        btn.disabled = true;
+        btn.dataset.originalText = btn.textContent;
+        btn.textContent = 'Saving…';
+    }
+    return true;
+}
+document.addEventListener('submit', function(e){
+    var f = e.target;
+    if(!f || !f.classList || !f.classList.contains('quick-status-form')) return;
+    validateQuickStatusSubmit(f, e);
+}, true);
+document.addEventListener('change', function(e){
+    var t = e.target;
+    if(!t) return;
+    var f = t.closest && t.closest('.quick-status-form');
+    if(!f) return;
+    if(t.classList.contains('quick-status') || t.classList.contains('sold-product') || t.classList.contains('sold-qty') || t.classList.contains('forward-partner')){
+        bindQuickStatusForm(f);
+        syncQuickStatus(f);
+    }
+});
+function initAllQuickStatusForms(){
+    document.querySelectorAll('.quick-status-form').forEach(bindQuickStatusForm);
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAllQuickStatusForms);
+else initAllQuickStatusForms();
+// When status modal opens, re-bind + sync + focus
+document.addEventListener('shown.bs.modal', function(ev){
+    var modal = ev.target;
+    if(!modal || !modal.classList.contains('qs-status-modal')) return;
+    var f = modal.querySelector('.quick-status-form');
+    if(f){
+        bindQuickStatusForm(f);
+        syncQuickStatus(f);
+        // Re-enable save button if previously left disabled
+        var btn = f.querySelector('.qs-save-status-btn, button[type="submit"]');
+        if(btn){ btn.disabled = false; if(btn.dataset.originalText) btn.textContent = btn.dataset.originalText; }
+    }
+});
+
+document.addEventListener('hidden.bs.modal', function(){
+    document.querySelectorAll('.modal-backdrop').forEach(x => x.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+});
+</script>
+}
+
+
+
+
+
+@* ===== Status update modals (outside table so sticky/overflow never clips them) ===== *@
+@if (canStatus)
+{
+    @foreach (var item in Model)
+    {
+        var historyInline = updateMap.ContainsKey(item.Id) ? updateMap[item.Id] : new List<InquiryUpdate>();
+        var latestHistoryNoteInline = historyInline.OrderByDescending(x => x.UpdateDate).FirstOrDefault()?.Note;
+        var latestRemarkInline = !string.IsNullOrWhiteSpace(item.StatusReason)
+            ? item.StatusReason
+            : !string.IsNullOrWhiteSpace(latestHistoryNoteInline)
+                ? latestHistoryNoteInline
+                : item.Remarks;
+        var remarkPreview = string.IsNullOrWhiteSpace(latestRemarkInline)
+            ? ""
+            : (latestRemarkInline.Length > 42 ? latestRemarkInline.Substring(0, 42) + "…" : latestRemarkInline);
+        <div class="modal fade qs-status-modal" id="statusModal_@item.Id" tabindex="-1" aria-labelledby="statusModalLabel_@item.Id" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-md">
+                <div class="modal-content">
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title fs-6" id="statusModalLabel_@item.Id">
+                            <i class="bi bi-arrow-repeat me-1"></i> Update Status
+                            <small class="text-muted ms-1">@(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)</small>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body qs-action-panel pt-2 pb-3">
+                        <form asp-action="UpdateStatus" method="post" class="quick-status-form qs-inline-form" data-can-implementation-setup="@(canSetupImplementationFromSold ? "true" : "false")" data-customer="@(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)" data-product="@item.ProductName">
+                        <input type="hidden" name="inquiryId" value="@item.Id" />
+                        <input type="hidden" name="setupImplementation" value="false" class="setup-implementation-value" />
+                        <input type="hidden" name="amountWithoutGst" class="auto-without" value="@item.AmountWithoutGst" />
+                        <input type="hidden" name="amountWithGst" class="auto-with" value="@item.AmountWithGst" />
+                        <input type="hidden" class="product-name" value="@item.ProductName" />
+                        <input type="hidden" class="product-version" value="@item.VersionType" />
+                        <input type="hidden" name="existingPartnerId" value="@item.ForwardedToPartnerId" />
+
+                        @* Row 2: Select Status · Genuine Status *@
+                        <div class="qs-action-row qs-action-row-status">
+                        <select name="status" class="form-select form-select-sm quick-status qs-control qs-status-select" title="Select Status">
+                        <option value="">Select Status</option>
+                        @foreach (var s in visibleStatuses) { <option value="@s">@s</option> }
+                        </select>
+                        @if (string.IsNullOrWhiteSpace(item.InquiryQuality))
+                        {
+                        <select name="inquiryQuality" class="form-select form-select-sm quality-status qs-control qs-genuine-select" title="Genuine Status">
+                        <option value="">Genuine Status</option>
+                        <option value="Genuine">Genuine</option>
+                        <option value="Not Genuine">Not Genuine</option>
+                        </select>
+                        }
+                        else
+                        {
+                        <span class="qs-genuine-locked badge status-badge @(item.InquiryQuality=="Genuine"?"bg-soft-success":"bg-soft-danger")" title="Genuine status already set">@item.InquiryQuality</span>
+                        }
+                        </div>
+
+                        @* Conditional Sold / Close / Forward fields *@
+                        @if (canForwardPartner)
+                        {
+                        <select name="forwardToPartnerId" class="form-select form-select-sm forward-quick forward-partner qs-control qs-extra-field" title="Select partner" style="display:none;">
+                        <option value="">Select Partner</option>
+                        @foreach (var p in partners) { <option value="@p.Id" data-margin="@(partnerMargins.ContainsKey(p.Id) ? partnerMargins[p.Id] : 0)">@p.FullName</option> }
+                        </select>
+                        }
+                        @if (canForwardUser)
+                        {
+                        <select name="forwardToUserId" class="form-select form-select-sm forward-quick forward-user qs-control qs-extra-field" title="Select user" style="display:none;">
+                        <option value="">Select User</option>
+                        @foreach (var u in users) { <option value="@u.Id">@u.FullName (@u.Role)</option> }
+                        </select>
+                        }
+                        <select name="soldProductName" class="form-select form-select-sm sold-quick sold-product sold-required qs-control qs-extra-field" style="display:none;">
+                        <option value="">Sold Product</option>
+                        @foreach (var p in products) { <option value="@p.Name" selected="@(item.ProductName==p.Name)">@p.Name (@p.Version)</option> }
+                        </select>
+                        <input name="soldLicenses" type="number" min="1" class="form-control form-control-sm sold-quick sold-qty sold-required qs-control qs-extra-field" placeholder="Qty" value="@(item.LicensesPurchased > 0 ? item.LicensesPurchased : 1)" style="display:none;" />
+                        <div class="sold-quick price-source-preview small text-muted qs-extra-field" style="display:none;"></div>
+                        <input name="licenseNumber" class="form-control form-control-sm sold-quick sold-required sold-license qs-control qs-extra-field" placeholder="License No" value="@item.LicenseNumber" style="display:none;" />
+                        <input name="billNo" class="form-control form-control-sm sold-quick sold-required sold-bill qs-control qs-extra-field" placeholder="Bill No" value="@item.BillNo" style="display:none;" />
+                        <input type="text" name="billDate" class="form-control form-control-sm sold-quick sold-required sold-bill-date crm-date-picker qs-control qs-extra-field" placeholder="Bill date" value="@DateValue(item.BillDate)" autocomplete="off" style="display:none;" />
+                        <input type="hidden" name="closeReason" class="close-quick" value="" />
+
+                        @* Row 3: Update note (popup trigger) · Action date *@
+                        @if (canManageFollowup)
+                        {
+                        <div class="qs-action-row qs-action-row-note">
+                        <input type="hidden" name="note" class="required-note qs-note-full" value="" />
+                        <input type="text"
+                        class="form-control form-control-sm qs-control qs-note-trigger"
+                        placeholder="Update note"
+                        readonly
+                        data-inquiry-id="@item.Id"
+                        data-customer="@(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)"
+                        data-current-note=""
+                        value=""
+                        title="Click to write a new note"
+                        autocomplete="off" />
+                        <input type="text"
+                        name="nextFollowUp"
+                        class="form-control form-control-sm crm-date-picker action-date qs-control"
+                        placeholder="Action date"
+                        autocomplete="off" />
+                        </div>
+                        }
+                        else
+                        {
+                        <input type="hidden" name="note" class="required-note" value="" />
+                        }
+
+                        @* Row 4: Save Status *@
+                        <div class="qs-action-row qs-action-row-save">
+                        <button type="submit" class="btn qs-save-status-btn">Save Status</button>
+                        </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<div class="modal fade" id="remarksExpandModal" tabindex="-1" aria-labelledby="remarksExpandTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content remarks-expand-modal-content qs-remarks-modal">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="remarksExpandTitle"><i class="bi bi-chat-left-text me-2"></i>Update Note</h5>
+                    <div class="mini-muted" id="remarksModalCustomer"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label class="qs-label mb-1" for="remarksExpandTextarea">Remarks / Update note</label>
+                <textarea id="remarksExpandTextarea" class="form-control remarks-expand-textarea" rows="10" placeholder="Write complete remarks or status note here..."></textarea>
+                <div class="form-text mt-1">This is staged into Update Status below — it is saved once you press <strong>Save Status</strong>, not before.</div>
+                <div id="remarksModalFeedback" class="mt-2 small" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-brand" id="remarksExpandApply">Use this note</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function(){
+    var activeInquiryId = null;
+    var activeTrigger = null;
+    var modalEl = document.getElementById('remarksExpandModal');
+    var ta = document.getElementById('remarksExpandTextarea');
+    var customerEl = document.getElementById('remarksModalCustomer');
+    var feedback = document.getElementById('remarksModalFeedback');
+    var applyBtn = document.getElementById('remarksExpandApply');
+    var remarksModalInst = null;
+
+    function showFb(msg, ok){
+        if(!feedback) return;
+        feedback.style.display = 'block';
+        feedback.className = 'mt-2 small ' + (ok ? 'text-success' : 'text-danger');
+        feedback.textContent = msg;
+    }
+    function previewText(full){
+        if(!full) return '';
+        return full.length > 42 ? full.substring(0, 42) + '…' : full;
+    }
+    function openRemarksPopup(trigger){
+        activeTrigger = trigger;
+        activeInquiryId = trigger.getAttribute('data-inquiry-id');
+        if(customerEl) customerEl.textContent = 'Inquiry: ' + (trigger.getAttribute('data-customer') || '');
+        if(ta){
+            // Always start blank: each entry here is a NEW note, not an edit of
+            // the last one. The last saved remark still shows in the compact
+            // preview field and in the full history/timeline — it should not
+            // be re-loaded into this box for the user to accidentally resend.
+            ta.value = '';
+            setTimeout(function(){ ta.focus(); }, 280);
+        }
+        if(feedback){ feedback.style.display = 'none'; feedback.textContent = ''; }
+        if(applyBtn) applyBtn.disabled = false;
+        if(window.bootstrap && modalEl){
+            remarksModalInst = bootstrap.Modal.getOrCreateInstance(modalEl);
+            remarksModalInst.show();
+        }
+    }
+
+    // Clickable Update note field (readonly input acts as trigger)
+    document.querySelectorAll('.qs-note-trigger').forEach(function(el){
+        el.addEventListener('click', function(e){
+            e.preventDefault();
+            openRemarksPopup(el);
+        });
+        el.addEventListener('keydown', function(e){
+            if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openRemarksPopup(el); }
+        });
+    });
+    // Legacy buttons if any remain
+    document.querySelectorAll('.qs-update-remarks-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            var parentModal = btn.closest('.modal.show');
+            if(parentModal && window.bootstrap){
+                var parentInst = bootstrap.Modal.getInstance(parentModal);
+                if(parentInst) parentInst.hide();
+            }
+            openRemarksPopup(btn);
+        });
+    });
+
+    if(applyBtn){
+        applyBtn.addEventListener('click', function(){
+            if(!activeInquiryId){ showFb('No inquiry selected.', false); return; }
+            var note = (ta && ta.value || '').trim();
+            if(!note){ showFb('Remarks are required.', false); if(ta) ta.focus(); return; }
+
+            // SINGLE SAVE: this only stages the note into the Update Status
+            // form in memory. It does NOT call the server. The one and only
+            // save happens when the user presses "Save Status" — previously
+            // this button also posted to UpdateRemarks immediately, which
+            // wrote its own history entry, and then Save Status wrote a
+            // second one a moment later with the same note (that's what
+            // produced the near-duplicate "Follow Up" timeline entries a
+            // few minutes apart).
+            if(activeTrigger){
+                if(activeTrigger.classList.contains('qs-note-trigger')){
+                    activeTrigger.value = previewText(note);
+                    activeTrigger.classList.remove('is-invalid');
+                }
+                var form = activeTrigger.closest('form') || (activeTrigger.closest('.qs-action-panel') && activeTrigger.closest('.qs-action-panel').querySelector('form')) || (activeTrigger.closest('.qs-status-modal') && activeTrigger.closest('.qs-status-modal').querySelector('form'));
+                if(form){
+                    var noteInput = form.querySelector('input[name="note"].required-note, input.required-note, input.qs-note-full');
+                    if(noteInput){
+                        noteInput.value = note;
+                        noteInput.classList.remove('is-invalid');
+                    }
+                }
+            }
+
+            showFb('Note ready — click Save Status to save.', true);
+            if(ta) ta.value = '';
+            setTimeout(function(){
+                if(remarksModalInst) remarksModalInst.hide();
+                else if(modalEl && window.bootstrap){
+                    var inst = bootstrap.Modal.getInstance(modalEl);
+                    if(inst) inst.hide();
+                }
+                activeTrigger = null;
+            }, 200);
+        });
+    }
+})();
+</script>

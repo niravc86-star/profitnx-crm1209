@@ -1,0 +1,1040 @@
+/* ==========================================================================
+   ProfitNx CRM — Theme Switcher
+   Loaded LAST so it can safely override every earlier CSS file.
+   Selection is scoped by a single attribute on <html data-app-theme="...">
+   so switching themes never touches markup, controllers, or data.
+
+   Themes:
+     (no attribute) / "classic" -> current CRM look, unchanged (DEFAULT)
+     "dompet"   -> new theme matching the attached reference (Dompet admin)
+     "midnight" -> dark mode
+     "emerald"  -> bonus light variant
+   ========================================================================== */
+
+:root{
+  --theme-swatch-classic: linear-gradient(135deg,#3578e5,#32c7e8);
+  --theme-swatch-dompet: linear-gradient(135deg,#2f6fed,#7c4dff 55%,#22c07d);
+  --theme-swatch-midnight: linear-gradient(135deg,#0b1024,#3f2f8f);
+  --theme-swatch-emerald: linear-gradient(135deg,#0fae7e,#38d6b4);
+  --theme-swatch-rosegold: linear-gradient(135deg,#be185d,#ec4899);
+  --theme-swatch-premium: linear-gradient(135deg,#0b1330,#3a2c6d 55%,#caa14a);
+  --theme-swatch-saas: linear-gradient(135deg,#4f46e5,#7c3aed 55%,#22d3ee);
+}
+
+/* ---------- Theme switcher control (topbar) ---------- */
+.theme-switch-wrap{position:relative}
+.theme-switch-btn{width:42px;height:42px;border-radius:15px;background:#f5f8ff;color:#17416d;display:grid;place-items:center;border:0;position:relative}
+.theme-switch-btn i{font-size:1.05rem}
+.theme-switch-menu{display:none;position:absolute;right:0;top:52px;z-index:1200;background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(15,32,58,.22);padding:10px;width:248px;border:1px solid #eef3fb;max-height:80vh;overflow:auto}
+.theme-switch-menu.open{display:block}
+.theme-switch-menu-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;font-weight:850;color:#8b98b6;padding:6px 10px 4px}
+.theme-switch-option{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:9px 10px;border-radius:12px;font-weight:750;color:#243c5a;text-align:left}
+.theme-switch-option:hover{background:#f3f8ff}
+.theme-switch-option.active{background:#eaf2ff;color:#1f56c9}
+.theme-switch-badge{margin-left:auto;font-size:.62rem;font-weight:900;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#ff7d47,#ff5a7a);padding:2px 7px;border-radius:999px}
+.theme-switch-dot{width:20px;height:20px;border-radius:7px;flex:0 0 20px;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+.theme-switch-dot.classic{background:var(--theme-swatch-classic)}
+.theme-switch-dot.dompet{background:var(--theme-swatch-dompet)}
+.theme-switch-dot.midnight{background:var(--theme-swatch-midnight)}
+.theme-switch-dot.emerald{background:var(--theme-swatch-emerald)}
+.theme-switch-dot.rosegold{background:var(--theme-swatch-rosegold)}
+.theme-switch-dot.premium{background:var(--theme-swatch-premium)}
+.theme-switch-dot.saas{background:var(--theme-swatch-saas)}
+.theme-switch-default-row{display:flex;align-items:flex-start;gap:8px;padding:10px 10px 4px;margin-top:6px;border-top:1px solid #eef3fb;font-size:.76rem;font-weight:700;color:#5b6b8c;cursor:pointer;line-height:1.3}
+.theme-switch-default-row input{margin-top:2px}
+
+/* ---------- Font style / size controls (topbar theme menu) ---------- */
+.theme-switch-font-row{display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 8px}
+.font-style-option,.font-size-option{flex:1 1 auto;min-width:56px;border:1px solid #eef3fb;background:#f8faff;color:#48597c;font-size:.72rem;font-weight:750;padding:7px 8px;border-radius:10px;text-align:center;white-space:nowrap}
+.font-style-option:hover,.font-size-option:hover{background:#eef3fb}
+.font-style-option.active,.font-size-option.active{background:#eaf2ff;color:#1f56c9;border-color:#cfe0ff}
+
+/* ==========================================================================
+   THEME: dompet — clean white sidebar + teal/blue brand + colorful stat
+   cards, matching the attached reference image and template link.
+   ========================================================================== */
+html[data-app-theme="dompet"] body{background:#f4f7fc!important}
+html[data-app-theme="dompet"] .side-rail{background:#ffffff!important;color:#233252;box-shadow:0 18px 50px rgba(30,60,110,.08)!important;border:1px solid #eef1f8}
+html[data-app-theme="dompet"] .brand-name,html[data-app-theme="dompet"] .brand-caption{color:#233252!important}
+html[data-app-theme="dompet"] .brand-cube{background:linear-gradient(135deg,#2f6fed,#22c07d)!important;color:#fff!important}
+html[data-app-theme="dompet"] .menu-link{color:#5b6b8c!important}
+html[data-app-theme="dompet"] .menu-link:hover,html[data-app-theme="dompet"] .menu-link.highlight{background:linear-gradient(90deg,#2f6fed,#22c07d)!important;color:#fff!important;transform:none}
+html[data-app-theme="dompet"] .menu-divider{background:#eef1f8!important}
+html[data-app-theme="dompet"] .top-panel,html[data-app-theme="dompet"] .top-panel.clean-top-panel{background:#ffffff!important;border:1px solid #eef1f8;box-shadow:0 10px 30px rgba(30,60,110,.06)!important}
+html[data-app-theme="dompet"] .top-panel h1{color:#1c2b45!important}
+html[data-app-theme="dompet"] .eyebrow{color:#2f6fed!important}
+html[data-app-theme="dompet"] .top-alert,html[data-app-theme="dompet"] .top-action-button,html[data-app-theme="dompet"] .theme-switch-btn{background:#f4f7fc!important;color:#2f6fed!important}
+html[data-app-theme="dompet"] .btn-brand{background:linear-gradient(135deg,#2f6fed,#22c07d)!important;box-shadow:0 16px 32px rgba(47,111,237,.24)!important}
+html[data-app-theme="dompet"] .pro-hero-panel{background:linear-gradient(135deg,#1a2b57,#20396e 55%,#123a56)!important}
+html[data-app-theme="dompet"] .dash-card.accent-coral,html[data-app-theme="dompet"] .pro-kpi.orange,html[data-app-theme="dompet"] .aiz-kpi.amber{background:linear-gradient(135deg,#ff9b5a,#ff7d47)!important}
+html[data-app-theme="dompet"] .dash-card.accent-green,html[data-app-theme="dompet"] .pro-kpi.green,html[data-app-theme="dompet"] .aiz-kpi.green{background:linear-gradient(135deg,#22c07d,#38d6b4)!important}
+html[data-app-theme="dompet"] .dash-card.accent-purple,html[data-app-theme="dompet"] .pro-kpi.purple,html[data-app-theme="dompet"] .aiz-kpi.purple{background:linear-gradient(135deg,#7c4dff,#9b6bff)!important}
+html[data-app-theme="dompet"] .dash-card.accent-cyan,html[data-app-theme="dompet"] .dash-card.accent-dark,html[data-app-theme="dompet"] .pro-kpi.blue,html[data-app-theme="dompet"] .aiz-kpi.cyan{background:linear-gradient(135deg,#2f6fed,#4fa3ff)!important}
+html[data-app-theme="dompet"] .pro-card,html[data-app-theme="dompet"] .dash-panel,html[data-app-theme="dompet"] .card-soft,html[data-app-theme="dompet"] .crm-card,html[data-app-theme="dompet"] .kpi-card{background:#ffffff!important;border:1px solid #eef1f8!important;box-shadow:0 14px 40px rgba(30,60,110,.07)!important;border-radius:22px!important}
+html[data-app-theme="dompet"] .page-surface{background:transparent!important}
+html[data-app-theme="dompet"] .profile-dot{background:linear-gradient(135deg,#2f6fed,#22c07d)!important}
+html[data-app-theme="dompet"] .table thead th{background:#f7f9fd!important;color:#5b6b8c!important;border-bottom:1px solid #eef1f8!important}
+html[data-app-theme="dompet"] .table-hover tbody tr:hover{background:#f7f9fd!important}
+html[data-app-theme="dompet"] .status-badge.bg-soft-success{background:#e5faf1!important;color:#0f9d58!important}
+html[data-app-theme="dompet"] .status-badge.bg-soft-danger{background:#fdeceb!important;color:#e64545!important}
+html[data-app-theme="dompet"] .status-badge.bg-soft-primary{background:#eaf1ff!important;color:#2f6fed!important}
+html[data-app-theme="dompet"] .pro-card h4,html[data-app-theme="dompet"] .big-number{color:#1c2b45!important}
+html[data-app-theme="dompet"] .priority-list a,html[data-app-theme="dompet"] .focus-lines div{background:#f7f9fd!important}
+html[data-app-theme="dompet"] .theme-switch-menu{border-radius:20px!important}
+
+/* ==========================================================================
+   THEME: midnight — full dark mode
+   ========================================================================== */
+html[data-app-theme="midnight"] body{background:#0b1024!important;color:#dbe3f5!important}
+html[data-app-theme="midnight"] .side-rail{background:linear-gradient(180deg,#0b1024,#141a34)!important}
+html[data-app-theme="midnight"] .top-panel,html[data-app-theme="midnight"] .top-panel.clean-top-panel{background:#141a34!important;border:1px solid rgba(255,255,255,.06)}
+html[data-app-theme="midnight"] .top-panel h1{color:#f2f5ff!important}
+html[data-app-theme="midnight"] .top-panel p,html[data-app-theme="midnight"] .mini-muted{color:#8b96b8!important}
+html[data-app-theme="midnight"] .top-alert,html[data-app-theme="midnight"] .top-action-button,html[data-app-theme="midnight"] .theme-switch-btn{background:#1b2140!important;color:#c8d3f0!important}
+html[data-app-theme="midnight"] .pro-card,html[data-app-theme="midnight"] .dash-panel,html[data-app-theme="midnight"] .card-soft,html[data-app-theme="midnight"] .crm-card,html[data-app-theme="midnight"] .kpi-card,html[data-app-theme="midnight"] .page-surface,html[data-app-theme="midnight"] .report-hero{background:#141a34!important;border:1px solid rgba(255,255,255,.06)!important;color:#dbe3f5!important}
+html[data-app-theme="midnight"] .pro-card h4,html[data-app-theme="midnight"] .big-number{color:#f2f5ff!important}
+html[data-app-theme="midnight"] .report-hero h2{color:#f2f5ff!important}
+html[data-app-theme="midnight"] .report-hero p{color:#8b96b8!important}
+html[data-app-theme="midnight"] .report-hero .eyebrow{color:#7ea8ff!important}
+html[data-app-theme="midnight"] .report-hero:after{display:none}
+html[data-app-theme="midnight"] .table{color:#dbe3f5!important}
+html[data-app-theme="midnight"] .table td{border-color:rgba(255,255,255,.06)!important}
+html[data-app-theme="midnight"] .table thead th{color:#8b96b8!important;border-color:rgba(255,255,255,.06)!important}
+html[data-app-theme="midnight"] .btn-brand{background:linear-gradient(135deg,#7c4dff,#2f6fed)!important}
+html[data-app-theme="midnight"] .theme-switch-menu{background:#141a34!important;border-color:rgba(255,255,255,.08)}
+html[data-app-theme="midnight"] .theme-switch-option{color:#dbe3f5!important}
+html[data-app-theme="midnight"] .theme-switch-option:hover{background:#1b2140!important}
+
+/* ==========================================================================
+   THEME: emerald — bonus light variant
+   ========================================================================== */
+html[data-app-theme="emerald"] body{background:radial-gradient(circle at 5% 10%,#dcf7ee 0,#eefaf5 40%,#e7f7f0 100%)!important}
+html[data-app-theme="emerald"] .side-rail{background:linear-gradient(180deg,#0fae7e,#0b7d5c)!important}
+html[data-app-theme="emerald"] .btn-brand{background:linear-gradient(135deg,#0fae7e,#38d6b4)!important;box-shadow:0 16px 32px rgba(15,174,126,.24)!important}
+html[data-app-theme="emerald"] .menu-link:hover,html[data-app-theme="emerald"] .menu-link.highlight{background:rgba(255,255,255,.2)!important}
+html[data-app-theme="emerald"] .eyebrow{color:#0b8f68!important}
+html[data-app-theme="emerald"] .dash-card.accent-cyan,html[data-app-theme="emerald"] .pro-kpi.blue{background:linear-gradient(135deg,#0fae7e,#38d6b4)!important}
+
+@media(max-width:760px){.theme-switch-menu{right:-40px}}
+
+/* ---------- Sidebar auto-fit: never scroll, always fit one screen ---------- */
+.side-rail{overflow:hidden!important}
+.side-rail .menu-list{
+  gap: calc(9px * var(--menu-scale, 1));
+  overflow: hidden;
+}
+.side-rail .menu-link{
+  padding: calc(13px * var(--menu-scale, 1)) calc(14px * var(--menu-scale, 1));
+  font-size: calc(1rem * var(--menu-scale, 1));
+  gap: calc(12px * var(--menu-scale, 1));
+}
+.side-rail .menu-link i{ font-size: calc(1.1rem * var(--menu-scale, 1)); }
+.side-rail .brand-block{ margin-bottom: calc(24px * var(--menu-scale, 1)); }
+.side-rail .menu-divider{ margin: calc(10px * var(--menu-scale, 1)) 4px; }
+
+/* ==========================================================================
+   THEME: rosegold — bonus light variant (also used as chat theme #6)
+   ========================================================================== */
+html[data-app-theme="rosegold"] body{background:radial-gradient(circle at 5% 10%,#fde3ee 0,#fdf1f6 40%,#fbe7f0 100%)!important}
+html[data-app-theme="rosegold"] .side-rail{background:linear-gradient(180deg,#be185d,#831843)!important}
+html[data-app-theme="rosegold"] .btn-brand{background:linear-gradient(135deg,#be185d,#ec4899)!important;box-shadow:0 16px 32px rgba(190,24,93,.24)!important}
+html[data-app-theme="rosegold"] .menu-link:hover,html[data-app-theme="rosegold"] .menu-link.highlight{background:rgba(255,255,255,.2)!important}
+html[data-app-theme="rosegold"] .eyebrow{color:#be185d!important}
+html[data-app-theme="rosegold"] .dash-card.accent-purple,html[data-app-theme="rosegold"] .pro-kpi.purple{background:linear-gradient(135deg,#be185d,#ec4899)!important}
+
+/* ==========================================================================
+   GLOBAL FIX — dashboard KPI card text must always be clearly readable.
+   Earlier CSS (crm-reference-ui.css) forced a dark navy text color onto the
+   colored accent-* dash-cards, which is low-contrast on their saturated
+   gradient backgrounds. This file loads last, so this restores solid white,
+   bold, shadowed text on every colored KPI/dashboard card — in EVERY theme,
+   including Classic — while leaving light/white cards untouched.
+   ========================================================================== */
+.crm-app-body .dash-card.accent-purple,
+.crm-app-body .dash-card.accent-coral,
+.crm-app-body .dash-card.accent-cyan,
+.crm-app-body .dash-card.accent-blue,
+.crm-app-body .dash-card.accent-green,
+.crm-app-body .dash-card.accent-dark{color:#ffffff!important}
+.crm-app-body .dash-card.accent-purple span,.crm-app-body .dash-card.accent-purple strong,.crm-app-body .dash-card.accent-purple small,
+.crm-app-body .dash-card.accent-coral span,.crm-app-body .dash-card.accent-coral strong,.crm-app-body .dash-card.accent-coral small,
+.crm-app-body .dash-card.accent-cyan span,.crm-app-body .dash-card.accent-cyan strong,.crm-app-body .dash-card.accent-cyan small,
+.crm-app-body .dash-card.accent-blue span,.crm-app-body .dash-card.accent-blue strong,.crm-app-body .dash-card.accent-blue small,
+.crm-app-body .dash-card.accent-green span,.crm-app-body .dash-card.accent-green strong,.crm-app-body .dash-card.accent-green small,
+.crm-app-body .dash-card.accent-dark span,.crm-app-body .dash-card.accent-dark strong,.crm-app-body .dash-card.accent-dark small{
+  color:#ffffff!important;
+  opacity:1!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.35);
+}
+.crm-app-body .dash-card.accent-purple strong,.crm-app-body .dash-card.accent-coral strong,.crm-app-body .dash-card.accent-cyan strong,
+.crm-app-body .dash-card.accent-blue strong,.crm-app-body .dash-card.accent-green strong,.crm-app-body .dash-card.accent-dark strong{font-weight:900!important}
+/* KPI/aiz/pro cards are already white-on-gradient by default — just guarantee it everywhere too */
+.crm-app-body .pro-kpi span,.crm-app-body .pro-kpi strong,.crm-app-body .pro-kpi small,
+.crm-app-body .aiz-kpi span,.crm-app-body .aiz-kpi strong,.crm-app-body .aiz-kpi small{color:#ffffff!important;opacity:1!important;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+/* Light/white surface cards (kpi-card, pro-card, dash-panel, card-soft) keep dark ink text — just make sure it's never washed out */
+.crm-app-body .kpi-card .kpi-value,.crm-app-body .pro-card h4,.crm-app-body .big-number{font-weight:900!important}
+
+/* ==========================================================================
+   THEME: premium — "Premium Elite". Deep navy + brushed-gold, glass panels,
+   serif display headings. Applies app-wide: sidebar, menu, topbar, buttons,
+   every card type, tables, badges — AND the login screen (credential-wise).
+   ========================================================================== */
+html[data-app-theme="premium"] body,
+html[data-app-theme="premium"] .form-control,html[data-app-theme="premium"] .form-select,
+html[data-app-theme="premium"] .btn,html[data-app-theme="premium"] .table,
+html[data-app-theme="premium"] .dropdown-menu,html[data-app-theme="premium"] .badge,
+html[data-app-theme="premium"] .menu-link,html[data-app-theme="premium"] .status-badge{font-family:'Poppins',system-ui,-apple-system,sans-serif!important}
+html[data-app-theme="premium"] h1,html[data-app-theme="premium"] h2,html[data-app-theme="premium"] h3,
+html[data-app-theme="premium"] .top-panel h1,html[data-app-theme="premium"] .page-title,html[data-app-theme="premium"] .modal-title,
+html[data-app-theme="premium"] .pro-card h4,html[data-app-theme="premium"] .crm-logo,html[data-app-theme="premium"] .brand-name,
+html[data-app-theme="premium"] .pro-hero-panel h2{font-family:'Playfair Display','Poppins',serif!important;letter-spacing:.005em}
+
+html[data-app-theme="premium"] body{background:radial-gradient(circle at 8% 0%,#1c1440 0,#0b0f24 45%,#0b0f24 100%)!important;color:#e9e6f5!important}
+html[data-app-theme="premium"] .side-rail{background:linear-gradient(180deg,#0d1230 0%,#181235 55%,#231a4d 100%)!important;border:1px solid rgba(202,161,74,.22)!important;box-shadow:0 30px 80px rgba(0,0,0,.45)!important}
+html[data-app-theme="premium"] .brand-cube{background:linear-gradient(145deg,#caa14a,#f1d385)!important;color:#1a1330!important;box-shadow:0 14px 30px rgba(202,161,74,.35)!important}
+html[data-app-theme="premium"] .brand-name,html[data-app-theme="premium"] .brand-caption{color:#f3ecff!important}
+html[data-app-theme="premium"] .menu-link{color:#c6bfe6!important}
+html[data-app-theme="premium"] .menu-link:hover,html[data-app-theme="premium"] .menu-link.highlight{background:linear-gradient(90deg,rgba(202,161,74,.9),rgba(124,77,255,.85))!important;color:#181235!important;font-weight:850!important;transform:none}
+html[data-app-theme="premium"] .menu-link.highlight .menu-icon,html[data-app-theme="premium"] .menu-link:hover .menu-icon{color:#181235!important}
+html[data-app-theme="premium"] .menu-divider{background:rgba(202,161,74,.2)!important}
+html[data-app-theme="premium"] .menu-group-label{color:#caa14a!important}
+html[data-app-theme="premium"] .menu-shortcut{background:rgba(202,161,74,.16)!important;color:#e9d9a8!important;border-color:rgba(202,161,74,.25)!important}
+
+html[data-app-theme="premium"] .top-panel,html[data-app-theme="premium"] .top-panel.clean-top-panel{background:rgba(24,18,53,.82)!important;backdrop-filter:blur(18px);border:1px solid rgba(202,161,74,.22)!important;box-shadow:0 18px 50px rgba(0,0,0,.35)!important}
+html[data-app-theme="premium"] .top-panel h1{color:#f7f2ff!important}
+html[data-app-theme="premium"] .top-panel p,html[data-app-theme="premium"] .mini-muted{color:#a79fcf!important}
+html[data-app-theme="premium"] .eyebrow{color:#e0c479!important}
+html[data-app-theme="premium"] .top-alert,html[data-app-theme="premium"] .top-action-button,html[data-app-theme="premium"] .theme-switch-btn{background:rgba(202,161,74,.14)!important;color:#e9d9a8!important}
+html[data-app-theme="premium"] .profile-dot{background:linear-gradient(135deg,#caa14a,#7c4dff)!important;color:#181235!important}
+html[data-app-theme="premium"] .btn-brand{background:linear-gradient(135deg,#caa14a,#f1d385)!important;color:#1a1330!important;font-weight:850!important;box-shadow:0 16px 36px rgba(202,161,74,.35)!important;border:0!important}
+html[data-app-theme="premium"] .btn-brand:hover{filter:brightness(1.05)}
+html[data-app-theme="premium"] .btn-outline-primary,html[data-app-theme="premium"] .btn-outline-info,html[data-app-theme="premium"] .btn-outline-secondary{color:#e9d9a8!important;border-color:rgba(202,161,74,.45)!important}
+
+html[data-app-theme="premium"] .pro-hero-panel,html[data-app-theme="premium"] .polished-hero{background:linear-gradient(135deg,#181235,#241a52 55%,#3a2c6d)!important;border:1px solid rgba(202,161,74,.22)!important}
+html[data-app-theme="premium"] .pro-eyebrow{background:rgba(202,161,74,.16)!important;color:#e0c479!important}
+
+html[data-app-theme="premium"] .pro-card,html[data-app-theme="premium"] .dash-panel,html[data-app-theme="premium"] .card-soft,
+html[data-app-theme="premium"] .crm-card,html[data-app-theme="premium"] .kpi-card,html[data-app-theme="premium"] .simple-report-card,
+html[data-app-theme="premium"] .support-action-card,html[data-app-theme="premium"] .role-info-card,html[data-app-theme="premium"] .aiz-panel,
+html[data-app-theme="premium"] .report-hero{
+  background:rgba(24,18,53,.72)!important;border:1px solid rgba(202,161,74,.2)!important;box-shadow:0 20px 55px rgba(0,0,0,.35)!important;
+  backdrop-filter:blur(14px);color:#e9e6f5!important;border-radius:22px!important;
+}
+html[data-app-theme="premium"] .pro-card h4,html[data-app-theme="premium"] .big-number,html[data-app-theme="premium"] .kpi-value,
+html[data-app-theme="premium"] .aiz-panel h4{color:#f7f2ff!important}
+html[data-app-theme="premium"] .report-hero h2{color:#f7f2ff!important}
+html[data-app-theme="premium"] .report-hero p{color:#a79fcf!important}
+html[data-app-theme="premium"] .report-hero .eyebrow{color:#e0c479!important}
+html[data-app-theme="premium"] .report-hero:after{display:none}
+html[data-app-theme="premium"] .kpi-label,html[data-app-theme="premium"] .metric-row{color:#a79fcf!important}
+html[data-app-theme="premium"] .page-surface{background:transparent!important}
+html[data-app-theme="premium"] .priority-list a,html[data-app-theme="premium"] .focus-lines div,html[data-app-theme="premium"] .aiz-focus-list div,html[data-app-theme="premium"] .aiz-task-list a{background:rgba(202,161,74,.09)!important;color:#e9e6f5!important}
+html[data-app-theme="premium"] .focus-lines span,html[data-app-theme="premium"] .priority-list small{color:#a79fcf!important}
+
+html[data-app-theme="premium"] .dash-card.accent-purple,html[data-app-theme="premium"] .pro-kpi.purple,html[data-app-theme="premium"] .aiz-kpi.purple{background:linear-gradient(135deg,#5b3fd6,#8a4dff)!important}
+html[data-app-theme="premium"] .dash-card.accent-coral,html[data-app-theme="premium"] .pro-kpi.orange,html[data-app-theme="premium"] .aiz-kpi.amber{background:linear-gradient(135deg,#caa14a,#e8c778)!important}
+html[data-app-theme="premium"] .dash-card.accent-cyan,html[data-app-theme="premium"] .dash-card.accent-blue,html[data-app-theme="premium"] .pro-kpi.blue,html[data-app-theme="premium"] .aiz-kpi.cyan{background:linear-gradient(135deg,#2d4fc9,#5b7ce8)!important}
+html[data-app-theme="premium"] .dash-card.accent-green,html[data-app-theme="premium"] .pro-kpi.green,html[data-app-theme="premium"] .aiz-kpi.green{background:linear-gradient(135deg,#1a8f6e,#2fbf94)!important}
+html[data-app-theme="premium"] .dash-card.accent-dark,html[data-app-theme="premium"] .pro-kpi.dark{background:linear-gradient(135deg,#241a52,#0d0a24)!important}
+html[data-app-theme="premium"] .dash-card.accent-coral span,html[data-app-theme="premium"] .dash-card.accent-coral strong,html[data-app-theme="premium"] .dash-card.accent-coral small{color:#1a1330!important;text-shadow:none!important}
+
+html[data-app-theme="premium"] .table{color:#e9e6f5!important}
+html[data-app-theme="premium"] .table thead th{background:rgba(202,161,74,.1)!important;color:#e0c479!important;border-color:rgba(202,161,74,.18)!important}
+html[data-app-theme="premium"] .table td{border-color:rgba(202,161,74,.14)!important}
+html[data-app-theme="premium"] .table-hover tbody tr:hover{background:rgba(202,161,74,.08)!important}
+html[data-app-theme="premium"] .status-badge.bg-soft-success,html[data-app-theme="premium"] .bg-soft-success{background:rgba(47,191,148,.16)!important;color:#5fe0bb!important}
+html[data-app-theme="premium"] .status-badge.bg-soft-danger,html[data-app-theme="premium"] .bg-soft-danger{background:rgba(255,110,110,.16)!important;color:#ff9d9d!important}
+html[data-app-theme="premium"] .status-badge.bg-soft-primary,html[data-app-theme="premium"] .bg-soft-primary{background:rgba(124,77,255,.18)!important;color:#c3b1ff!important}
+html[data-app-theme="premium"] .status-badge.bg-soft-warning,html[data-app-theme="premium"] .bg-soft-warning{background:rgba(202,161,74,.18)!important;color:#e9d9a8!important}
+html[data-app-theme="premium"] .form-control,html[data-app-theme="premium"] .form-select,html[data-app-theme="premium"] textarea{background:rgba(255,255,255,.05)!important;border:1px solid rgba(202,161,74,.25)!important;color:#f3ecff!important}
+html[data-app-theme="premium"] .form-control::placeholder{color:#8a82ad!important}
+html[data-app-theme="premium"] .form-label{color:#c6bfe6!important}
+html[data-app-theme="premium"] .theme-switch-menu{background:#181235!important;border-color:rgba(202,161,74,.25)!important}
+html[data-app-theme="premium"] .theme-switch-option{color:#e9e6f5!important}
+html[data-app-theme="premium"] .theme-switch-option:hover{background:rgba(202,161,74,.12)!important}
+html[data-app-theme="premium"] .theme-switch-option.active{background:rgba(202,161,74,.18)!important;color:#e0c479!important}
+html[data-app-theme="premium"] .theme-switch-default-row{color:#a79fcf!important;border-color:rgba(202,161,74,.2)!important}
+
+/* Login screen — premium reskin (applies whenever this browser's last theme was Premium Elite) */
+html[data-app-theme="premium"] .login-bg{background:radial-gradient(circle at 15% 10%,#241a52 0,#0b0f24 55%,#0b0f24 100%)!important}
+html[data-app-theme="premium"] .login-card,html[data-app-theme="premium"] .clean-card{background:rgba(24,18,53,.85)!important;border:1px solid rgba(202,161,74,.3)!important;box-shadow:0 30px 90px rgba(0,0,0,.5)!important;color:#e9e6f5!important;backdrop-filter:blur(18px)}
+html[data-app-theme="premium"] .login-card .text-muted{color:#a79fcf!important}
+html[data-app-theme="premium"] .login-card .form-label{color:#c6bfe6!important}
+html[data-app-theme="premium"] .crm-logo{background:linear-gradient(135deg,#caa14a,#f1d385 55%,#8a4dff)!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important}
+html[data-app-theme="premium"] .login-logo-row img{background:rgba(255,255,255,.94)!important}
+html[data-app-theme="premium"] .password-toggle-btn{color:#a79fcf!important}
+
+/* ==========================================================================
+   PRO GRID + report toolbar — dark-mode support (midnight + premium).
+   The Pro Grid rebuild (pg-panel/pg-toolbar/pg-table/etc.) and the older
+   report search/export bar were never themed, so they stayed on their
+   hardcoded light colors even in dark themes. Cover both dark themes here.
+   ========================================================================== */
+html[data-app-theme="midnight"] .form-control,html[data-app-theme="midnight"] .form-select,html[data-app-theme="midnight"] textarea{background:rgba(255,255,255,.05)!important;border:1px solid rgba(255,255,255,.12)!important;color:#dbe3f5!important}
+html[data-app-theme="midnight"] .form-control::placeholder{color:#7683a3!important}
+html[data-app-theme="midnight"] .form-label{color:#a9b4d1!important}
+html[data-app-theme="midnight"] .btn-soft,html[data-app-theme="premium"] .btn-soft{background:rgba(255,255,255,.06)!important;color:#dbe3f5!important;border:1px solid rgba(255,255,255,.12)!important}
+html[data-app-theme="premium"] .btn-soft{color:#e9d9a8!important;border-color:rgba(202,161,74,.3)!important}
+
+html[data-app-theme="midnight"] .pg-panel,html[data-app-theme="midnight"] .pg-filter-pop{background:#141a34!important;border-color:rgba(255,255,255,.08)!important}
+html[data-app-theme="midnight"] .pg-toolbar-left h4{color:#f2f5ff!important}
+html[data-app-theme="midnight"] .pg-count-chip{background:rgba(255,255,255,.08)!important;color:#c8d3f0!important}
+html[data-app-theme="midnight"] .pg-search-box{background:rgba(255,255,255,.06)!important;border-color:rgba(255,255,255,.12)!important}
+html[data-app-theme="midnight"] .pg-search-box input{color:#dbe3f5!important}
+html[data-app-theme="midnight"] .pg-search-box i,html[data-app-theme="midnight"] .pg-hint{color:#8b96b8!important}
+html[data-app-theme="midnight"] .pg-table-wrap{border-color:rgba(255,255,255,.08)!important}
+html[data-app-theme="midnight"] table.pg-table thead th{background:rgba(255,255,255,.04)!important;border-color:rgba(255,255,255,.08)!important}
+html[data-app-theme="midnight"] .pg-th{color:#a9b4d1!important}
+html[data-app-theme="midnight"] table.pg-table tfoot td{background:rgba(255,255,255,.04)!important;color:#f2f5ff!important;border-color:rgba(255,255,255,.14)!important}
+html[data-app-theme="midnight"] table.pg-table tbody tr.clickable-row:hover{background:rgba(255,255,255,.05)!important}
+html[data-app-theme="midnight"] .pg-filter-btn{color:#8b96b8!important}
+html[data-app-theme="midnight"] .pg-filter-btn:hover,html[data-app-theme="midnight"] .pg-filter-btn.pg-filter-active{background:rgba(124,77,255,.18)!important;color:#c3b1ff!important}
+html[data-app-theme="midnight"] .pg-filter-pop input,html[data-app-theme="midnight"] .pg-filter-pop select{background:rgba(255,255,255,.06)!important;border-color:rgba(255,255,255,.12)!important;color:#dbe3f5!important}
+html[data-app-theme="midnight"] .pg-empty-state{color:#8b96b8!important}
+
+html[data-app-theme="premium"] .pg-panel,html[data-app-theme="premium"] .pg-filter-pop{background:rgba(24,18,53,.85)!important;border-color:rgba(202,161,74,.2)!important}
+html[data-app-theme="premium"] .pg-toolbar-left h4{color:#f7f2ff!important}
+html[data-app-theme="premium"] .pg-count-chip{background:rgba(202,161,74,.14)!important;color:#e9d9a8!important}
+html[data-app-theme="premium"] .pg-search-box{background:rgba(255,255,255,.05)!important;border-color:rgba(202,161,74,.25)!important}
+html[data-app-theme="premium"] .pg-search-box input{color:#f3ecff!important}
+html[data-app-theme="premium"] .pg-search-box i,html[data-app-theme="premium"] .pg-hint{color:#a79fcf!important}
+html[data-app-theme="premium"] .pg-table-wrap{border-color:rgba(202,161,74,.2)!important}
+html[data-app-theme="premium"] table.pg-table thead th{background:rgba(202,161,74,.08)!important;border-color:rgba(202,161,74,.16)!important}
+html[data-app-theme="premium"] .pg-th{color:#c6bfe6!important}
+html[data-app-theme="premium"] table.pg-table tfoot td{background:rgba(202,161,74,.08)!important;color:#f7f2ff!important;border-color:rgba(202,161,74,.3)!important}
+html[data-app-theme="premium"] table.pg-table tbody tr.clickable-row:hover{background:rgba(202,161,74,.06)!important}
+html[data-app-theme="premium"] .pg-filter-btn{color:#a79fcf!important}
+html[data-app-theme="premium"] .pg-filter-btn:hover,html[data-app-theme="premium"] .pg-filter-btn.pg-filter-active{background:rgba(202,161,74,.16)!important;color:#e0c479!important}
+html[data-app-theme="premium"] .pg-filter-pop input,html[data-app-theme="premium"] .pg-filter-pop select{background:rgba(255,255,255,.05)!important;border-color:rgba(202,161,74,.25)!important;color:#f3ecff!important}
+html[data-app-theme="premium"] .pg-empty-state{color:#a79fcf!important}
+
+/* ==========================================================================
+   THEME: saas — "Professional SaaS". Crisp white/indigo, flat modern cards,
+   geometric SaaS typography. Applies app-wide including the login screen.
+   ========================================================================== */
+html[data-app-theme="saas"] body,
+html[data-app-theme="saas"] .form-control,html[data-app-theme="saas"] .form-select,
+html[data-app-theme="saas"] .btn,html[data-app-theme="saas"] .table,
+html[data-app-theme="saas"] .dropdown-menu,html[data-app-theme="saas"] .badge,
+html[data-app-theme="saas"] .menu-link,html[data-app-theme="saas"] .status-badge{font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif!important}
+html[data-app-theme="saas"] h1,html[data-app-theme="saas"] h2,html[data-app-theme="saas"] h3,
+html[data-app-theme="saas"] .top-panel h1,html[data-app-theme="saas"] .page-title,html[data-app-theme="saas"] .modal-title,
+html[data-app-theme="saas"] .pro-card h4,html[data-app-theme="saas"] .crm-logo,html[data-app-theme="saas"] .brand-name,
+html[data-app-theme="saas"] .pro-hero-panel h2{font-family:'Sora','Plus Jakarta Sans',sans-serif!important;letter-spacing:-.01em}
+
+html[data-app-theme="saas"] body{background:#f7f7fb!important;color:#1e2133}
+html[data-app-theme="saas"] .side-rail{background:#ffffff!important;color:#1e2133;border:1px solid #ececf5;box-shadow:0 18px 50px rgba(30,33,51,.06)!important}
+html[data-app-theme="saas"] .brand-name,html[data-app-theme="saas"] .brand-caption{color:#1e2133!important}
+html[data-app-theme="saas"] .brand-cube{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;color:#fff!important}
+html[data-app-theme="saas"] .menu-link{color:#64677e!important}
+html[data-app-theme="saas"] .menu-link:hover,html[data-app-theme="saas"] .menu-link.highlight{background:linear-gradient(90deg,#4f46e5,#7c3aed)!important;color:#fff!important;font-weight:800!important;transform:none}
+html[data-app-theme="saas"] .menu-divider{background:#ececf5!important}
+html[data-app-theme="saas"] .menu-group-label{color:#4f46e5!important}
+
+html[data-app-theme="saas"] .top-panel,html[data-app-theme="saas"] .top-panel.clean-top-panel{background:#ffffff!important;border:1px solid #ececf5!important;box-shadow:0 10px 30px rgba(30,33,51,.05)!important}
+html[data-app-theme="saas"] .top-panel h1{color:#1e2133!important;font-weight:800!important}
+html[data-app-theme="saas"] .top-panel p,html[data-app-theme="saas"] .mini-muted{color:#7a7d94!important}
+html[data-app-theme="saas"] .eyebrow{color:#4f46e5!important}
+html[data-app-theme="saas"] .top-alert,html[data-app-theme="saas"] .top-action-button,html[data-app-theme="saas"] .theme-switch-btn{background:#f1f0fb!important;color:#4f46e5!important}
+html[data-app-theme="saas"] .profile-dot{background:linear-gradient(135deg,#4f46e5,#22d3ee)!important}
+html[data-app-theme="saas"] .btn-brand{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;color:#fff!important;font-weight:800!important;border-radius:12px!important;box-shadow:0 14px 30px rgba(79,70,229,.28)!important;border:0!important}
+html[data-app-theme="saas"] .btn-outline-primary,html[data-app-theme="saas"] .btn-outline-info,html[data-app-theme="saas"] .btn-outline-secondary{color:#4f46e5!important;border-color:#d9d7f5!important}
+
+html[data-app-theme="saas"] .pro-hero-panel,html[data-app-theme="saas"] .polished-hero{background:linear-gradient(135deg,#1e1b4b,#312e81 55%,#4f46e5)!important;border-radius:20px!important}
+html[data-app-theme="saas"] .pro-eyebrow{background:rgba(255,255,255,.14)!important;color:#c7d2fe!important}
+
+html[data-app-theme="saas"] .pro-card,html[data-app-theme="saas"] .dash-panel,html[data-app-theme="saas"] .card-soft,
+html[data-app-theme="saas"] .crm-card,html[data-app-theme="saas"] .kpi-card,html[data-app-theme="saas"] .simple-report-card,
+html[data-app-theme="saas"] .support-action-card,html[data-app-theme="saas"] .role-info-card,html[data-app-theme="saas"] .aiz-panel{
+  background:#ffffff!important;border:1px solid #ececf5!important;box-shadow:0 4px 18px rgba(30,33,51,.05)!important;border-radius:16px!important;color:#1e2133!important;
+}
+html[data-app-theme="saas"] .pro-card h4,html[data-app-theme="saas"] .big-number,html[data-app-theme="saas"] .kpi-value{color:#1e2133!important;font-weight:800!important}
+html[data-app-theme="saas"] .kpi-label,html[data-app-theme="saas"] .metric-row{color:#7a7d94!important}
+html[data-app-theme="saas"] .page-surface{background:transparent!important}
+html[data-app-theme="saas"] .priority-list a,html[data-app-theme="saas"] .focus-lines div,html[data-app-theme="saas"] .aiz-focus-list div,html[data-app-theme="saas"] .aiz-task-list a{background:#f7f7fb!important;color:#1e2133!important;border-radius:12px!important}
+html[data-app-theme="saas"] .focus-lines span,html[data-app-theme="saas"] .priority-list small{color:#7a7d94!important}
+
+html[data-app-theme="saas"] .dash-card.accent-purple,html[data-app-theme="saas"] .pro-kpi.purple,html[data-app-theme="saas"] .aiz-kpi.purple{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;border-radius:16px!important}
+html[data-app-theme="saas"] .dash-card.accent-coral,html[data-app-theme="saas"] .pro-kpi.orange,html[data-app-theme="saas"] .aiz-kpi.amber{background:linear-gradient(135deg,#fb923c,#f97316)!important;border-radius:16px!important}
+html[data-app-theme="saas"] .dash-card.accent-cyan,html[data-app-theme="saas"] .dash-card.accent-blue,html[data-app-theme="saas"] .pro-kpi.blue,html[data-app-theme="saas"] .aiz-kpi.cyan{background:linear-gradient(135deg,#0ea5e9,#22d3ee)!important;border-radius:16px!important}
+html[data-app-theme="saas"] .dash-card.accent-green,html[data-app-theme="saas"] .pro-kpi.green,html[data-app-theme="saas"] .aiz-kpi.green{background:linear-gradient(135deg,#10b981,#22c55e)!important;border-radius:16px!important}
+html[data-app-theme="saas"] .dash-card.accent-dark,html[data-app-theme="saas"] .pro-kpi.dark{background:linear-gradient(135deg,#334155,#1e2133)!important;border-radius:16px!important}
+html[data-app-theme="saas"] .dash-card,html[data-app-theme="saas"] .pro-kpi,html[data-app-theme="saas"] .kpi-card{border-radius:16px!important}
+
+html[data-app-theme="saas"] .table thead th{background:#f7f7fb!important;color:#7a7d94!important;border-color:#ececf5!important;text-transform:uppercase;font-size:.72rem;letter-spacing:.05em}
+html[data-app-theme="saas"] .table td{border-color:#f1f0fb!important}
+html[data-app-theme="saas"] .table-hover tbody tr:hover{background:#f7f7fb!important}
+html[data-app-theme="saas"] .status-badge.bg-soft-success,html[data-app-theme="saas"] .bg-soft-success{background:#dcfce7!important;color:#15803d!important}
+html[data-app-theme="saas"] .status-badge.bg-soft-danger,html[data-app-theme="saas"] .bg-soft-danger{background:#fee2e2!important;color:#b91c1c!important}
+html[data-app-theme="saas"] .status-badge.bg-soft-primary,html[data-app-theme="saas"] .bg-soft-primary{background:#e0e7ff!important;color:#4338ca!important}
+html[data-app-theme="saas"] .status-badge.bg-soft-warning,html[data-app-theme="saas"] .bg-soft-warning{background:#fef3c7!important;color:#b45309!important}
+html[data-app-theme="saas"] .form-control,html[data-app-theme="saas"] .form-select,html[data-app-theme="saas"] textarea{background:#fbfbfe!important;border:1px solid #e2e1f2!important;border-radius:10px!important;color:#1e2133!important}
+html[data-app-theme="saas"] .form-control:focus,html[data-app-theme="saas"] .form-select:focus{border-color:#4f46e5!important;box-shadow:0 0 0 .2rem rgba(79,70,229,.15)!important}
+html[data-app-theme="saas"] .form-label{color:#3d3f57!important;font-weight:700!important}
+html[data-app-theme="saas"] .theme-switch-menu{border-radius:14px!important}
+html[data-app-theme="saas"] .theme-switch-option.active{background:#eef0ff!important;color:#4338ca!important}
+
+/* Login screen — SaaS reskin (applies whenever this browser's last theme was Professional SaaS) */
+html[data-app-theme="saas"] .login-bg{background:linear-gradient(160deg,#f7f7fb 0%,#eef0ff 55%,#e5e2ff 100%)!important}
+html[data-app-theme="saas"] .login-card,html[data-app-theme="saas"] .clean-card{background:#ffffff!important;border:1px solid #ececf5!important;box-shadow:0 24px 60px rgba(30,33,51,.1)!important;border-radius:20px!important}
+html[data-app-theme="saas"] .crm-logo{background:linear-gradient(135deg,#4f46e5,#7c3aed 55%,#22d3ee)!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important}
+html[data-app-theme="saas"] .login-card .form-control{border-radius:10px!important}
+
+@media(max-width:760px){
+  html[data-app-theme="premium"] .theme-switch-menu,html[data-app-theme="saas"] .theme-switch-menu{right:-40px}
+}
+
+/* ==========================================================================
+   FIX — "Executive CRM Dashboard" hero heading was inheriting the app-wide
+   dark-ink heading color (.crm-app-body h2{color:var(--nx-ink)} in
+   premium-2026.css), which is a dark navy blue. On the hero panel's own dark
+   navy/indigo gradient background (every theme, worst on Dompet Blue and
+   Professional SaaS) that produced low-contrast, "bluer", barely-readable
+   text. Pin it back to solid white in every theme so it always reads clearly.
+   ========================================================================== */
+.pro-hero-panel h2,.polished-hero h2{color:#ffffff!important}
+
+/* ---------- Sidebar brand text ("ProfitNx" / "CRM System") — always readable ---------- */
+html[data-app-theme="dompet"] .brand-name,html[data-app-theme="dompet"] .brand-caption{color:#233252!important;opacity:1!important}
+html[data-app-theme="saas"] .brand-name,html[data-app-theme="saas"] .brand-caption{color:#1e2133!important;opacity:1!important}
+/* Safety net: if a browser doesn't support the gradient text-clip on .crm-logo, fall back to a solid readable color instead of invisible/transparent text. */
+html[data-app-theme="saas"] .crm-logo{color:#4f46e5}
+html[data-app-theme="premium"] .crm-logo{color:#caa14a}
+
+/* ==========================================================================
+   Font style & font size — user preference controls (topbar theme menu).
+   Both are opt-in (no attribute = original look, unchanged). Kept to a
+   narrow, tested range and layered on top of everything above so they win,
+   while explicitly leaving icons, dots, avatars and badge pills alone —
+   nothing that could overflow a fixed-size button/card.
+   ========================================================================== */
+
+/* ---- Font style: overrides the two font variables almost everything in
+   the CRM already reads from, plus the handful of themes/elements that
+   hardcode a literal font-family instead of the variable. ---- */
+html[data-app-font-style="modern"]{--crm-font-body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--crm-font-heading:'Inter',system-ui,-apple-system,sans-serif}
+html[data-app-font-style="elegant"]{--crm-font-body:'Merriweather',Georgia,'Times New Roman',serif;--crm-font-heading:'Playfair Display','Merriweather',serif}
+html[data-app-font-style="rounded"]{--crm-font-body:'Quicksand',system-ui,-apple-system,sans-serif;--crm-font-heading:'Quicksand',system-ui,-apple-system,sans-serif}
+
+html[data-app-font-style="modern"] body,html[data-app-font-style="modern"] .form-control,html[data-app-font-style="modern"] .form-select,
+html[data-app-font-style="modern"] .btn,html[data-app-font-style="modern"] .table,html[data-app-font-style="modern"] .dropdown-menu,
+html[data-app-font-style="modern"] .badge,html[data-app-font-style="modern"] .menu-link,html[data-app-font-style="modern"] .status-badge,
+html[data-app-font-style="elegant"] body,html[data-app-font-style="elegant"] .form-control,html[data-app-font-style="elegant"] .form-select,
+html[data-app-font-style="elegant"] .btn,html[data-app-font-style="elegant"] .table,html[data-app-font-style="elegant"] .dropdown-menu,
+html[data-app-font-style="elegant"] .badge,html[data-app-font-style="elegant"] .menu-link,html[data-app-font-style="elegant"] .status-badge,
+html[data-app-font-style="rounded"] body,html[data-app-font-style="rounded"] .form-control,html[data-app-font-style="rounded"] .form-select,
+html[data-app-font-style="rounded"] .btn,html[data-app-font-style="rounded"] .table,html[data-app-font-style="rounded"] .dropdown-menu,
+html[data-app-font-style="rounded"] .badge,html[data-app-font-style="rounded"] .menu-link,html[data-app-font-style="rounded"] .status-badge{font-family:var(--crm-font-body)!important}
+
+html[data-app-font-style="modern"] h1,html[data-app-font-style="modern"] h2,html[data-app-font-style="modern"] h3,
+html[data-app-font-style="modern"] .top-panel h1,html[data-app-font-style="modern"] .page-title,html[data-app-font-style="modern"] .modal-title,
+html[data-app-font-style="modern"] .pro-card h4,html[data-app-font-style="modern"] .crm-logo,html[data-app-font-style="modern"] .brand-name,
+html[data-app-font-style="modern"] .pro-hero-panel h2,
+html[data-app-font-style="elegant"] h1,html[data-app-font-style="elegant"] h2,html[data-app-font-style="elegant"] h3,
+html[data-app-font-style="elegant"] .top-panel h1,html[data-app-font-style="elegant"] .page-title,html[data-app-font-style="elegant"] .modal-title,
+html[data-app-font-style="elegant"] .pro-card h4,html[data-app-font-style="elegant"] .crm-logo,html[data-app-font-style="elegant"] .brand-name,
+html[data-app-font-style="elegant"] .pro-hero-panel h2,
+html[data-app-font-style="rounded"] h1,html[data-app-font-style="rounded"] h2,html[data-app-font-style="rounded"] h3,
+html[data-app-font-style="rounded"] .top-panel h1,html[data-app-font-style="rounded"] .page-title,html[data-app-font-style="rounded"] .modal-title,
+html[data-app-font-style="rounded"] .pro-card h4,html[data-app-font-style="rounded"] .crm-logo,html[data-app-font-style="rounded"] .brand-name,
+html[data-app-font-style="rounded"] .pro-hero-panel h2{font-family:var(--crm-font-heading)!important}
+
+/* ---- Font size: three fixed presets, deliberately kept close to 100% so
+   fixed-height buttons/inputs/badges never clip or overlap. Scales the root
+   rem base (everything in this stylesheet is sized in rem/em) and nudges
+   line-height up slightly at the larger sizes for breathing room. Icons,
+   theme dots, avatars, and KPI "big number" stats are excluded on purpose
+   so the dashboard's headline figures never look accidentally huge/tiny. ---- */
+html[data-app-font-scale="sm"]{font-size:93.75%}
+html[data-app-font-scale="lg"]{font-size:106.25%}
+html[data-app-font-scale="lg"] body{line-height:1.5}
+html[data-app-font-scale="sm"] .menu-link,html[data-app-font-scale="lg"] .menu-link{line-height:1.25}
+/* Decorative fixed-size chrome (dots/cubes/avatars are sized in px, not rem)
+   is naturally unaffected by the root scale above — nothing to override. */
+
+/* ==========================================================================
+   Login screen — "crm-login-*" split shell (Views/Account/Login.cshtml),
+   re-themed to match whichever app theme this browser last selected
+   (same data-app-theme attribute, set from a cookie before first paint).
+   Structure/copy is unchanged across themes — only the background wash,
+   accent colour (eyebrow, icon chips, secure badge, focus ring, button)
+   change, so the panel stays legible and the right-hand sign-in card
+   stays a clean white surface in every theme, same as the reference.
+   ========================================================================== */
+html[data-app-theme="dompet"] .crm-login-page{background:radial-gradient(circle at 8% 8%,rgba(47,111,237,.24),transparent 24rem),radial-gradient(circle at 96% 92%,rgba(34,192,125,.16),transparent 28rem),linear-gradient(135deg,#0c1c33 0%,#123354 52%,#0d2e2a 100%)!important}
+html[data-app-theme="dompet"] .crm-login-eyebrow,html[data-app-theme="dompet"] .crm-login-eyebrow i,html[data-app-theme="dompet"] .crm-login-intro-footer i,html[data-app-theme="dompet"] .crm-login-trust i{color:#7fd9b8!important}
+html[data-app-theme="dompet"] .crm-login-features article>span{background:rgba(47,111,237,.18)!important;color:#8fc0ff!important}
+html[data-app-theme="dompet"] .crm-secure-signin{background:rgba(34,192,125,.16)!important;color:#7fd9b8!important}
+html[data-app-theme="dompet"] .crm-login-button{background:linear-gradient(135deg,#2f6fed,#22c07d)!important;box-shadow:0 8px 22px rgba(47,111,237,.32)!important}
+html[data-app-theme="dompet"] .crm-login-input .form-control:focus{border-color:#2f6fed!important;box-shadow:0 0 0 4px rgba(47,111,237,.15)!important}
+
+html[data-app-theme="saas"] .crm-login-page{background:radial-gradient(circle at 8% 8%,rgba(79,70,229,.26),transparent 24rem),radial-gradient(circle at 96% 92%,rgba(34,211,238,.14),transparent 28rem),linear-gradient(135deg,#150f3a 0%,#211a4f 52%,#1b1440 100%)!important}
+html[data-app-theme="saas"] .crm-login-eyebrow,html[data-app-theme="saas"] .crm-login-eyebrow i,html[data-app-theme="saas"] .crm-login-intro-footer i,html[data-app-theme="saas"] .crm-login-trust i{color:#a7b0ff!important}
+html[data-app-theme="saas"] .crm-login-features article>span{background:rgba(124,58,237,.2)!important;color:#c7b8ff!important}
+html[data-app-theme="saas"] .crm-secure-signin{background:rgba(79,70,229,.18)!important;color:#b7c0ff!important}
+html[data-app-theme="saas"] .crm-login-button{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;box-shadow:0 8px 22px rgba(79,70,229,.32)!important}
+html[data-app-theme="saas"] .crm-login-input .form-control:focus{border-color:#4f46e5!important;box-shadow:0 0 0 4px rgba(79,70,229,.15)!important}
+
+html[data-app-theme="premium"] .crm-login-page{background:radial-gradient(circle at 8% 8%,rgba(202,161,74,.2),transparent 24rem),radial-gradient(circle at 96% 92%,rgba(138,77,255,.16),transparent 28rem),linear-gradient(135deg,#150b2e 0%,#1c1440 52%,#120c26 100%)!important}
+html[data-app-theme="premium"] .crm-login-eyebrow,html[data-app-theme="premium"] .crm-login-eyebrow i,html[data-app-theme="premium"] .crm-login-intro-footer i,html[data-app-theme="premium"] .crm-login-trust i{color:#e0c479!important}
+html[data-app-theme="premium"] .crm-login-features article>span{background:rgba(202,161,74,.18)!important;color:#e9d9a8!important}
+html[data-app-theme="premium"] .crm-secure-signin{background:rgba(202,161,74,.16)!important;color:#e9d9a8!important}
+html[data-app-theme="premium"] .crm-login-button{background:linear-gradient(135deg,#caa14a,#8a4dff)!important;box-shadow:0 8px 22px rgba(202,161,74,.32)!important}
+html[data-app-theme="premium"] .crm-login-input .form-control:focus{border-color:#caa14a!important;box-shadow:0 0 0 4px rgba(202,161,74,.15)!important}
+
+html[data-app-theme="midnight"] .crm-login-page{background:radial-gradient(circle at 8% 8%,rgba(71,85,105,.28),transparent 24rem),radial-gradient(circle at 96% 92%,rgba(100,116,139,.16),transparent 28rem),linear-gradient(135deg,#070b18 0%,#0d1330 52%,#090d1c 100%)!important}
+html[data-app-theme="midnight"] .crm-login-eyebrow,html[data-app-theme="midnight"] .crm-login-eyebrow i,html[data-app-theme="midnight"] .crm-login-intro-footer i,html[data-app-theme="midnight"] .crm-login-trust i{color:#a9b7cf!important}
+html[data-app-theme="midnight"] .crm-login-features article>span{background:rgba(100,116,139,.22)!important;color:#c3ccdc!important}
+html[data-app-theme="midnight"] .crm-secure-signin{background:rgba(100,116,139,.2)!important;color:#c3ccdc!important}
+html[data-app-theme="midnight"] .crm-login-button{background:linear-gradient(135deg,#334155,#64748b)!important;box-shadow:0 8px 22px rgba(51,65,85,.32)!important}
+html[data-app-theme="midnight"] .crm-login-input .form-control:focus{border-color:#64748b!important;box-shadow:0 0 0 4px rgba(100,116,139,.15)!important}
+
+html[data-app-theme="emerald"] .crm-login-page{background:radial-gradient(circle at 8% 8%,rgba(15,174,126,.26),transparent 24rem),radial-gradient(circle at 96% 92%,rgba(56,214,180,.16),transparent 28rem),linear-gradient(135deg,#08221c 0%,#0d2e26 52%,#071c17 100%)!important}
+html[data-app-theme="emerald"] .crm-login-eyebrow,html[data-app-theme="emerald"] .crm-login-eyebrow i,html[data-app-theme="emerald"] .crm-login-intro-footer i,html[data-app-theme="emerald"] .crm-login-trust i{color:#7fe0c4!important}
+html[data-app-theme="emerald"] .crm-login-features article>span{background:rgba(15,174,126,.2)!important;color:#8ce8cf!important}
+html[data-app-theme="emerald"] .crm-secure-signin{background:rgba(15,174,126,.18)!important;color:#8ce8cf!important}
+html[data-app-theme="emerald"] .crm-login-button{background:linear-gradient(135deg,#0fae7e,#38d6b4)!important;box-shadow:0 8px 22px rgba(15,174,126,.32)!important}
+html[data-app-theme="emerald"] .crm-login-input .form-control:focus{border-color:#0fae7e!important;box-shadow:0 0 0 4px rgba(15,174,126,.15)!important}
+
+html[data-app-theme="rosegold"] .crm-login-page{background:radial-gradient(circle at 8% 8%,rgba(190,24,93,.24),transparent 24rem),radial-gradient(circle at 96% 92%,rgba(236,72,153,.16),transparent 28rem),linear-gradient(135deg,#2a0f1c 0%,#3a1327 52%,#210a15 100%)!important}
+html[data-app-theme="rosegold"] .crm-login-eyebrow,html[data-app-theme="rosegold"] .crm-login-eyebrow i,html[data-app-theme="rosegold"] .crm-login-intro-footer i,html[data-app-theme="rosegold"] .crm-login-trust i{color:#f6a9c8!important}
+html[data-app-theme="rosegold"] .crm-login-features article>span{background:rgba(236,72,153,.2)!important;color:#f8bcd6!important}
+html[data-app-theme="rosegold"] .crm-secure-signin{background:rgba(190,24,93,.18)!important;color:#f8bcd6!important}
+html[data-app-theme="rosegold"] .crm-login-button{background:linear-gradient(135deg,#be185d,#ec4899)!important;box-shadow:0 8px 22px rgba(190,24,93,.32)!important}
+html[data-app-theme="rosegold"] .crm-login-input .form-control:focus{border-color:#be185d!important;box-shadow:0 0 0 4px rgba(190,24,93,.15)!important}
+
+/* Font style/size controls already apply here too, via the shared body/heading
+   selectors above — .crm-login-copy h1, .crm-login-heading h2 etc inherit the
+   body font, and .crm-login-page is a plain body element so the root font-size
+   scale (data-app-font-scale) applies the same way it does across the CRM. */
+
+/* ==========================================================================
+   Chat drawer ("right side" slide-over chat panel + floating launcher) —
+   sync with the app theme. Root cause: chat-system.css defines its own
+   colour system (--chat-primary/-2/-3, --chat-aurora, --chat-dark/-2,
+   --chat-glow-1/-2) once at :root, completely independent of the app theme
+   switcher's data-app-theme attribute — so switching the app theme (Dompet
+   Blue, Professional SaaS, Premium Elite, etc.) never touched the chat
+   launcher button, the slide-in drawer header, message bubbles or unread
+   badges. Since chat-system.css already reads every colour through these
+   variables (see its own inline comment on the #chatRoot theme blocks),
+   redeclaring them here — scoped to each data-app-theme — re-skins the
+   whole chat drawer/launcher for free, no markup or JS changes needed. */
+html[data-app-theme="dompet"]{--chat-primary:#2f6fed;--chat-primary-2:#7c4dff;--chat-primary-3:#22c07d;--chat-aurora:linear-gradient(135deg,var(--chat-primary) 0%,var(--chat-primary-2) 52%,var(--chat-primary-3) 100%);--chat-dark:#0c1c33;--chat-dark-2:#123354;--chat-glow-1:rgba(47,111,237,.5);--chat-glow-2:rgba(34,192,125,.4)}
+html[data-app-theme="saas"]{--chat-primary:#4f46e5;--chat-primary-2:#7c3aed;--chat-primary-3:#22d3ee;--chat-aurora:linear-gradient(135deg,var(--chat-primary) 0%,var(--chat-primary-2) 52%,var(--chat-primary-3) 100%);--chat-dark:#1e1b4b;--chat-dark-2:#241f5c;--chat-glow-1:rgba(79,70,229,.5);--chat-glow-2:rgba(124,58,237,.4)}
+html[data-app-theme="premium"]{--chat-primary:#8a4dff;--chat-primary-2:#caa14a;--chat-primary-3:#f1d385;--chat-aurora:linear-gradient(135deg,var(--chat-primary) 0%,var(--chat-primary-2) 52%,var(--chat-primary-3) 100%);--chat-dark:#150b2e;--chat-dark-2:#1c1440;--chat-glow-1:rgba(138,77,255,.5);--chat-glow-2:rgba(202,161,74,.35)}
+html[data-app-theme="midnight"]{--chat-primary:#334155;--chat-primary-2:#475569;--chat-primary-3:#64748b;--chat-aurora:linear-gradient(135deg,var(--chat-primary) 0%,var(--chat-primary-2) 52%,var(--chat-primary-3) 100%);--chat-dark:#0b1220;--chat-dark-2:#131b2c;--chat-glow-1:rgba(71,85,105,.55);--chat-glow-2:rgba(100,116,139,.4)}
+html[data-app-theme="emerald"]{--chat-primary:#059669;--chat-primary-2:#10b981;--chat-primary-3:#34d399;--chat-aurora:linear-gradient(135deg,var(--chat-primary) 0%,var(--chat-primary-2) 52%,var(--chat-primary-3) 100%);--chat-dark:#052e22;--chat-dark-2:#06392a;--chat-glow-1:rgba(16,185,129,.55);--chat-glow-2:rgba(52,211,153,.4)}
+html[data-app-theme="rosegold"]{--chat-primary:#be185d;--chat-primary-2:#ec4899;--chat-primary-3:#f9a8d4;--chat-aurora:linear-gradient(135deg,var(--chat-primary) 0%,var(--chat-primary-2) 52%,var(--chat-primary-3) 100%);--chat-dark:#3f0d24;--chat-dark-2:#4d1230;--chat-glow-1:rgba(236,72,153,.55);--chat-glow-2:rgba(249,168,212,.4)}
+
+/* The two dark app themes (Premium Elite, Midnight) leave the rest of the
+   CRM dark, so the chat drawer/launcher also needs its light surfaces
+   (chat-system.css hardcodes several `background:#fff` panels — the drawer
+   shell, thread pane, incoming bubble, input bar, settings panel) switched
+   to a matching dark surface, and its ink/muted/border/soft-bg variables
+   flipped for light-on-dark text — otherwise the drawer would still look
+   like a bright white plate glued onto a dark app. */
+/* Scoped to .chat-fab-panel only (not html-wide) so the full Chat page —
+   which keeps its own white card background — never gets light-on-dark
+   text colours; only the drawer subtree re-reads these variables. */
+html[data-app-theme="premium"] .chat-fab-panel,html[data-app-theme="midnight"] .chat-fab-panel{--chat-ink:#eef0fa;--chat-muted:#9aa3c4;--chat-border:rgba(255,255,255,.1);--chat-bg-soft:rgba(255,255,255,.05)}
+html[data-app-theme="premium"] .chat-fab-panel{background:#181235!important}
+html[data-app-theme="midnight"] .chat-fab-panel{background:#141a34!important}
+/* Scoped to the floating drawer only (.chat-fab-panel-body), not the full
+   Chat page — the full page's own card chrome is left exactly as it was. */
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-shell,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-thread-pane,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-input-bar,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-settings-panel{background:#181235!important}
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-shell,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-thread-pane,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-input-bar,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-settings-panel{background:#141a34!important}
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-bubble-theirs,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-bubble-theirs{background:rgba(255,255,255,.07)!important;border-color:rgba(255,255,255,.1)!important;color:var(--chat-ink)!important}
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-input-bar textarea,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-input-bar textarea,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-contacts-search input,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-contacts-search input{background:rgba(255,255,255,.06)!important;color:var(--chat-ink)!important}
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-input-bar textarea:focus,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-input-bar textarea:focus,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-contacts-search input:focus,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-contacts-search input:focus{background:rgba(255,255,255,.1)!important}
+/* 2026-08-13 — "Chat" page (chat-page-mode, full page — NOT the floating
+   .chat-fab-panel drawer) typed messages were invisible on Premium Elite.
+   Root cause: the app-wide generic rule a few lines up
+   (`html[data-app-theme="premium"] textarea{...color:#f3ecff!important}`)
+   is a bare `textarea` selector, so it also hits the Chat PAGE's message
+   box — which intentionally keeps its normal light card background (see
+   the comment above, "the full Chat page ... never gets light-on-dark
+   text colours"). That generic rule paints near-white text (#f3ecff) on
+   that still-light textarea, so anything typed was white-on-white.
+   Restore the normal light-card contrast here, scoped to page mode only —
+   the floating drawer (chat-fab-panel-body block above) already handles
+   its own dark surface correctly and is untouched. */
+html[data-app-theme="premium"] .chat-shell.chat-page-mode .chat-input-bar textarea,
+html[data-app-theme="premium"] .chat-shell.chat-page-mode .chat-contacts-search input{
+  background:var(--chat-bg-soft)!important;
+  color:var(--chat-ink)!important;
+  -webkit-text-fill-color:var(--chat-ink)!important;
+  caret-color:var(--chat-ink)!important;
+  border-color:#e7e1fb!important;
+}
+html[data-app-theme="premium"] .chat-shell.chat-page-mode .chat-input-bar textarea:focus,
+html[data-app-theme="premium"] .chat-shell.chat-page-mode .chat-contacts-search input:focus{
+  background:#fff!important;
+  color:var(--chat-ink)!important;
+  -webkit-text-fill-color:var(--chat-ink)!important;
+}
+html[data-app-theme="premium"] .chat-shell.chat-page-mode .chat-input-bar textarea::placeholder,
+html[data-app-theme="premium"] .chat-shell.chat-page-mode .chat-contacts-search input::placeholder{color:#9992b8!important;-webkit-text-fill-color:#9992b8!important}
+
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-settings-toggle-btn.active,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-settings-toggle-btn.active,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-scope-option,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-scope-option,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-theme-swatch,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-theme-swatch,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-font-option,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-font-option,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-emoji-btn,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-emoji-btn{background:rgba(255,255,255,.06)!important;color:var(--chat-ink)!important}
+
+/* 2026-08-18 — reported: under Premium Elite / Midnight (Dark), names and
+   text in the chat "Search people..." contact list were unreadable.
+   Root cause: the block above already flips --chat-ink to a light colour
+   for text everywhere inside .chat-fab-panel, but chat-system.css hardcodes
+   .chat-contacts-pane / .chat-contacts-search / .chat-contact hover-active /
+   .chat-msg-menu (the "..." message actions popup) / the forward-message
+   contact list to their own light backgrounds that were never included in
+   the dark-surface list above - so light text landed on a light background
+   that never actually turned dark (the exact same background/text mismatch
+   already fixed elsewhere in theme-contrast-fix-2026-08-18.css). Giving
+   each of those components its own matching dark surface here closes the
+   gap - names, previews and menu items are readable in every chat surface
+   now, not just the message bubbles and input bar. */
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-contacts-pane,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-contacts-search{background:#181235!important}
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-contacts-pane,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-contacts-search{background:#141a34!important}
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-contact:hover,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-contact.active,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-contact:hover,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-contact.active{background:rgba(255,255,255,.07)!important}
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-contact-time,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-contact-time{color:var(--chat-muted)!important}
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-status-dot,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-status-dot{border-color:#181235}
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-status-dot{border-color:#141a34}
+
+/* The "..." message-actions popup and the Forward-message contact list
+   still render as their own always-light floating cards (by design, like a
+   native context menu/modal) - their background was never switched dark, so
+   reset --chat-ink/--chat-muted back to the normal light-card values only
+   inside these two components instead of letting the panel-wide dark
+   override leak in and paint their text invisible on a card that stayed
+   white. */
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-msg-menu,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-msg-menu,
+html[data-app-theme="premium"] .chat-fab-panel-body .chat-forward-contact-list,
+html[data-app-theme="midnight"] .chat-fab-panel-body .chat-forward-contact-list{--chat-ink:#17122c;--chat-muted:#786f95}
+
+/* ---------- crm-logo (gradient-clip wordmark) — solid-colour fallback in
+   every theme, so a browser without -webkit-background-clip:text support
+   never shows blank/overlapping "ghost" text instead of the wordmark. ---- */
+html:not([data-app-theme]) .crm-logo{color:#2867d0}
+html[data-app-theme="dompet"] .crm-logo{color:#2f6fed}
+html[data-app-theme="midnight"] .crm-logo{color:#94a3b8}
+html[data-app-theme="emerald"] .crm-logo{color:#0fae7e}
+html[data-app-theme="rosegold"] .crm-logo{color:#be185d}
+
+/* ==========================================================================
+   2026-08-08 (round 3) — reported-again fixes:
+   1) Login username/password fields showing invisible typed text
+   2) Sidebar "ProfitNx / CRM System" wordmark unreadable on Dompet Blue /
+      Professional SaaS
+   Both are theme-cascade leaks: an earlier per-theme rule elsewhere in this
+   file (or in professional-ui.css) has a selector that is ALSO satisfied by
+   the login card / sidebar brand block, with the wrong colour combination
+   for that particular surface. Every rule below intentionally uses one extra
+   scoping class versus the offending rule so it always wins on specificity,
+   not just load order — so this can't silently regress again if the file is
+   re-ordered later.
+   ========================================================================== */
+
+/* ---- 1) Login inputs: always solid dark ink on solid white, no matter what
+   a theme's generic ".form-control" rule says elsewhere (Premium Elite's
+   generic form-control rule sets near-white text on a near-transparent
+   background for the *dark* app pages — that combination is invisible when
+   it also lands on the login card, which is always a white surface). ---- */
+html[data-app-theme] .crm-login-page .crm-login-input .form-control,
+html[data-app-theme] .crm-login-page .crm-login-input .form-control:focus{
+  background:#ffffff!important;
+  color:#17243b!important;
+  -webkit-text-fill-color:#17243b!important;
+  caret-color:#17243b!important;
+}
+html[data-app-theme] .crm-login-page .crm-login-input .form-control::placeholder{color:#8b96a8!important;-webkit-text-fill-color:#8b96a8!important}
+/* Autofill (Chrome/Edge) paints its own background+text colour on top of
+   the above the moment a saved credential is used — force it back too. */
+.crm-login-page .crm-login-input .form-control:-webkit-autofill,
+.crm-login-page .crm-login-input .form-control:-webkit-autofill:focus,
+.crm-login-page .crm-login-input .form-control:-webkit-autofill:hover{
+  -webkit-text-fill-color:#17243b!important;
+  -webkit-box-shadow:0 0 0 1000px #ffffff inset!important;
+  box-shadow:0 0 0 1000px #ffffff inset!important;
+  caret-color:#17243b!important;
+}
+
+/* ---- 2) Sidebar wordmark: guaranteed-contrast colour per theme, with any
+   gradient/text-clip effect explicitly cleared so it can never render as
+   faint "ghost" text again. Dompet Blue and Professional SaaS use a WHITE
+   sidebar, so the wordmark must be dark; every other theme keeps a dark or
+   colour-tinted sidebar, so the wordmark stays white. ---- */
+html[data-app-theme] .side-rail .brand-block .brand-name,
+html[data-app-theme] .side-rail .brand-block .brand-caption{
+  background:none!important;
+  -webkit-background-clip:initial!important;
+  background-clip:initial!important;
+  -webkit-text-fill-color:currentColor!important;
+  text-shadow:none!important;
+  opacity:1!important;
+}
+html[data-app-theme="dompet"] .side-rail .brand-block .brand-name,
+html[data-app-theme="saas"] .side-rail .brand-block .brand-name{color:#182238!important}
+html[data-app-theme="dompet"] .side-rail .brand-block .brand-caption,
+html[data-app-theme="saas"] .side-rail .brand-block .brand-caption{color:#57647e!important}
+html[data-app-theme="premium"] .side-rail .brand-block .brand-name,
+html[data-app-theme="midnight"] .side-rail .brand-block .brand-name,
+html[data-app-theme="emerald"] .side-rail .brand-block .brand-name,
+html[data-app-theme="rosegold"] .side-rail .brand-block .brand-name{color:#ffffff!important}
+html[data-app-theme="premium"] .side-rail .brand-block .brand-caption,
+html[data-app-theme="midnight"] .side-rail .brand-block .brand-caption,
+html[data-app-theme="emerald"] .side-rail .brand-block .brand-caption,
+html[data-app-theme="rosegold"] .side-rail .brand-block .brand-caption{color:#d7deee!important}
+/* Classic (no data-app-theme attribute at all) already renders white-on-blue
+   correctly, but pin it too so nothing upstream can quietly break it. */
+html:not([data-app-theme]) .side-rail .brand-block .brand-name,
+html[data-app-theme="classic"] .side-rail .brand-block .brand-name{color:#ffffff!important;background:none!important;-webkit-text-fill-color:#ffffff!important}
+html:not([data-app-theme]) .side-rail .brand-block .brand-caption,
+html[data-app-theme="classic"] .side-rail .brand-block .brand-caption{color:rgba(255,255,255,.78)!important}
+
+/* ---- 3) Dompet Blue was missing a couple of the small text bits saas
+   already covers, so its white sidebar was left showing the default
+   pale/white-on-dark colours from the base stylesheets on the section
+   labels and the menu search box. ---- */
+html[data-app-theme="dompet"] .menu-group-label{color:#5b6b8c!important}
+html[data-app-theme="dompet"] .sidebar-overline{color:#7c8bab!important}
+html[data-app-theme="dompet"] .sidebar-search-box{background:#f4f7fc!important;border:1px solid #eef1f8!important}
+html[data-app-theme="dompet"] .sidebar-search-box input{color:#233252!important}
+html[data-app-theme="dompet"] .sidebar-search-box input::placeholder{color:#94a2bd!important}
+html[data-app-theme="dompet"] .sidebar-search-box i{color:#94a2bd!important}
+
+/* ==========================================================================
+   2026-08-08 (round 4) — the sidebar's ACTIVE menu item and the "New
+   Inquiry" primary action button never re-themed.
+   Root cause: they're driven by `.menu-link.active`, `.menu-link[aria-
+   current="page"]` and `.menu-link.primary-menu-action` in
+   corporate-ui-2026.css, which paints them with one fixed
+   orange->purple / blue gradient with `!important` and is never scoped to
+   `data-app-theme` anywhere — so every theme's sidebar recolours the plain
+   menu items and the *hover* state (that part already worked), but the
+   current-page highlight and the "New Inquiry" button stayed the same
+   hardcoded gradient no matter which theme was picked. Only the six
+   non-classic themes are covered here; Classic keeps its original
+   orange/purple + icon-badge look untouched, exactly as before. ---- */
+html[data-app-theme="dompet"] .menu-link.active,
+html[data-app-theme="dompet"] .menu-link[aria-current="page"],
+html[data-app-theme="dompet"] .menu-link.primary-menu-action{background:linear-gradient(135deg,#2f6fed,#22c07d)!important;color:#fff!important;box-shadow:0 14px 30px rgba(47,111,237,.28)!important;border-color:transparent!important}
+
+html[data-app-theme="saas"] .menu-link.active,
+html[data-app-theme="saas"] .menu-link[aria-current="page"],
+html[data-app-theme="saas"] .menu-link.primary-menu-action{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;color:#fff!important;font-weight:800!important;box-shadow:0 14px 30px rgba(79,70,229,.28)!important;border-color:transparent!important}
+
+html[data-app-theme="premium"] .menu-link.active,
+html[data-app-theme="premium"] .menu-link[aria-current="page"],
+html[data-app-theme="premium"] .menu-link.primary-menu-action{background:linear-gradient(90deg,rgba(202,161,74,.92),rgba(124,77,255,.88))!important;color:#181235!important;font-weight:850!important;box-shadow:0 14px 30px rgba(124,77,255,.24)!important;border-color:transparent!important}
+
+html[data-app-theme="midnight"] .menu-link.active,
+html[data-app-theme="midnight"] .menu-link[aria-current="page"],
+html[data-app-theme="midnight"] .menu-link.primary-menu-action{background:linear-gradient(135deg,#7c4dff,#2f6fed)!important;color:#fff!important;box-shadow:0 14px 30px rgba(47,111,237,.28)!important;border-color:transparent!important}
+
+html[data-app-theme="emerald"] .menu-link.active,
+html[data-app-theme="emerald"] .menu-link[aria-current="page"],
+html[data-app-theme="emerald"] .menu-link.primary-menu-action{background:linear-gradient(135deg,#0fae7e,#38d6b4)!important;color:#fff!important;box-shadow:0 14px 30px rgba(15,174,126,.28)!important;border-color:transparent!important}
+
+html[data-app-theme="rosegold"] .menu-link.active,
+html[data-app-theme="rosegold"] .menu-link[aria-current="page"],
+html[data-app-theme="rosegold"] .menu-link.primary-menu-action{background:linear-gradient(135deg,#be185d,#ec4899)!important;color:#fff!important;box-shadow:0 14px 30px rgba(190,24,93,.28)!important;border-color:transparent!important}
+
+/* Icon chip + keyboard-shortcut badge inside the active/primary item, so
+   they don't keep the old rgba(255,255,255,.18) look bolted onto a
+   colour it was never designed against — kept subtle/consistent across
+   all six themes. */
+html[data-app-theme="dompet"] .menu-link.active .menu-icon,html[data-app-theme="dompet"] .menu-link[aria-current="page"] .menu-icon,html[data-app-theme="dompet"] .menu-link.primary-menu-action .menu-icon,
+html[data-app-theme="saas"] .menu-link.active .menu-icon,html[data-app-theme="saas"] .menu-link[aria-current="page"] .menu-icon,html[data-app-theme="saas"] .menu-link.primary-menu-action .menu-icon,
+html[data-app-theme="midnight"] .menu-link.active .menu-icon,html[data-app-theme="midnight"] .menu-link[aria-current="page"] .menu-icon,html[data-app-theme="midnight"] .menu-link.primary-menu-action .menu-icon,
+html[data-app-theme="emerald"] .menu-link.active .menu-icon,html[data-app-theme="emerald"] .menu-link[aria-current="page"] .menu-icon,html[data-app-theme="emerald"] .menu-link.primary-menu-action .menu-icon,
+html[data-app-theme="rosegold"] .menu-link.active .menu-icon,html[data-app-theme="rosegold"] .menu-link[aria-current="page"] .menu-icon,html[data-app-theme="rosegold"] .menu-link.primary-menu-action .menu-icon{background:rgba(255,255,255,.2)!important;color:#fff!important}
+html[data-app-theme="dompet"] .menu-link.active .menu-shortcut,html[data-app-theme="dompet"] .menu-link[aria-current="page"] .menu-shortcut,html[data-app-theme="dompet"] .menu-link.primary-menu-action .menu-shortcut,
+html[data-app-theme="saas"] .menu-link.active .menu-shortcut,html[data-app-theme="saas"] .menu-link[aria-current="page"] .menu-shortcut,html[data-app-theme="saas"] .menu-link.primary-menu-action .menu-shortcut,
+html[data-app-theme="midnight"] .menu-link.active .menu-shortcut,html[data-app-theme="midnight"] .menu-link[aria-current="page"] .menu-shortcut,html[data-app-theme="midnight"] .menu-link.primary-menu-action .menu-shortcut,
+html[data-app-theme="emerald"] .menu-link.active .menu-shortcut,html[data-app-theme="emerald"] .menu-link[aria-current="page"] .menu-shortcut,html[data-app-theme="emerald"] .menu-link.primary-menu-action .menu-shortcut,
+html[data-app-theme="rosegold"] .menu-link.active .menu-shortcut,html[data-app-theme="rosegold"] .menu-link[aria-current="page"] .menu-shortcut,html[data-app-theme="rosegold"] .menu-link.primary-menu-action .menu-shortcut{background:rgba(255,255,255,.18)!important;color:#fff!important}
+html[data-app-theme="premium"] .menu-link.active .menu-icon,html[data-app-theme="premium"] .menu-link[aria-current="page"] .menu-icon,html[data-app-theme="premium"] .menu-link.primary-menu-action .menu-icon{background:rgba(24,18,53,.16)!important;color:#181235!important}
+html[data-app-theme="premium"] .menu-link.active .menu-shortcut,html[data-app-theme="premium"] .menu-link[aria-current="page"] .menu-shortcut,html[data-app-theme="premium"] .menu-link.primary-menu-action .menu-shortcut{background:rgba(24,18,53,.14)!important;color:#181235!important}
+
+/* Notification/chat unread badge sits on top of `.with-badge` menu items —
+   keep it a fixed alert-red across every theme (intentional, it's the
+   universal "something needs attention" colour), but make sure its white
+   ring still contrasts against each theme's own active-item background. */
+html[data-app-theme="premium"] .menu-link.active .notify-badge,
+html[data-app-theme="premium"] .menu-link[aria-current="page"] .notify-badge{border-color:#f1d9a0!important}
+
+/* ==========================================================================
+   2026-08-08 (round 5) — "the sidebar's own background never changes"
+   reported again. The per-theme `.side-rail` background rules above are
+   already correct on paper (`html[data-app-theme="..."] .side-rail`, with
+   `!important`), but several older stylesheets also paint `.side-rail`'s
+   background with `!important` on a rule of equal-or-close specificity —
+   e.g. `.crm-app-body .side-rail{...!important}` in three different files.
+   To remove all doubt, this final block repeats every theme's sidebar
+   background with one extra ancestor in the selector chain
+   (`html[data-app-theme] .app-shell .side-rail`), which is mathematically
+   guaranteed to out-rank every other `.side-rail` background rule in the
+   project — nothing loaded before or after this file can win against it.
+   ========================================================================== */
+html[data-app-theme="dompet"] .app-shell .side-rail{background:#ffffff!important}
+html[data-app-theme="saas"] .app-shell .side-rail{background:#ffffff!important}
+html[data-app-theme="premium"] .app-shell .side-rail{background:linear-gradient(180deg,#0d1230 0%,#181235 55%,#231a4d 100%)!important}
+html[data-app-theme="midnight"] .app-shell .side-rail{background:linear-gradient(180deg,#0b1024,#141a34)!important}
+html[data-app-theme="emerald"] .app-shell .side-rail{background:linear-gradient(180deg,#0fae7e,#0b7d5c)!important}
+html[data-app-theme="rosegold"] .app-shell .side-rail{background:linear-gradient(180deg,#be185d,#831843)!important}
+/* Classic (no data-app-theme attribute) keeps its original navy — pinned
+   here too for the same reason, so it can never end up matching a theme
+   colour left behind from a previous selection. */
+html:not([data-app-theme]) .app-shell .side-rail{background:linear-gradient(180deg,#152946 0%,#0c1a31 100%)!important}
+
+/* ==========================================================================
+   2026-08-08 (round 6) — Dompet Blue / Professional SaaS: plain (non-active)
+   left-menu items reported unreadable again, with a screenshot showing every
+   icon and label almost invisible against the white sidebar.
+
+   Root cause found: `.menu-link{color:#d7e2f5!important}` in
+   `new-ui-reference-2026-07-29.css` AND, more importantly,
+   `html body.crm-app-body .menu-link{color:#d7e2f5!important}` in
+   `final-ui-correction-2026-07-30.css` are near-white colours meant for the
+   dark/navy Classic sidebar. The second one carries an extra `html`+`body`
+   ancestor, which gives it MORE type-selectors than this file's own
+   `html[data-app-theme="..."] .menu-link{...}` rule — so even though this
+   file loads last, that older rule was mathematically more specific and
+   kept winning regardless of load order. The same problem hit the icon:
+   `.crm-app-body .menu-icon{color:#c8d6e8!important}` in
+   `professional-ui.css` was never scoped to a theme at all for the
+   non-active state, so every theme's plain icon stayed that same
+   near-white blue-grey. `.sub-menu-link .menu-text` (the indented rows,
+   e.g. "New Implementation / Training") is hit hardest because it's the
+   smallest, lightest text of all and inherits the same broken colour.
+
+   Fix: one more unambiguous block, using the same "extra ancestor"
+   technique as the round-5 sidebar-background fix above
+   (`html[data-app-theme="..."] .app-shell .side-rail .menu-link`), which is
+   guaranteed to out-rank every rule listed above for both class-count and
+   type-count, so nothing loaded before or after this file can win against
+   it. Only the plain/default and :hover states are covered here — the
+   active/current-page state already has its own higher-specificity rule
+   further up this file and is untouched. ========================================================================== */
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link,
+html[data-app-theme="dompet"] .app-shell .side-rail .sub-menu-link .menu-text{color:#48597a!important}
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link .menu-icon{color:#5b6b8c!important;background:rgba(47,111,237,.08)!important;border-color:transparent!important}
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:hover,
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:hover .menu-text{color:#fff!important}
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link:hover .menu-icon{color:#fff!important;background:rgba(255,255,255,.22)!important}
+html[data-app-theme="dompet"] .app-shell .side-rail .sidebar-overline{color:#7c8bab!important}
+
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link,
+html[data-app-theme="saas"] .app-shell .side-rail .sub-menu-link .menu-text{color:#54576c!important}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link .menu-icon{color:#4f46e5!important;background:rgba(79,70,229,.08)!important;border-color:transparent!important}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:hover,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:hover .menu-text{color:#fff!important}
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link:hover .menu-icon{color:#fff!important;background:rgba(255,255,255,.22)!important}
+html[data-app-theme="saas"] .app-shell .side-rail .sidebar-overline{color:#7a7d94!important}
+
+/* Active/current-page item's icon already turns solid white on a coloured
+   pill (rules earlier in this file) — make sure the plain-state icon rule
+   above can never bleed into it even if a future edit changes selector
+   order. */
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link.active .menu-icon,
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link[aria-current="page"] .menu-icon,
+html[data-app-theme="dompet"] .app-shell .side-rail .menu-link.primary-menu-action .menu-icon,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link.active .menu-icon,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link[aria-current="page"] .menu-icon,
+html[data-app-theme="saas"] .app-shell .side-rail .menu-link.primary-menu-action .menu-icon{color:#fff!important;background:rgba(255,255,255,.2)!important}
+
+/* ==========================================================================
+   2026-08-10 (round 7) — Premium Elite / Midnight (Dark): form-field
+   captions and card/panel headings reported "not showing proper font"
+   (screenshot: "Create Inquiry" page — the h4 title is almost invisible,
+   and the field captions like "Inquiry Date"/"Support Executive" are low
+   contrast) on both dark themes.
+
+   Root cause #1 (panel/card headings, e.g. the "Create Inquiry" <h4>):
+   `professional-ui.css` sets `.crm-app-body .dash-panel h4` (also h5,
+   .card-title, .card-header strong, .simple-report-card h4/h5) to
+   `var(--crm-ink)` = #17243b — a near-black navy meant for the light
+   themes. That rule targets the <h4> element directly (not just its
+   .dash-panel ancestor), so even without `!important` it wins over the
+   *inherited* light text colour the dark themes already put on
+   `.dash-panel` itself (a directly-specified colour on an element always
+   beats an inherited one). Premium/Midnight only ever re-coloured
+   `.pro-card h4` and `.aiz-panel h4` — `.dash-panel h4/h5`,
+   `.card-title`, `.card-header strong` and `.simple-report-card h4/h5`
+   were never covered, so #17243b-on-near-black stayed in place.
+
+   Root cause #2 (field captions, e.g. "Inquiry Date"): this file already
+   sets `.form-label` colour for Premium Elite, and Midnight never had a
+   `.form-label` rule at all — but either way, `final-ui-correction-
+   2026-07-30.css` has `html body.crm-app-body .form-label, html
+   body.crm-app-body label{color:#40536d!important}`, which carries two
+   extra ancestor tags (html + body) versus this file's own
+   `html[data-app-theme="..."] .form-label` selector, making it MORE
+   specific and letting it win regardless of file load order — the same
+   "extra ancestor" issue already fixed for the sidebar menu on 2026-08-10
+   (round 6 above). #40536d is a mid navy that reads fine on the light
+   themes' near-white cards but is very low-contrast on Premium Elite /
+   Midnight's near-black page background.
+
+   Fix: repeat both sets of rules here with either an explicit theme scope
+   the older rules don't have (headings) or one extra ancestor so the
+   selector out-ranks the older rule on specificity, not load order
+   (captions) — same technique as every earlier round in this file. ---- */
+
+/* Panel/card headings */
+html[data-app-theme="premium"] .dash-panel h4,
+html[data-app-theme="premium"] .dash-panel h5,
+html[data-app-theme="premium"] .simple-report-card h4,
+html[data-app-theme="premium"] .simple-report-card h5,
+html[data-app-theme="premium"] .card-title,
+html[data-app-theme="premium"] .card-header strong{color:#f7f2ff!important}
+html[data-app-theme="midnight"] .dash-panel h4,
+html[data-app-theme="midnight"] .dash-panel h5,
+html[data-app-theme="midnight"] .simple-report-card h4,
+html[data-app-theme="midnight"] .simple-report-card h5,
+html[data-app-theme="midnight"] .card-title,
+html[data-app-theme="midnight"] .card-header strong{color:#f2f5ff!important}
+
+/* Field captions (form-label + plain <label>), out-ranking
+   final-ui-correction-2026-07-30.css's "html body.crm-app-body .form-label"
+   with a matching extra-ancestor selector. */
+html[data-app-theme="premium"] body.crm-app-body .form-label,
+html[data-app-theme="premium"] body.crm-app-body label{color:#c6bfe6!important}
+html[data-app-theme="midnight"] body.crm-app-body .form-label,
+html[data-app-theme="midnight"] body.crm-app-body label{color:#aab4d9!important}
+
+/* ==========================================================================
+   Dark Mode Toggle (header moon/sun button)
+   ========================================================================== */
+.dark-mode-toggle {
+  position: relative;
+}
+.dark-mode-toggle .dark-mode-icon-sun {
+  color: #fbbf24;
+}
+.dark-mode-toggle.is-dark {
+  background: #1b2140 !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.35);
+}
+.dark-mode-toggle:hover {
+  transform: translateY(-1px);
+}
+
+/* When dark mode is on, keep palette menu readable */
+html[data-app-theme="midnight"] .theme-switch-menu-label,
+html[data-dark-mode="1"] .theme-switch-menu-label {
+  color: #8b96b8 !important;
+}
+html[data-app-theme="midnight"] .theme-switch-default-row,
+html[data-dark-mode="1"] .theme-switch-default-row {
+  color: #aab4d9 !important;
+  border-top-color: rgba(255,255,255,.08) !important;
+}
+html[data-app-theme="midnight"] .font-style-option,
+html[data-app-theme="midnight"] .font-size-option,
+html[data-dark-mode="1"] .font-style-option,
+html[data-dark-mode="1"] .font-size-option {
+  background: #1b2140 !important;
+  color: #dbe3f5 !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+html[data-app-theme="midnight"] .font-style-option.active,
+html[data-app-theme="midnight"] .font-size-option.active,
+html[data-dark-mode="1"] .font-style-option.active,
+html[data-dark-mode="1"] .font-size-option.active {
+  background: linear-gradient(135deg, #7c4dff, #2f6fed) !important;
+  color: #fff !important;
+}
+
+/* Live Dashboard under midnight / dark mode */
+html[data-app-theme="midnight"] .live-dash,
+html[data-dark-mode="1"] .live-dash {
+  --ld-bg: #0b1024;
+  --ld-card: #141a34;
+  --ld-card-2: #1b2140;
+  --ld-border: rgba(255, 255, 255, 0.08);
+  --ld-text: #f2f5ff;
+  --ld-muted: #8b96b8;
+}
+html[data-app-theme="midnight"] .live-dash .ld-card,
+html[data-dark-mode="1"] .live-dash .ld-card,
+html[data-app-theme="midnight"] .live-dash .ld-kpi,
+html[data-dark-mode="1"] .live-dash .ld-kpi {
+  background: #141a34;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+html[data-app-theme="midnight"] .live-dash .ld-input,
+html[data-app-theme="midnight"] .live-dash .ld-select,
+html[data-dark-mode="1"] .live-dash .ld-input,
+html[data-dark-mode="1"] .live-dash .ld-select {
+  color: #f2f5ff;
+  color-scheme: dark;
+}
+html[data-app-theme="midnight"] .live-dash .ld-date-range,
+html[data-dark-mode="1"] .live-dash .ld-date-range {
+  background: #1b2140;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   2026-08-11 (round 8) — Midnight (Dark): KPI card numbers unreadable
+   (screenshot: Admin > Users page — "Admins/Users/Partner Logins/Support
+   Users/Support Heads" cards; the labels are visible but the count number
+   under each one is almost invisible).
+
+   Root cause: `site.css` sets `.kpi-value{color:#173756}` (a near-black
+   navy) and `.kpi-label{color:#647893}` with NO !important, meant for the
+   light themes' white cards. The Premium Elite dark theme already re-
+   colours `.kpi-value` / `.kpi-label` / `.metric-row` for its own palette
+   (see the `html[data-app-theme="premium"]` rules above), but Midnight
+   never got the equivalent fix — so `.kpi-card`'s own dark-theme text
+   colour (line ~94 above) is inherited by nothing, since `.kpi-value` has
+   its own directly-specified (non-inherited) colour that wins regardless.
+   Same root cause hits `.metric-row` (Reports page "Business Focus
+   Analysis" / "Partner Focus" / "Product Focus" numbers). Fix: give
+   Midnight the same explicit overrides Premium already has. */
+html[data-app-theme="midnight"] .kpi-value{color:#f2f5ff!important}
+html[data-app-theme="midnight"] .kpi-label{color:#8b96b8!important}
+html[data-app-theme="midnight"] .metric-row{color:#dbe3f5!important}
+
+/* Dark mode toggle inside theme menu */
+.theme-switch-option.dark-mode-menu-toggle { font-weight: 800; }
+.theme-switch-option.dark-mode-menu-toggle.is-dark {
+  background: linear-gradient(135deg, rgba(124,77,255,.18), rgba(47,111,237,.18)) !important;
+}
+.theme-switch-option.dark-mode-menu-toggle .theme-switch-badge {
+  background: #94a3b8;
+}
+.theme-switch-option.dark-mode-menu-toggle.is-dark .theme-switch-badge {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}

@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "dgSpecHash": "L+yeH2JZ3ug=",
+  "success": true,
+  "projectFilePath": "E:\\CRM 11.07.26\\New folder\\profitnx-crm\\ProfitNx.CRM.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\OM\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\google.apis\\1.68.0\\google.apis.1.68.0.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\google.apis.auth\\1.68.0\\google.apis.auth.1.68.0.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\google.apis.core\\1.68.0\\google.apis.core.1.68.0.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\google.apis.sheets.v4\\1.68.0.3407\\google.apis.sheets.v4.1.68.0.3407.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\lib.net.http.encryptedcontentencoding\\2.1.1\\lib.net.http.encryptedcontentencoding.2.1.1.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\lib.net.http.webpush\\3.3.1\\lib.net.http.webpush.3.3.1.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\system.codedom\\7.0.0\\system.codedom.7.0.0.nupkg.sha512",
+    "C:\\Users\\OM\\.nuget\\packages\\system.management\\7.0.2\\system.management.7.0.2.nupkg.sha512"
+  ],
+  "logs": []
+}

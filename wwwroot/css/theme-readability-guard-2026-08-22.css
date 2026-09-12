@@ -1,0 +1,284 @@
+/* ==========================================================================
+   Dark theme contrast fix — 2026-08-22 (Round 4)
+   ==========================================================================
+   Reported (screenshots): under Midnight (Dark) / Premium Elite, several
+   plain grid/report tables show near-invisible text — e.g. "License Stock
+   Register", "Partner Stock Amount Report", "Detailed Sold / Pipeline
+   Grid", the four Performance tables (Admin/Support/User/Partner) and
+   "Product / Version Wise Sold" on the Stock and Reports screens.
+
+   ROOT CAUSE (same family of bug as the 2026-08-18 fix, different spot):
+   Every one of these tables is a plain Bootstrap table wrapped in a bare
+   `.table-responsive` div sitting inside a card container (.dash-panel,
+   .pg-panel, .card-soft, etc.). That `.table-responsive` wrapper has a
+   HARD-CODED white background (see professional-ui.css:
+   ".crm-app-body .table-responsive{background:#fff}"), with no dark-theme
+   variant — it was only ever given a dark variant when the table also had
+   the special `.professional-table` or `.pg-table` class (see the
+   2026-08-18 fix). Meanwhile the row/cell text color for these plain
+   tables comes from `--crm-text`, a CSS variable that is only ever defined
+   once, at :root, and is never redefined for Midnight or Premium Elite —
+   so it stays a dark navy no matter the theme.
+
+   Net effect: the *card* around the table goes dark (correctly), but the
+   `.table-responsive` strip stays white and the cell text stays dark navy
+   — which happens to still read fine on that stray white strip UNLESS a
+   cell's text is wrapped in <strong>/<span>/<b> etc, which the broader
+   theme-readability-guard-2026-08-17.css safety net repaints a *light*
+   colour (correct for the many places that sit directly on the dark page,
+   but wrong here because this particular white strip never went dark).
+   That is exactly what the screenshots show: plain digits/short codes
+   stay legible (dark-on-white, untouched), while <strong> partner/product
+   names and the <div class="mini-muted"> sub-lines wash out to pale
+   lavender-on-white.
+
+   FIX
+   Loaded LAST so it reliably wins. Three parts:
+     1) Make `.table-responsive` transparent (so the card's own dark
+        background always shows through) for the known set of card
+        containers used across the app — the same container list already
+        used elsewhere in this codebase for this exact purpose.
+     2) Because the background can now be dark, restate the *plain* table
+        cell text colour (bare digits/codes with no wrapping tag) so it
+        isn't left dark-on-dark. `.professional-table` and `.pg-table` are
+        excluded — they already have their own correct dark-theme cell
+        styling from the 2026-08-18 fix and must not be double-patched.
+     3) Do the same for the hover-row background, which was also hard-coded
+        light.
+
+   A second, unrelated instance of the same bug family lives in modals:
+   `.modal-content` is hard-coded to a white background *by design*, in
+   every theme (see site.css: ".modal-content{background:#fff!important;
+   color:#0b2545!important}") — e.g. the License Stock "Zoom" modals. But
+   the same broad <strong>/<span>/<h1-h6>/.mini-muted safety net in
+   theme-readability-guard-2026-08-17.css still repaints THOSE elements
+   light for Midnight/Premium Elite, because it has no way to know this
+   particular ancestor never goes dark. Part 4 below restates the correct
+   dark-on-white colours inside `.modal-content` at the same specificity,
+   so modal contents stay readable regardless of the active theme.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------
+   1) Un-white the plain table wrapper inside every card-style container.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] body.crm-app-body :where(.card,.card-soft,.crm-card,.crm-panel,.dash-panel,.pro-card,.simple-report-card,.support-action-card,.role-info-card,.business-card,.followup-command-card,.pg-panel,.kpi-card,.mini-graph-panel) .table-responsive {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, .08) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body :where(.card,.card-soft,.crm-card,.crm-panel,.dash-panel,.pro-card,.simple-report-card,.support-action-card,.role-info-card,.business-card,.followup-command-card,.pg-panel,.kpi-card,.mini-graph-panel) .table-responsive {
+  background: transparent !important;
+  border-color: rgba(202, 161, 74, .2) !important;
+}
+
+/* --------------------------------------------------------------------
+   2) Restate plain (unwrapped) cell text colour now that the strip
+   behind it can be dark. .professional-table / .pg-table already have
+   their own correct dark-theme cell styling — excluded to avoid
+   double-patching them.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] body.crm-app-body :where(.card,.card-soft,.crm-card,.crm-panel,.dash-panel,.pro-card,.simple-report-card,.support-action-card,.role-info-card,.business-card,.followup-command-card,.pg-panel,.kpi-card,.mini-graph-panel) table:not(.professional-table):not(.pg-table) tbody td,
+html[data-app-theme="midnight"] body.crm-app-body :where(.card,.card-soft,.crm-card,.crm-panel,.dash-panel,.pro-card,.simple-report-card,.support-action-card,.role-info-card,.business-card,.followup-command-card,.pg-panel,.kpi-card,.mini-graph-panel) table:not(.professional-table):not(.pg-table) tbody th {
+  color: #dbe3f5 !important;
+  border-color: rgba(255, 255, 255, .07) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body :where(.card,.card-soft,.crm-card,.crm-panel,.dash-panel,.pro-card,.simple-report-card,.support-action-card,.role-info-card,.business-card,.followup-command-card,.pg-panel,.kpi-card,.mini-graph-panel) table:not(.professional-table):not(.pg-table) tbody td,
+html[data-app-theme="premium"] body.crm-app-body :where(.card,.card-soft,.crm-card,.crm-panel,.dash-panel,.pro-card,.simple-report-card,.support-action-card,.role-info-card,.business-card,.followup-command-card,.pg-panel,.kpi-card,.mini-graph-panel) table:not(.professional-table):not(.pg-table) tbody th {
+  color: #f3ecff !important;
+  border-color: rgba(202, 161, 74, .18) !important;
+}
+
+/* Table header keeps its own light strip by design in every theme
+   (already correct/legible) — intentionally left untouched. */
+
+/* --------------------------------------------------------------------
+   3) Hover-row background was also hard-coded light (site.css
+   `.table-hover tbody tr:hover`, corporate-ui-2026.css
+   `.table tbody tr:hover`). Restate for dark themes only.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] body.crm-app-body :where(.card,.card-soft,.crm-card,.crm-panel,.dash-panel,.pro-card,.simple-report-card,.support-action-card,.role-info-card,.business-card,.followup-command-card,.pg-panel,.kpi-card,.mini-graph-panel) table:not(.professional-table):not(.pg-table) tbody tr:hover {
+  background: rgba(255, 255, 255, .04) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body :where(.card,.card-soft,.crm-card,.crm-panel,.dash-panel,.pro-card,.simple-report-card,.support-action-card,.role-info-card,.business-card,.followup-command-card,.pg-panel,.kpi-card,.mini-graph-panel) table:not(.professional-table):not(.pg-table) tbody tr:hover {
+  background: rgba(202, 161, 74, .07) !important;
+}
+
+/* --------------------------------------------------------------------
+   4) Modal safety net — `.modal-content` stays white by design in every
+   theme, so anything inside it must stay dark-on-white regardless of
+   the active theme, undoing the generic light-text safety net for just
+   this container.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] body.crm-app-body .modal-content,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content p,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content span,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content li,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content strong,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content b,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content td,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content th,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content h1,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content h2,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content h3,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content h4,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content h5,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content h6,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content .modal-title,
+html[data-app-theme="premium"] body.crm-app-body .modal-content,
+html[data-app-theme="premium"] body.crm-app-body .modal-content p,
+html[data-app-theme="premium"] body.crm-app-body .modal-content span,
+html[data-app-theme="premium"] body.crm-app-body .modal-content li,
+html[data-app-theme="premium"] body.crm-app-body .modal-content strong,
+html[data-app-theme="premium"] body.crm-app-body .modal-content b,
+html[data-app-theme="premium"] body.crm-app-body .modal-content td,
+html[data-app-theme="premium"] body.crm-app-body .modal-content th,
+html[data-app-theme="premium"] body.crm-app-body .modal-content h1,
+html[data-app-theme="premium"] body.crm-app-body .modal-content h2,
+html[data-app-theme="premium"] body.crm-app-body .modal-content h3,
+html[data-app-theme="premium"] body.crm-app-body .modal-content h4,
+html[data-app-theme="premium"] body.crm-app-body .modal-content h5,
+html[data-app-theme="premium"] body.crm-app-body .modal-content h6,
+html[data-app-theme="premium"] body.crm-app-body .modal-content .modal-title {
+  color: #0b2545 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .modal-content .text-muted,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content small,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content .mini-muted,
+html[data-app-theme="midnight"] body.crm-app-body .modal-content .text-secondary,
+html[data-app-theme="premium"] body.crm-app-body .modal-content .text-muted,
+html[data-app-theme="premium"] body.crm-app-body .modal-content small,
+html[data-app-theme="premium"] body.crm-app-body .modal-content .mini-muted,
+html[data-app-theme="premium"] body.crm-app-body .modal-content .text-secondary {
+  color: #657992 !important;
+}
+
+/* ==========================================================================
+   Round 5 — 2026-08-22: REAL root cause found — plain grid text still pale
+   on a still-light strip (License Stock Register, Partner Stock Amount
+   Report, Detailed Sold/Pipeline Grid, the 4 Performance tables, Product/
+   Version Wise Sold, and the Pro Grid reports: Total Inquiry List +
+   Implementation/Training Report).
+
+   WHY ROUNDS 1-4 DIDN'T FULLY FIX IT:
+   1) Every "plain" cell (no <strong>/.mini-muted wrapper) gets its text
+      colour from `color:var(--pn-text)` (see professional-ui.css:
+      ".table{color:var(--pn-text)}" — this matches ALL tables, including
+      .pg-table and .professional-table, since they all also carry the
+      base Bootstrap `.table` class). `--pn-text` — and its siblings
+      `--pn-muted` / `--pn-border` / `--crm-text` — are defined exactly
+      ONCE, at :root (professional-ui.css), and were NEVER redefined for
+      Midnight or Premium Elite by ANY of the theme files, including this
+      one. So plain cell text stays dark navy forever, regardless of theme.
+   2) Round 4's fix for the `.table-responsive` wrapper background relied on
+      `:where(...) .table-responsive { background: transparent !important }`
+      so the dark card behind it could show through. `.pg-panel` (the
+      container for both Pro Grid reports) was only added to that
+      `:where()` list in Round 4 and — independently of whether that rule
+      matches — Round 4 explicitly EXCLUDED `.pg-table` from getting a
+      restated cell colour, wrongly assuming the 2026-08-18 fix already
+      gave it one. It didn't: the 08-18 fix only ever coloured `.pg-table`
+      thead/tfoot/hover, never the plain tbody text. Net effect: even where
+      the wrapper does go transparent, the text sitting on it was still
+      unset dark navy.
+
+   FIX (belt-and-braces, no `:where()`, so it can't silently no-op):
+     A) Redefine `--pn-text` / `--pn-muted` / `--pn-border` / `--crm-text`
+        once, at the body level, for each dark theme. Every element that
+        already reads these variables (which is most of the plain-table
+        text across the whole app, not just the reported pages) is fixed
+        in one place instead of being chased page by page. Anything with
+        its own more specific colour rule (badges, modals, KPI values,
+        etc.) is completely unaffected — variables only fill in where
+        nothing more specific already set a colour.
+     B) Restate a SOLID (not transparent) dark background directly on the
+        `.table-responsive` strip for every known card container, so the
+        table backing colour is never in doubt regardless of how the
+        parent card's own background rule resolves.
+     C) Explicitly colour plain tbody td/th text for both `.pg-table` and
+        every other in-card table — redundant with (A) for `.table`-classed
+        elements, but kept as a second safety net in case a future table
+        is added without the base `.table` class.
+   ========================================================================== */
+
+/* ---- A) Root-cause variable fix ---- */
+html[data-app-theme="midnight"] body.crm-app-body {
+  --pn-text: #dbe3f5 !important;
+  --pn-muted: #8b96b8 !important;
+  --pn-border: rgba(255, 255, 255, .1) !important;
+  --crm-text: #dbe3f5 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body {
+  --pn-text: #e9e6f5 !important;
+  --pn-muted: #a79fcf !important;
+  --pn-border: rgba(202, 161, 74, .2) !important;
+  --crm-text: #e9e6f5 !important;
+}
+
+/* ---- B) Solid (not transparent) dark strip behind every in-card table ---- */
+html[data-app-theme="midnight"] body.crm-app-body .dash-panel .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .pg-panel .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .card-soft .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .crm-panel .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .crm-card .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .pro-card .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .simple-report-card .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .support-action-card .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .role-info-card .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .business-card .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .followup-command-card .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .kpi-card .table-responsive,
+html[data-app-theme="midnight"] body.crm-app-body .mini-graph-panel .table-responsive {
+  background: #141a34 !important;
+  border-color: rgba(255, 255, 255, .1) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .dash-panel .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .pg-panel .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .card-soft .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .crm-panel .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .crm-card .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .pro-card .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .simple-report-card .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .support-action-card .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .role-info-card .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .business-card .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .followup-command-card .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .kpi-card .table-responsive,
+html[data-app-theme="premium"] body.crm-app-body .mini-graph-panel .table-responsive {
+  background: rgba(24, 18, 53, .72) !important;
+  border-color: rgba(202, 161, 74, .2) !important;
+}
+
+/* ---- C) Explicit plain-cell colour safety net (covers .pg-table too) ---- */
+html[data-app-theme="midnight"] body.crm-app-body .dash-panel table tbody td,
+html[data-app-theme="midnight"] body.crm-app-body .dash-panel table tbody th,
+html[data-app-theme="midnight"] body.crm-app-body .pg-panel table tbody td,
+html[data-app-theme="midnight"] body.crm-app-body .pg-panel table tbody th,
+html[data-app-theme="midnight"] body.crm-app-body .card-soft table tbody td,
+html[data-app-theme="midnight"] body.crm-app-body .card-soft table tbody th,
+html[data-app-theme="midnight"] body.crm-app-body .simple-report-card table tbody td,
+html[data-app-theme="midnight"] body.crm-app-body .simple-report-card table tbody th {
+  color: #dbe3f5 !important;
+  border-color: rgba(255, 255, 255, .08) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .dash-panel table tbody td,
+html[data-app-theme="premium"] body.crm-app-body .dash-panel table tbody th,
+html[data-app-theme="premium"] body.crm-app-body .pg-panel table tbody td,
+html[data-app-theme="premium"] body.crm-app-body .pg-panel table tbody th,
+html[data-app-theme="premium"] body.crm-app-body .card-soft table tbody td,
+html[data-app-theme="premium"] body.crm-app-body .card-soft table tbody th,
+html[data-app-theme="premium"] body.crm-app-body .simple-report-card table tbody td,
+html[data-app-theme="premium"] body.crm-app-body .simple-report-card table tbody th {
+  color: #e9e6f5 !important;
+  border-color: rgba(202, 161, 74, .18) !important;
+}
+
+/* Row hover strip — restated without :where() for the same reliability reason. */
+html[data-app-theme="midnight"] body.crm-app-body .dash-panel table tbody tr:hover,
+html[data-app-theme="midnight"] body.crm-app-body .pg-panel table tbody tr:hover,
+html[data-app-theme="midnight"] body.crm-app-body .card-soft table tbody tr:hover {
+  background: rgba(255, 255, 255, .05) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .dash-panel table tbody tr:hover,
+html[data-app-theme="premium"] body.crm-app-body .pg-panel table tbody tr:hover,
+html[data-app-theme="premium"] body.crm-app-body .card-soft table tbody tr:hover {
+  background: rgba(202, 161, 74, .07) !important;
+}

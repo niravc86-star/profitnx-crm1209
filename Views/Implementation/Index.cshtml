@@ -1,0 +1,133 @@
+@model ImplementationDashboardViewModel
+@using ProfitNx.CRM.Models
+@{
+    ViewData["Title"] = "Implementation & Training";
+    ViewData["Subtitle"] = "Manage new implementation, paid training, transfers, secure re-opening and customer feedback.";
+    var members = ViewBag.SupportMembers as List<AppUser> ?? new();
+    var canCreate = ViewBag.CanCreate as bool? ?? false;
+}
+
+<div class="module-hero onboarding-hero">
+    <div>
+        <span class="module-kicker"><i class="bi bi-diagram-3-fill"></i> Customer Success Operations</span>
+        <h2>Implementation & Training Workspace</h2>
+        <p>A simple, secure workflow for new implementation, additional or paid training, scheduling, OTP transfers, closure and feedback.</p>
+    </div>
+    @if (canCreate)
+    {
+        <a asp-action="Create" class="btn btn-primary btn-lg"><i class="bi bi-plus-lg"></i> New Implementation / Training</a>
+    }
+</div>
+
+<div class="implementation-steps mb-4" aria-label="Implementation and training workflow">
+    <div><b>1</b><span><strong>Create / Fetch</strong><small>Enter license and fetch existing customer.</small></span></div>
+    <i class="bi bi-chevron-right"></i>
+    <div><b>2</b><span><strong>Assign</strong><small>Select Support Head and executive.</small></span></div>
+    <i class="bi bi-chevron-right"></i>
+    <div><b>3</b><span><strong>Plan & Deliver</strong><small>Schedule days and record covered topics.</small></span></div>
+    <i class="bi bi-chevron-right"></i>
+    <div><b>4</b><span><strong>Complete / Close</strong><small>Complete training or close with remarks.</small></span></div>
+    <i class="bi bi-chevron-right"></i>
+    <div><b>5</b><span><strong>Feedback</strong><small>Customer rating updates performance.</small></span></div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl"><div class="metric-card"><span>Total Cases</span><strong>@Model.TotalCases</strong><small>Visible to your login</small></div></div>
+    <div class="col-6 col-xl"><div class="metric-card"><span>Awaiting Assignment</span><strong>@Model.AwaitingAssignment</strong><small>Needs an owner</small></div></div>
+    <div class="col-6 col-xl"><div class="metric-card"><span>In Progress</span><strong>@Model.InProgress</strong><small>Active delivery</small></div></div>
+    <div class="col-6 col-xl"><div class="metric-card"><span>Completed</span><strong>@Model.Completed</strong><small>Training closed</small></div></div>
+    <div class="col-6 col-xl"><div class="metric-card metric-alert"><span>At Risk</span><strong>@Model.AtRisk</strong><small>AI attention required</small></div></div>
+    <div class="col-6 col-xl"><div class="metric-card"><span>Avg. Rating</span><strong>@(Model.AverageRating == 0 ? "—" : Model.AverageRating.ToString("0.0"))</strong><small>Out of 5</small></div></div>
+</div>
+
+@if (Model.ExecutivePerformance.Count > 0)
+{
+<div class="crm-panel mb-4 executive-performance-panel">
+    <div class="panel-heading"><div><h3>Training Performance Snapshot</h3><p>Customer feedback helps Admin, Support Head and the executive understand training quality.</p></div></div>
+    <div class="performance-grid">
+        @foreach (var person in Model.ExecutivePerformance.Take(8))
+        {
+            <div class="performance-card"><span class="performance-avatar">@(string.IsNullOrWhiteSpace(person.UserName) ? "U" : person.UserName[..1].ToUpperInvariant())</span><div><strong>@person.UserName</strong><small>@person.FeedbackCount feedback response(s)</small></div><div class="performance-score"><b>@person.AverageRating</b><span>/5</span><em class="performance-level level-@person.Level.ToLowerInvariant()">@person.Level</em></div></div>
+        }
+    </div>
+</div>
+}
+
+<div class="crm-panel mb-4">
+    <div class="panel-heading"><div><h3>Find Implementation / Training Work</h3><p>Search by customer, mobile, license, product or city.</p></div></div>
+    <form method="get" class="filter-grid compact-filter-grid">
+        <div class="filter-field filter-grow"><label>Search</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="Customer, mobile, license, product..." /></div>
+        <div class="filter-field"><label>Status</label><select name="status" class="form-select"><option value="">All statuses</option>@foreach (var value in new[] { "New Record", "New Sale", "Assigned", "Scheduled", "In Progress", "Paused", "Transferred", "Ready to Complete", "Completed", "Reopened", "Closed - Training Not Required" }) { <option value="@value" selected="@(string.Equals(ViewBag.Status as string, value, StringComparison.OrdinalIgnoreCase))">@value</option> }</select></div>
+        <div class="filter-field"><label>Support Member</label><select name="memberId" class="form-select"><option value="">All members</option>@foreach (var member in members) { <option value="@member.Id" selected="@(string.Equals(ViewBag.MemberId as string, member.Id, StringComparison.OrdinalIgnoreCase))">@member.FullName</option> }</select></div>
+        <div class="filter-field"><label>AI Risk</label><select name="risk" class="form-select"><option value="">All risks</option>@foreach (var value in new[] { "Low", "Medium", "High", "Critical" }) { <option value="@value" selected="@(string.Equals(ViewBag.Risk as string, value, StringComparison.OrdinalIgnoreCase))">@value</option> }</select></div>
+        <div class="filter-actions"><button class="btn btn-primary"><i class="bi bi-search"></i> Apply</button><a asp-action="Index" class="btn btn-light">Reset</a></div>
+    </form>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-9">
+        <div class="crm-panel p-0 overflow-hidden">
+            <div class="panel-heading px-4 pt-4"><div><h3>Implementation & Training Records</h3><p>@Model.Cases.Count record(s)</p></div></div>
+            <div class="enterprise-table-toolbar no-print px-3">
+                <div class="toolbar-left">
+                    <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="implTable" />
+                    <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="implTable">
+                        <option value="20" selected>20 records</option>
+                        <option value="40">40 records</option>
+                        <option value="100">100 records</option>
+                    </select>
+                </div>
+                <div class="toolbar-right">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="implTable"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+                </div>
+            </div>
+            <div class="table-responsive enterprise-table-scroll">
+                <table class="table professional-table align-middle mb-0 enterprise-data-table" id="implTable" data-table-id="implTable">
+                    <thead><tr><th>Customer / License</th><th>Owner</th><th>Stage</th><th>Progress</th><th>Next Guidance</th><th class="col-action"></th></tr></thead>
+                    <tbody>
+                    @if (Model.Cases.Count == 0)
+                    {
+                        <tr><td colspan="6"><div class="empty-state"><i class="bi bi-inboxes"></i><h4>No implementation or training records found</h4><p>Create a new implementation / paid training record or convert a Sold inquiry.</p></div></td></tr>
+                    }
+                    @foreach (var item in Model.Cases)
+                    {
+                        var riskClass = item.AiRiskLevel.ToLowerInvariant();
+                        <tr class="@(item.IsTransferredHistoryView ? "transferred-history-row" : "")">
+                            <td><div class="primary-cell"><strong>@item.FirmName</strong><span>@item.PersonName · @item.City</span><small><i class="bi bi-key"></i> @item.LicenseNumber · @item.ProductName</small><small class="record-type-line"><i class="bi bi-mortarboard"></i> @item.ServiceType @if (item.IsPaidTraining) { <span class="paid-training-chip">Paid</span> }</small>@if (item.IsTransferredHistoryView) { <span class="transferred-view-chip"><i class="bi bi-arrow-left-right"></i> @item.TransferredHistoryNote</span> }</div></td>
+                            <td><div class="owner-cell"><span class="avatar-xs">@(string.IsNullOrWhiteSpace(item.AssignedMemberName) ? "?" : item.AssignedMemberName[..1].ToUpperInvariant())</span><div><strong>@(string.IsNullOrWhiteSpace(item.AssignedMemberName) ? "Unassigned" : item.AssignedMemberName)</strong><small>@item.SupportHeadName</small></div></div></td>
+                            <td><span class="status-pill" data-stage="@item.Stage">@item.Stage</span><small class="d-block text-muted mt-1">@item.Status</small></td>
+                            <td><div class="progress-copy"><strong>@item.ProgressPercent%</strong><div class="progress"><div class="progress-bar" style="width:@item.ProgressPercent%"></div></div><small>@item.PlannedDays planned day(s)</small></div></td>
+                            <td><span class="risk-badge risk-@riskClass">@item.AiRiskLevel</span><div class="guidance-text">@item.AiRecommendation</div></td>
+                            <td class="text-end"><a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Open <i class="bi bi-arrow-right"></i></a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="enterprise-table-pagination no-print px-3 pb-3">
+                <div class="mini-muted" data-table-info="implTable"></div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="implTable"><i class="bi bi-chevron-left"></i></button>
+                    <span class="small" data-table-page="implTable">1 / 1</span>
+                    <div class="enterprise-page-numbers" data-table-pages="implTable"></div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="implTable"><i class="bi bi-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3">
+        <div class="crm-panel schedule-side-panel">
+            <div class="panel-heading"><div><h3>Next 7 Days</h3><p>Upcoming sessions</p></div></div>
+            <div class="schedule-list">
+                @if (Model.UpcomingSchedules.Count == 0) { <div class="empty-mini"><i class="bi bi-calendar2-check"></i><span>No sessions scheduled.</span></div> }
+                @foreach (var schedule in Model.UpcomingSchedules.Take(10))
+                {
+                    <a asp-action="Details" asp-route-id="@schedule.CaseId" class="schedule-list-item">
+                        <div class="schedule-date"><strong>@schedule.ScheduleDate.ToString("dd")</strong><span>@schedule.ScheduleDate.ToString("MMM")</span></div>
+                        <div><strong>Day @schedule.DayNumber · @schedule.StartTime</strong><span>@schedule.Stage</span><small>@schedule.AssignedMemberName</small></div>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

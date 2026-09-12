@@ -1,0 +1,202 @@
+@model ProfitNx.CRM.ViewModels.PermissionMatrixViewModel
+@{
+    ViewData["Title"] = "User Wise Rights";
+    ViewData["Subtitle"] = "Manage role inheritance and user-specific exceptions from an easy user-first layout.";
+    var firstItems = Model.UserItems.GroupBy(x => x.PermissionKey).Select(x => x.First()).ToList();
+}
+
+<div class="rights-page-heading">
+    <div>
+        <span class="rights-kicker"><i class="bi bi-shield-lock-fill"></i> Access Control</span>
+        <h2>User Wise Rights</h2>
+        <p>Select a user, enable <strong>Separate Rights</strong>, and manage that user's options directly below the user row.</p>
+    </div>
+    <div class="rights-heading-actions">
+        <a asp-action="Permissions" class="btn btn-outline-primary"><i class="bi bi-people-fill"></i> Role Wise Rights</a>
+    </div>
+</div>
+
+<form method="post" id="userRightsForm">
+    @Html.AntiForgeryToken()
+
+    <div class="rights-toolbar-card">
+        <div class="rights-search-box">
+            <i class="bi bi-search"></i>
+            <input type="search" id="userRightsSearch" placeholder="Search user, username or role..." autocomplete="off" />
+        </div>
+        <div class="rights-toolbar-copy">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>Separate Rights OFF = role rights apply automatically. Separate Rights ON = selected user options apply.</span>
+        </div>
+        <div class="rights-toolbar-buttons">
+            <button type="button" class="btn btn-sm btn-light" id="expandAllUsers"><i class="bi bi-arrows-expand"></i> Expand</button>
+            <button type="button" class="btn btn-sm btn-light" id="collapseAllUsers"><i class="bi bi-arrows-collapse"></i> Collapse</button>
+        </div>
+    </div>
+
+    <div class="user-rights-list" id="userRightsList">
+        @foreach (var user in Model.Users)
+        {
+            var separate = Model.SeparateUserIds.Contains(user.Id);
+            var safeId = "userRights_" + user.Id.Replace("-", "_").Replace(" ", "_");
+            <section class="user-rights-card" data-user-card data-search="@($"{user.FullName} {user.Username} {user.Role}")">
+                <div class="user-rights-row">
+                    <button type="button" class="user-rights-expand" data-bs-toggle="collapse" data-bs-target="#@safeId" aria-expanded="@(separate ? "true" : "false")" aria-controls="@safeId">
+                        <span class="user-avatar">@(string.IsNullOrWhiteSpace(user.FullName) ? "U" : user.FullName[..1].ToUpperInvariant())</span>
+                        <span class="user-identity">
+                            <strong>@user.FullName</strong>
+                            <small>@user.Username</small>
+                        </span>
+                        <span class="user-role-pill">@user.Role</span>
+                        <span class="rights-summary" data-rights-summary data-user-id="@user.Id">@(separate ? "Separate user permissions" : $"Inherited from {user.Role}")</span>
+                        <i class="bi bi-chevron-down expand-chevron"></i>
+                    </button>
+                    <div class="user-mode-control">
+                        <span class="mode-copy">
+                            <strong>Separate Rights</strong>
+                            <small>Apply options shown below</small>
+                        </span>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input separate-rights-toggle" type="checkbox" role="switch"
+                                   name="separate_@user.Id" value="true" data-user-id="@user.Id" data-panel-id="@safeId"
+                                   @(separate ? "checked" : null) aria-label="Enable separate rights for @user.FullName" />
+                        </div>
+                    </div>
+                </div>
+
+                <div id="@safeId" class="collapse user-rights-detail @(separate ? "show" : "")" data-user-panel="@user.Id">
+                    <div class="user-rights-detail-head">
+                        <div>
+                            <span class="detail-mode-badge @(separate ? "is-separate" : "is-inherited")" data-mode-badge>
+                                <i class="bi @(separate ? "bi-person-check-fill" : "bi-diagram-3-fill")"></i>
+                                <span>@(separate ? "Separate rights active" : $"Inherited from {user.Role}")</span>
+                            </span>
+                            <p data-mode-description>@(separate ? "The switches below are saved specifically for this user." : "Enable Separate Rights to edit. Current switches show the effective role permissions.")</p>
+                        </div>
+                        <div class="permission-filter-box">
+                            <i class="bi bi-filter"></i>
+                            <input type="search" class="permission-search" placeholder="Find a permission..." data-user-id="@user.Id" />
+                        </div>
+                    </div>
+
+                    <div class="permission-groups" data-permission-groups="@user.Id">
+                        @foreach (var group in Model.Groups)
+                        {
+                            var groupItems = firstItems.Where(x => x.GroupName == group).ToList();
+                            if (!groupItems.Any()) { continue; }
+                            <article class="permission-group-card" data-permission-group>
+                                <div class="permission-group-title">
+                                    <span><i class="bi bi-shield-check"></i> @group</span>
+                                    <small>@groupItems.Count option(s)</small>
+                                </div>
+                                <div class="permission-option-grid">
+                                    @foreach (var item in groupItems)
+                                    {
+                                        var key = $"userperm_{user.Id}_{item.PermissionKey}".Replace('.', '_').Replace(' ', '_');
+                                        var userItem = Model.UserItems.FirstOrDefault(x => x.UserId == user.Id && x.PermissionKey == item.PermissionKey);
+                                        var roleAllowed = Model.Items.Any(x => x.RoleName.Equals(user.Role, StringComparison.OrdinalIgnoreCase) && x.PermissionKey == item.PermissionKey && x.Allowed);
+                                        var allowed = userItem?.Allowed ?? roleAllowed;
+                                        <label class="permission-option" data-permission-option data-search="@($"{item.PermissionLabel} {item.PermissionKey} {group}")">
+                                            <span class="permission-option-copy">
+                                                <strong>@item.PermissionLabel</strong>
+                                                <small>@(separate ? "User specific" : $"Role default: {(roleAllowed ? "Allow" : "Deny")}")</small>
+                                            </span>
+                                            <span class="form-check form-switch m-0">
+                                                <input class="form-check-input user-right-switch" type="checkbox" role="switch"
+                                                       name="@key" value="true" data-user-id="@user.Id"
+                                                       data-role-value="@(roleAllowed ? "true" : "false")"
+                                                       @(allowed ? "checked" : null) @(!separate ? "disabled" : null)
+                                                       aria-label="@item.PermissionLabel for @user.FullName" />
+                                            </span>
+                                        </label>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </div>
+            </section>
+        }
+    </div>
+
+    <div class="rights-sticky-save">
+        <div><i class="bi bi-cloud-check-fill"></i><span><strong>Save all user rights</strong><small>Changes apply immediately after save.</small></span></div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-light">Back</a>
+            <button class="btn btn-primary px-4"><i class="bi bi-check2-circle"></i> Save User Rights</button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+(function () {
+    const cards = Array.from(document.querySelectorAll('[data-user-card]'));
+    const mainSearch = document.getElementById('userRightsSearch');
+
+    function syncUser(toggle, openWhenSeparate) {
+        const userId = toggle.dataset.userId;
+        const panel = document.getElementById(toggle.dataset.panelId);
+        const separate = toggle.checked;
+        const summary = document.querySelector(`[data-rights-summary][data-user-id="${userId}"]`);
+        const badge = panel?.querySelector('[data-mode-badge]');
+        const description = panel?.querySelector('[data-mode-description]');
+        const switches = document.querySelectorAll(`.user-right-switch[data-user-id="${userId}"]`);
+
+        switches.forEach(function (sw) {
+            sw.disabled = !separate;
+            if (!separate) sw.checked = sw.dataset.roleValue === 'true';
+            const option = sw.closest('.permission-option');
+            const note = option?.querySelector('small');
+            if (note) note.textContent = separate ? 'User specific' : `Role default: ${sw.dataset.roleValue === 'true' ? 'Allow' : 'Deny'}`;
+        });
+
+        if (summary) summary.textContent = separate ? 'Separate user permissions' : 'Inherited role permissions';
+        if (badge) {
+            badge.classList.toggle('is-separate', separate);
+            badge.classList.toggle('is-inherited', !separate);
+            badge.innerHTML = separate
+                ? '<i class="bi bi-person-check-fill"></i><span>Separate rights active</span>'
+                : '<i class="bi bi-diagram-3-fill"></i><span>Inherited role rights</span>';
+        }
+        if (description) description.textContent = separate
+            ? 'The switches below are saved specifically for this user.'
+            : 'Enable Separate Rights to edit. Current switches show the effective role permissions.';
+
+        if (separate && openWhenSeparate && panel) bootstrap.Collapse.getOrCreateInstance(panel, { toggle: false }).show();
+    }
+
+    document.querySelectorAll('.separate-rights-toggle').forEach(function (toggle) {
+        toggle.addEventListener('change', function () { syncUser(toggle, true); });
+        syncUser(toggle, false);
+    });
+
+    mainSearch?.addEventListener('input', function () {
+        const term = mainSearch.value.trim().toLowerCase();
+        cards.forEach(function (card) {
+            card.hidden = term && !String(card.dataset.search || '').toLowerCase().includes(term);
+        });
+    });
+
+    document.querySelectorAll('.permission-search').forEach(function (input) {
+        input.addEventListener('input', function () {
+            const panel = input.closest('.user-rights-detail');
+            const term = input.value.trim().toLowerCase();
+            panel?.querySelectorAll('[data-permission-option]').forEach(function (option) {
+                option.hidden = term && !String(option.dataset.search || '').toLowerCase().includes(term);
+            });
+            panel?.querySelectorAll('[data-permission-group]').forEach(function (group) {
+                group.hidden = !Array.from(group.querySelectorAll('[data-permission-option]')).some(function (option) { return !option.hidden; });
+            });
+        });
+    });
+
+    document.getElementById('expandAllUsers')?.addEventListener('click', function () {
+        document.querySelectorAll('.user-rights-detail').forEach(function (panel) { bootstrap.Collapse.getOrCreateInstance(panel, { toggle: false }).show(); });
+    });
+    document.getElementById('collapseAllUsers')?.addEventListener('click', function () {
+        document.querySelectorAll('.user-rights-detail').forEach(function (panel) { bootstrap.Collapse.getOrCreateInstance(panel, { toggle: false }).hide(); });
+    });
+})();
+</script>
+}

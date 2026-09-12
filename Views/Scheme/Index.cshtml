@@ -1,0 +1,62 @@
+@model List<ProfitNx.CRM.Models.Scheme>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    ViewData["Title"] = "Scheme Master";
+    var participantCounts = ViewBag.ParticipantCount as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var canManageSchemes = await PermissionService.HasPermissionAsync(User, "scheme.manage");
+}
+<div class="row g-4 mb-4">
+    <div class="col-md-4"><div class="kpi-card"><div class="kpi-label">Total Schemes</div><p class="kpi-value">@Model.Count</p></div></div>
+    <div class="col-md-4"><div class="kpi-card"><div class="kpi-label">Active Schemes</div><p class="kpi-value">@Model.Count(x => x.IsActive)</p></div></div>
+    <div class="col-md-4"><div class="kpi-card"><div class="kpi-label">Closed / Inactive</div><p class="kpi-value">@Model.Count(x => !x.IsActive)</p></div></div>
+</div>
+@if (canManageSchemes)
+{
+    <div class="page-actions mb-4"><a asp-action="Create" class="btn btn-brand"><i class="bi bi-plus-circle"></i><span>Add Scheme</span></a></div>
+}
+<div class="card card-soft border-0">
+<div class="enterprise-table-toolbar no-print px-2 px-md-4 pt-3">
+    <div class="toolbar-left">
+        <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="schemeTable" />
+        <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="schemeTable">
+            <option value="20" selected>20 records</option>
+            <option value="40">40 records</option>
+            <option value="100">100 records</option>
+        </select>
+    </div>
+    <div class="toolbar-right">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="schemeTable"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+    </div>
+</div>
+<div class="table-responsive px-2 px-md-4 py-4 enterprise-table-scroll">
+<table class="table table-hover align-middle mb-0 enterprise-data-table" id="schemeTable" data-table-id="schemeTable">
+<thead><tr><th>Scheme</th><th>Type</th><th>Period</th><th>Extra Margin</th><th>Discount</th><th>Target</th><th>Applicable Roles</th><th>Joined</th><th>Status</th><th class="text-end col-action">Actions</th></tr></thead>
+<tbody>
+@foreach (var item in Model)
+{
+    var joined = participantCounts.ContainsKey(item.Id) ? participantCounts[item.Id] : 0;
+    <tr>
+        <td><div class="fw-semibold">@item.Name</div><div class="small text-muted">@item.Description</div></td><td>@item.SchemeType</td>
+        <td>@item.StartDate.ToString("dd/MM/yyyy") - @item.EndDate.ToString("dd/MM/yyyy")</td><td>@item.ExtraMarginPercent.ToString("N2")%</td><td>@item.DiscountAmount.ToString("N2")</td><td>@item.TargetAmount.ToString("N2")</td><td>@item.ApplicableRoles</td>
+        <td><span class="stat-pill bg-soft-primary">@joined</span></td><td><span class="stat-pill @(item.IsActive ? "bg-soft-success" : "bg-soft-danger")">@(item.IsActive ? "Active" : "Inactive")</span></td>
+        <td class="text-end"><div class="table-actions">
+            <a asp-action="Participants" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary"><i class="bi bi-people"></i><span>Participants</span></a>
+            @if (canManageSchemes)
+            {
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i><span>Edit</span></a>
+                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this scheme and its participants?');"><button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i><span>Delete</span></button></form>
+            }
+        </div></td>
+    </tr>
+}
+</tbody></table></div></div>
+<div class="enterprise-table-pagination no-print px-2 px-md-4 pb-3">
+    <div class="mini-muted" data-table-info="schemeTable"></div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="schemeTable"><i class="bi bi-chevron-left"></i></button>
+        <span class="small" data-table-page="schemeTable">1 / 1</span>
+        <div class="enterprise-page-numbers" data-table-pages="schemeTable"></div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="schemeTable"><i class="bi bi-chevron-right"></i></button>
+    </div>
+</div>
+</div>

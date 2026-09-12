@@ -1,0 +1,356 @@
+@model ImplementationCase
+@using ProfitNx.CRM.Models
+@using ProfitNx.CRM.Services
+@{
+    ViewData["Title"] = "Implementation & Training Details";
+    ViewData["Subtitle"] = $"{Model.FirmName} · {Model.LicenseNumber}";
+    var schedules = ViewBag.Schedules as List<ImplementationSchedule> ?? new();
+    var activities = ViewBag.Activities as List<ImplementationActivity> ?? new();
+    var heads = ViewBag.SupportHeads as List<AppUser> ?? new();
+    var members = ViewBag.SupportMembers as List<AppUser> ?? new();
+    var canEdit = ViewBag.CanEdit as bool? ?? false;
+    var canAssign = ViewBag.CanAssign as bool? ?? false;
+    var canSchedule = ViewBag.CanSchedule as bool? ?? false;
+    var canProgress = ViewBag.CanProgress as bool? ?? false;
+    var canTransfer = ViewBag.CanTransfer as bool? ?? false;
+    var canComplete = ViewBag.CanComplete as bool? ?? false;
+    var canReopen = ViewBag.CanReopen as bool? ?? false;
+    var canCloseNoTraining = ViewBag.CanCloseNoTraining as bool? ?? false;
+    var canPause = ViewBag.CanPause as bool? ?? false;
+    var isTransferredHistoryView = ViewBag.IsTransferredHistoryView as bool? ?? false;
+    var canDelete = ViewBag.CanDelete as bool? ?? false;
+    var canViewFeedback = ViewBag.CanViewFeedback as bool? ?? false;
+    var canViewPin = ViewBag.CanViewPin as bool? ?? false;
+    var canViewAi = ViewBag.CanViewAi as bool? ?? false;
+    var completionTopics = ImplementationTrainingTopicCatalog.All;
+    var savedTopicLines = (Model.TrainingTopicsSummary ?? string.Empty)
+        .Replace("\r\n", "\n")
+        .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var savedOtherPoints = savedTopicLines.FirstOrDefault(x => x.StartsWith("Other Points:", StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
+    if (!string.IsNullOrWhiteSpace(savedOtherPoints)) savedOtherPoints = savedOtherPoints["Other Points:".Length..].Trim();
+}
+<div class="detail-command-bar">
+    <a asp-action="Index" class="btn btn-light"><i class="bi bi-arrow-left"></i> Back</a>
+    <div class="ms-auto d-flex gap-2 flex-wrap">
+        @if (canEdit) { <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a> }
+        @if (canComplete && !Model.IsTrainingCompleted) { <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#completeTrainingModal"><i class="bi bi-check2-circle"></i> Complete Training</button> }
+        @if (canPause && !Model.IsTrainingCompleted && !Model.IsPaused) { <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#pauseTrainingModal"><i class="bi bi-pause-circle"></i> Pause Training</button> }
+        @if (canPause && !Model.IsTrainingCompleted && Model.IsPaused) { <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#resumeTrainingModal"><i class="bi bi-play-circle"></i> Resume Training</button> }
+        @if (canDelete) { <form asp-action="Delete" method="post" data-confirm="Delete this implementation / training record and all related schedules/history?">@Html.AntiForgeryToken()<input type="hidden" name="caseId" value="@Model.Id" /><button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button></form> }
+    </div>
+</div>
+
+@if (canComplete && !Model.IsTrainingCompleted)
+{
+<div class="modal fade" id="completeTrainingModal" tabindex="-1" aria-labelledby="completeTrainingTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content crm-modal-card completion-modal-card">
+            <form asp-action="Complete" method="post" id="completeTrainingForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="CaseId" value="@Model.Id" />
+                <div class="modal-header">
+                    <div>
+                        <span class="crm-modal-eyebrow"><i class="bi bi-patch-check-fill"></i> Training Completion Checklist</span>
+                        <h5 class="modal-title" id="completeTrainingTitle">Select all topics covered during training</h5>
+                        <p class="mb-0">Only selected topics and the Other Points note will be included in the customer completion email.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="completion-customer-strip">
+                        <div><span>Customer</span><strong>@Model.FirmName</strong></div>
+                        <div><span>License</span><strong>@Model.LicenseNumber</strong></div>
+                        <div><span>Executive</span><strong>@Model.AssignedMemberName</strong></div>
+                    </div>
+                    <div class="training-topic-grid mt-3">
+                        @for (var topicIndex = 0; topicIndex < completionTopics.Count; topicIndex++)
+                        {
+                            var topic = completionTopics[topicIndex];
+                            var isPreviouslySelected = savedTopicLines.Any(x => x.Contains(topic, StringComparison.OrdinalIgnoreCase));
+                            <label class="training-topic-option" for="trainingTopic_@topicIndex">
+                                <input class="form-check-input training-topic-checkbox" type="checkbox" name="TrainingTopics" id="trainingTopic_@topicIndex" value="@topic" checked="@(isPreviouslySelected ? "checked" : null)" />
+                                <span class="training-topic-check"><i class="bi bi-check-lg"></i></span>
+                                <span><strong>@(topicIndex + 1). @topic</strong><small>Mark this point only when it was covered.</small></span>
+                            </label>
+                        }
+                    </div>
+                    <div class="other-points-box mt-3">
+                        <label for="otherPointsCovered" class="form-label">Other Points Covered <span class="optional-label">Optional when a checklist point is selected</span></label>
+                        <textarea class="form-control" name="OtherPointsCovered" id="otherPointsCovered" rows="4" maxlength="4000" placeholder="Enter any additional modules, setup steps, customer-specific guidance or questions covered during training...">@savedOtherPoints</textarea>
+                        <small>These points will also be shown in the customer email and internal feedback response email.</small>
+                    </div>
+                    <div class="alert alert-warning d-none mt-3 mb-0" id="completionTopicValidation"><i class="bi bi-exclamation-triangle-fill"></i> Select at least one covered point or enter Other Points Covered.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-envelope-check-fill"></i> Complete &amp; Send Feedback Email</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}
+
+@if (canPause && !Model.IsTrainingCompleted && !Model.IsPaused)
+{
+<div class="modal fade" id="pauseTrainingModal" tabindex="-1" aria-labelledby="pauseTrainingTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content crm-modal-card">
+            <form asp-action="Pause" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="caseId" value="@Model.Id" />
+                <div class="modal-header">
+                    <div>
+                        <span class="crm-modal-eyebrow"><i class="bi bi-pause-circle-fill"></i> Pause Training</span>
+                        <h5 class="modal-title" id="pauseTrainingTitle">Customer wants to continue later?</h5>
+                        <p class="mb-0">Use this when a customer completes a day and says they will take the next session later (e.g. "I'll do it next time"). The record stays safely on hold until you resume it.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Reason / Customer Note <span class="text-muted small">(Optional)</span></label>
+                    <textarea name="reason" rows="3" class="form-control" placeholder="e.g. Customer requested to continue training after a few days"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-pause-circle"></i> Pause Training</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}
+
+@if (canPause && !Model.IsTrainingCompleted && Model.IsPaused)
+{
+<div class="modal fade" id="resumeTrainingModal" tabindex="-1" aria-labelledby="resumeTrainingTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content crm-modal-card">
+            <form asp-action="Resume" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="caseId" value="@Model.Id" />
+                <div class="modal-header">
+                    <div>
+                        <span class="crm-modal-eyebrow"><i class="bi bi-play-circle-fill"></i> Resume Training</span>
+                        <h5 class="modal-title" id="resumeTrainingTitle">Ready to continue this training?</h5>
+                        <p class="mb-0">This will move the record back to its normal in-progress status so you can continue scheduling and updating days.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Resume Remarks <span class="text-muted small">(Optional)</span></label>
+                    <textarea name="remarks" rows="3" class="form-control" placeholder="e.g. Customer confirmed new date for next session"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info"><i class="bi bi-play-circle"></i> Resume Training</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}
+
+@if (Model.IsPaused)
+{
+    <div class="alert transferred-history-alert mb-4"><i class="bi bi-pause-circle-fill"></i><div><strong>Training paused</strong><p>@(string.IsNullOrWhiteSpace(Model.PauseReason) ? "Paused by customer request." : Model.PauseReason)</p><small>Paused by @Model.PausedByName on @Model.PausedDate?.ToString("dd MMM yyyy, hh:mm tt")@(canPause ? " · Use \"Resume Training\" above when the customer is ready to continue." : "")</small></div></div>
+}
+
+@if (isTransferredHistoryView)
+{
+    <div class="alert transferred-history-alert mb-4"><i class="bi bi-arrow-left-right"></i><div><strong>Transferred record — read-only</strong><p>@Model.TransferredHistoryNote</p><small>The current assigned user can continue this implementation/training. Your login can view the transfer history only.</small></div></div>
+}
+
+<div class="onboarding-summary crm-panel mb-4">
+    <div class="summary-identity"><span class="customer-monogram">@(string.IsNullOrWhiteSpace(Model.FirmName) ? "C" : Model.FirmName[..1].ToUpperInvariant())</span><div><span class="section-label">@Model.ServiceType</span><h2>@Model.FirmName</h2><p>@Model.PersonName · @Model.Mobile · @Model.City</p></div></div>
+    <div class="summary-status"><span class="status-pill large" data-stage="@Model.Status">@Model.Status</span><span class="risk-badge risk-@Model.AiRiskLevel.ToLowerInvariant()">@Model.AiRiskLevel Risk</span></div>
+    <div class="summary-progress"><div><strong>@Model.ProgressPercent%</strong><span>Overall progress</span></div><div class="progress"><div class="progress-bar" style="width:@Model.ProgressPercent%"></div></div></div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-8">
+        <div class="crm-panel h-100">
+            <div class="panel-heading"><div><h3>Customer & License</h3><p>Verified handover details for the support team.</p></div></div>
+            <div class="data-grid">
+                <div><span>Firm</span><strong>@Model.FirmName</strong></div><div><span>Contact Person</span><strong>@Model.PersonName</strong></div>
+                <div><span>Mobile</span><strong>@Model.Mobile</strong></div><div><span>Email</span><strong>@(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</strong></div>
+                <div><span>Product</span><strong>@Model.ProductName</strong></div><div><span>License Count</span><strong>@Model.LicenseCount</strong></div>
+                <div><span>License Number</span><strong>@Model.LicenseNumber</strong></div>
+                <div><span>PIN Number</span><strong class="pin-display"><span id="pinDisplay">@(canViewPin ? (string.IsNullOrWhiteSpace(Model.PinNumber) ? "Not entered" : "••••••") : "Restricted")</span>@if (canViewPin && !string.IsNullOrWhiteSpace(Model.PinNumber)) { <button type="button" class="pin-view-button" id="togglePinDisplay" data-pin="@Model.PinNumber" title="Show PIN"><i class="bi bi-eye"></i></button> }</strong></div>
+                <div><span>Bill Number</span><strong>@(string.IsNullOrWhiteSpace(Model.BillNumber) ? "—" : Model.BillNumber)</strong></div><div><span>Sale / Request Date</span><strong>@Model.SaleDate.ToString("dd MMM yyyy")</strong></div>
+                <div><span>Record Type</span><strong>@Model.ServiceType</strong></div><div><span>Training Required</span><strong>@(Model.TrainingRequired ? "Yes" : "No")</strong></div>
+                @if (Model.IsPaidTraining) { <div><span>Paid Training Amount</span><strong>@Model.PaidTrainingAmount.ToString("0.00")</strong></div><div><span>Payment Reference</span><strong>@(string.IsNullOrWhiteSpace(Model.PaymentReference) ? "—" : Model.PaymentReference)</strong></div> }
+                <div><span>Sold By</span><strong>@Model.SoldByName <small>@Model.SoldByRole</small></strong></div><div><span>Priority</span><strong>@Model.Priority</strong></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="crm-panel h-100">
+            <div class="panel-heading"><div><h3>Ownership</h3><p>Current accountable team.</p></div></div>
+            <div class="ownership-stack"><div><span>Support Head</span><strong>@(string.IsNullOrWhiteSpace(Model.SupportHeadName) ? "Not selected" : Model.SupportHeadName)</strong></div><div><span>Assigned Member</span><strong>@(string.IsNullOrWhiteSpace(Model.AssignedMemberName) ? "Not assigned" : Model.AssignedMemberName)</strong></div><div><span>Preferred Start</span><strong>@(Model.PreferredStartDate?.ToString("dd MMM yyyy") ?? "Not confirmed") @Model.PreferredTime</strong></div><div><span>Last Update</span><strong>@Model.LastUpdated.ToString("dd MMM yyyy, hh:mm tt")</strong></div></div>
+            @if (canAssign && !Model.IsTrainingCompleted)
+            {
+                <form asp-action="Assign" method="post" class="inline-action-form mt-4">@Html.AntiForgeryToken()<input type="hidden" name="caseId" value="@Model.Id" />
+                    <label>Support Head</label><select name="supportHeadId" class="form-select"><option value="">Keep current</option>@foreach (var user in heads) { <option value="@user.Id" selected="@(Model.SupportHeadId == user.Id)">@user.FullName</option> }</select>
+                    <label>Support Member</label><select name="assignedMemberId" class="form-select" required><option value="">Select member</option>@foreach (var user in members) { <option value="@user.Id" selected="@(Model.AssignedMemberId == user.Id)">@user.FullName</option> }</select>
+                    <label>Assignment Note</label><textarea name="note" class="form-control" rows="2" placeholder="Customer call and scheduling instruction"></textarea>
+                    <button class="btn btn-primary w-100"><i class="bi bi-person-check"></i> Assign & Notify</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+@if (canViewAi)
+{
+<div class="ai-guidance-panel mb-4"><div class="ai-mark"><i class="bi bi-stars"></i></div><div><span>FREE RULE-BASED AI GUIDANCE</span><h3>@Model.AiRiskLevel Risk</h3><p>@Model.AiRecommendation</p></div></div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.TrainingTopicsSummary))
+{
+<div class="crm-panel completed-topics-panel mb-4">
+    <div class="panel-heading">
+        <div><h3><i class="bi bi-check2-square"></i> Topics Covered During Training</h3><p>The same selected points are included in the customer completion email for reference.</p></div>
+        <span class="status-pill">@savedTopicLines.Count() point(s)</span>
+    </div>
+    <div class="covered-topic-grid">
+        @foreach (var line in savedTopicLines)
+        {
+            var isOtherPoint = line.StartsWith("Other Points:", StringComparison.OrdinalIgnoreCase);
+            var displayLine = isOtherPoint ? line["Other Points:".Length..].Trim() : line.StartsWith("Covered:", StringComparison.OrdinalIgnoreCase) ? line["Covered:".Length..].Trim() : line;
+            <div class="covered-topic-item @(isOtherPoint ? "other" : string.Empty)">
+                <span><i class="bi @(isOtherPoint ? "bi-journal-text" : "bi-check-lg")"></i></span>
+                <div><strong>@(isOtherPoint ? "Other Points Covered" : displayLine)</strong>@if (isOtherPoint) { <p>@displayLine</p> }</div>
+            </div>
+        }
+    </div>
+</div>
+}
+
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="crm-panel p-0 overflow-hidden mb-4">
+            <div class="panel-heading px-4 pt-4"><div><h3>Multi-day Delivery Schedule</h3><p>Installation, implementation and training records.</p></div>@if (canSchedule && !Model.IsTrainingCompleted && !Model.IsPaused) { <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#scheduleForm"><i class="bi bi-calendar-plus"></i> Add Day</button> }</div>
+            @if (canSchedule && !Model.IsTrainingCompleted && !Model.IsPaused)
+            {
+                <div class="collapse px-4 pb-4" id="scheduleForm"><form asp-action="SaveSchedule" method="post" class="form-inline-card">@Html.AntiForgeryToken()<input type="hidden" name="CaseId" value="@Model.Id" />
+                    <div><label>Day</label><input name="DayNumber" type="number" min="1" value="@(schedules.Count + 1)" class="form-control" /></div>
+                    <div><label>Date</label><input name="ScheduleDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" required /></div>
+                    <div><label>Start</label><input name="StartTime" type="time" value="10:00" class="form-control" required /></div>
+                    <div><label>End</label><input name="EndTime" type="time" class="form-control" /></div>
+                    <div><label>Stage</label><select name="Stage" class="form-select"><option>Installation</option><option>Implementation</option><option>Training</option><option>Go-Live Support</option></select></div>
+                    <div><label>Member</label><select name="AssignedMemberId" class="form-select" required><option value="">Select</option>@foreach (var user in members) { <option value="@user.Id" selected="@(Model.AssignedMemberId == user.Id)">@user.FullName</option> }</select></div>
+                    <div class="form-span-2"><label>Planned Topics / Points <span class="text-muted small">(Optional)</span></label><textarea name="TopicPlan" rows="2" class="form-control"></textarea></div>
+                    <div class="form-action-cell"><button class="btn btn-primary">Save Schedule</button></div>
+                </form></div>
+            }
+            <div class="schedule-timeline">
+                @if (schedules.Count == 0) { <div class="empty-state"><i class="bi bi-calendar2-week"></i><h4>No schedule created</h4><p>Contact the customer and add the first delivery day.</p></div> }
+                @foreach (var schedule in schedules)
+                {
+                    <article class="timeline-day @(schedule.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase) ? "complete" : "")">
+                        <div class="timeline-marker"><strong>@schedule.DayNumber</strong><span>DAY</span></div>
+                        <div class="timeline-body"><div class="timeline-head"><div><h4>@schedule.Stage</h4><p>@schedule.ScheduleDate.ToString("dd MMM yyyy") · @schedule.StartTime @(string.IsNullOrWhiteSpace(schedule.EndTime) ? "" : "– " + schedule.EndTime) · @schedule.AssignedMemberName</p></div><span class="status-pill">@schedule.Status</span></div>
+                            <div class="topic-block"><span>Planned</span><p>@schedule.TopicPlan</p></div>
+                            @if (!string.IsNullOrWhiteSpace(schedule.TopicsCovered)) { <div class="topic-block covered"><span>Covered</span><p>@schedule.TopicsCovered</p><small>@schedule.Notes</small></div> }
+                            @if (canProgress && !Model.IsTrainingCompleted && !Model.IsPaused)
+                            {
+                                <form asp-action="UpdateProgress" method="post" class="progress-entry-form">@Html.AntiForgeryToken()<input type="hidden" name="ScheduleId" value="@schedule.Id" /><input type="hidden" name="CaseId" value="@Model.Id" />
+                                    <textarea name="TopicsCovered" rows="2" class="form-control" placeholder="Mention every point covered on this date" required>@schedule.TopicsCovered</textarea>
+                                    <input name="Notes" class="form-control" placeholder="Pending points / customer questions / next action" value="@schedule.Notes" />
+                                    <select name="Stage" class="form-select"><option selected="@(schedule.Stage == "Installation")">Installation</option><option selected="@(schedule.Stage == "Implementation")">Implementation</option><option selected="@(schedule.Stage == "Training")">Training</option><option selected="@(schedule.Stage == "Go-Live Support")">Go-Live Support</option></select>
+                                    <select name="Status" class="form-select"><option>Completed</option><option>In Progress</option><option>Rescheduled</option><option>Cancelled</option></select>
+                                    <input name="ProgressPercent" type="number" min="0" max="100" value="@Model.ProgressPercent" class="form-control" aria-label="Overall progress percent" />
+                                    <button class="btn btn-outline-primary">Save Day Record</button>
+                                </form>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+        </div>
+
+        @if (canViewFeedback)
+        {
+        <div class="crm-panel feedback-panel"><div class="panel-heading"><div><h3>Customer Feedback & Performance</h3><p>Linked to license @Model.LicenseNumber</p></div>@if (Model.FeedbackRating > 0) { <span class="performance-level level-@Model.FeedbackPerformanceLevel.ToLowerInvariant()">@Model.FeedbackPerformanceLevel</span> }</div>
+            @if (Model.FeedbackRating > 0) { <div class="feedback-result"><div class="rating-number">@Model.FeedbackRating<span>/5</span></div><div class="rating-stars">@for (var i = 1; i <= 5; i++) { <i class="bi @(i <= Model.FeedbackRating ? "bi-star-fill" : "bi-star")"></i> }<p>@Model.FeedbackRemarks</p><small>Received @Model.FeedbackDate?.ToString("dd MMM yyyy, hh:mm tt") · Training by @Model.AssignedMemberName</small></div></div> }
+            else { <div class="empty-mini horizontal"><i class="bi bi-chat-square-heart"></i><span>@(Model.IsTrainingCompleted && !Model.ClosedWithoutTraining ? "Feedback request sent; customer response is pending." : Model.ClosedWithoutTraining ? "Feedback is not requested when training was not required." : "Feedback form will be emailed after training completion.")</span></div> }
+        </div>
+        }
+    </div>
+
+    <div class="col-xl-4">
+        @if (canTransfer && !Model.IsTrainingCompleted)
+        {
+        <div class="crm-panel mb-4 secure-action-card"><div class="panel-heading"><div><h3>Secure Transfer</h3><p>Admin / Support Head OTP is compulsory.</p></div><i class="bi bi-shield-lock-fill secure-action-icon"></i></div>
+            <form asp-action="RequestOtp" method="post" class="mb-3">@Html.AntiForgeryToken()<input type="hidden" name="caseId" value="@Model.Id" /><input type="hidden" name="purpose" value="Transfer" /><button class="btn btn-light w-100"><i class="bi bi-key-fill"></i> Request Transfer OTP</button></form>
+            <form asp-action="Transfer" method="post" class="inline-action-form">@Html.AntiForgeryToken()<input type="hidden" name="caseId" value="@Model.Id" />
+                <label>New Support Member</label><select name="newMemberId" class="form-select" required><option value="">Select member</option>@foreach (var user in members.Where(x => x.Id != Model.AssignedMemberId)) { <option value="@user.Id">@user.FullName</option> }</select>
+                <label>Transfer Reason</label><textarea name="reason" rows="3" class="form-control" required placeholder="Workload, availability, specialist requirement..."></textarea>
+                <label>6-digit OTP</label><input name="otp" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" class="form-control otp-input" required placeholder="Enter OTP from Admin / Support Head" />
+                <button class="btn btn-outline-primary w-100"><i class="bi bi-arrow-left-right"></i> Verify OTP & Transfer</button>
+            </form>
+        </div>
+        }
+
+        @if (canCloseNoTraining && !Model.IsTrainingCompleted)
+        {
+        <div class="crm-panel mb-4"><div class="panel-heading"><div><h3>Training Not Required?</h3><p>Close this record with a clear customer / business remark.</p></div></div>
+            <form asp-action="CloseWithoutTraining" method="post" class="inline-action-form" data-confirm="Close this record because training is not required?">@Html.AntiForgeryToken()<input type="hidden" name="caseId" value="@Model.Id" />
+                <label>Closure Remarks</label><textarea name="remarks" rows="3" class="form-control" required placeholder="Why training is not required..."></textarea>
+                <button class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i> Close Without Training</button>
+            </form>
+        </div>
+        }
+
+        @if (canReopen && Model.IsTrainingCompleted)
+        {
+        <div class="crm-panel mb-4 secure-action-card"><div class="panel-heading"><div><h3>Re-open Record</h3><p>OTP approval is required for completed records.</p></div><i class="bi bi-arrow-counterclockwise secure-action-icon"></i></div>
+            <form asp-action="RequestOtp" method="post" class="mb-3">@Html.AntiForgeryToken()<input type="hidden" name="caseId" value="@Model.Id" /><input type="hidden" name="purpose" value="Reopen" /><button class="btn btn-light w-100"><i class="bi bi-key-fill"></i> Request Re-open OTP</button></form>
+            <form asp-action="Reopen" method="post" class="inline-action-form">@Html.AntiForgeryToken()<input type="hidden" name="caseId" value="@Model.Id" />
+                <label>Re-open Remarks</label><textarea name="remarks" rows="3" class="form-control" required placeholder="Why this completed record must be opened again..."></textarea>
+                <label>6-digit OTP</label><input name="otp" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" class="form-control otp-input" required />
+                <button class="btn btn-primary w-100"><i class="bi bi-arrow-counterclockwise"></i> Verify OTP & Re-open</button>
+            </form>
+        </div>
+        }
+
+        @if (Model.LastTransferDate.HasValue || Model.ReopenedCount > 0 || Model.ClosedWithoutTraining)
+        {
+        <div class="crm-panel mb-4"><div class="panel-heading"><div><h3>Control History</h3><p>Important secured status changes.</p></div></div><div class="ownership-stack">
+            @if (Model.LastTransferDate.HasValue) { <div><span>Last Transfer</span><strong>@Model.TransferFromName → @Model.AssignedMemberName<small>@Model.LastTransferDate?.ToString("dd MMM yyyy, hh:mm tt")</small></strong></div> }
+            @if (Model.ReopenedCount > 0) { <div><span>Re-opened</span><strong>@Model.ReopenedCount time(s)<small>@Model.LastReopenedDate?.ToString("dd MMM yyyy, hh:mm tt") · @Model.LastReopenedByName</small></strong></div> }
+            @if (Model.ClosedWithoutTraining) { <div><span>Training Not Required</span><strong>@Model.NoTrainingRemarks</strong></div> }
+        </div></div>
+        }
+        <div class="crm-panel activity-panel"><div class="panel-heading"><div><h3>Activity History</h3><p>Complete audit trail</p></div></div>
+            <div class="activity-list activity-list-scroll">@if (activities.Count == 0) { <div class="empty-mini"><span>No activity recorded.</span></div> }
+            @foreach (var activity in activities) { <div class="activity-item"><span class="activity-dot"></span><div><strong>@activity.ActivityType</strong><p>@activity.Note</p><small>@activity.ActivityDate.ToString("dd MMM yyyy, hh:mm tt") · @activity.PerformedByName</small></div></div> }</div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+ const button=document.getElementById('togglePinDisplay'); const text=document.getElementById('pinDisplay');
+ if(button&&text){button.addEventListener('click',()=>{const showing=button.dataset.showing==='true';text.textContent=showing?'••••••':button.dataset.pin;button.dataset.showing=showing?'false':'true';button.innerHTML=showing?'<i class="bi bi-eye"></i>':'<i class="bi bi-eye-slash"></i>';});}
+
+ const completionForm=document.getElementById('completeTrainingForm');
+ const otherPoints=document.getElementById('otherPointsCovered');
+ const validation=document.getElementById('completionTopicValidation');
+ completionForm?.addEventListener('submit',function(event){
+   const selected=completionForm.querySelectorAll('.training-topic-checkbox:checked').length;
+   if(selected===0 && !(otherPoints?.value||'').trim()){
+     event.preventDefault();
+     validation?.classList.remove('d-none');
+     otherPoints?.focus();
+     return;
+   }
+   validation?.classList.add('d-none');
+   const submit=completionForm.querySelector('button[type="submit"]');
+   if(submit){submit.disabled=true;submit.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Completing & Sending...';}
+ });
+ completionForm?.querySelectorAll('.training-topic-checkbox').forEach(x=>x.addEventListener('change',()=>validation?.classList.add('d-none')));
+ otherPoints?.addEventListener('input',()=>validation?.classList.add('d-none'));
+})();
+</script>

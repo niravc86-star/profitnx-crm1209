@@ -1,0 +1,76 @@
+/* =====================================================================
+   Quick Fix - 2026-08-02
+   Change 2: search box added to the left CRM sidebar, between the
+   "Business Workspace" header and the menu list. Filters the existing
+   menu links live as you type (see initSidebarMenuSearch in crm-ui.js) -
+   no new page, no server round-trip.
+
+   Loaded last in _Layout.cshtml so it reliably wins the cascade over the
+   older layered sidebar stylesheets without needing to fight their
+   !important rules. Only new class names are used here, so it never
+   collides with anything already styling .side-rail / .menu-list.
+   ===================================================================== */
+
+.side-rail .sidebar-search-box {
+    position: relative;
+    flex: 0 0 auto;
+    margin: 0 6px 12px;
+}
+
+.side-rail .sidebar-search-box .bi-search {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, .45);
+    font-size: .82rem;
+    pointer-events: none;
+}
+
+.side-rail .sidebar-search-box input {
+    width: 100%;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .14);
+    color: #fff;
+    border-radius: 12px;
+    padding: 9px 32px 9px 34px;
+    font-size: .82rem;
+    font-weight: 500;
+    outline: none;
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.side-rail .sidebar-search-box input::placeholder { color: rgba(255, 255, 255, .45); }
+
+.side-rail .sidebar-search-box input:focus {
+    background: rgba(255, 255, 255, .14);
+    border-color: rgba(255, 255, 255, .38);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .08);
+}
+
+.side-rail .sidebar-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, .5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    cursor: pointer;
+    transition: color .15s ease;
+}
+.side-rail .sidebar-search-clear:hover { color: #fff; }
+
+.side-rail .sidebar-search-empty {
+    margin: 4px 6px 0;
+    padding: 14px 10px;
+    text-align: center;
+    font-size: .78rem;
+    color: rgba(255, 255, 255, .5);
+}

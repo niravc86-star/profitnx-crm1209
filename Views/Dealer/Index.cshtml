@@ -1,0 +1,96 @@
+@model List<Dealer>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    ViewData["Title"] = "Partner Master";
+    var canManagePartners = await PermissionService.HasPermissionAsync(User, "dealer.manage");
+    var canManageUsers = await PermissionService.HasPermissionAsync(User, "users.manage");
+}
+<div class="page-heading-row mb-3">
+    <h3 class="mb-0">Partner Master</h3>
+    @if (canManagePartners) { <a asp-action="Create" class="btn btn-brand"><i class="bi bi-plus-circle"></i><span>Add Partner</span></a> }
+</div>
+<div class="card-soft p-3">
+<div class="enterprise-table-toolbar no-print">
+    <div class="toolbar-left">
+        <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="dealerTable" />
+        <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="dealerTable">
+            <option value="20" selected>20 records</option>
+            <option value="40">40 records</option>
+            <option value="100">100 records</option>
+        </select>
+    </div>
+    <div class="toolbar-right">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="dealerTable"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+    </div>
+</div>
+<div class="table-responsive enterprise-table-scroll">
+<table class="table table-hover mb-0 align-middle enterprise-data-table" id="dealerTable" data-table-id="dealerTable"><thead><tr><th>Name</th><th>Contact</th><th>City</th><th>Margin</th><th>Year Target</th><th>Target Date</th><th>Joined</th><th>PSS/API</th><th>Status / Left</th>@if(canManagePartners || canManageUsers){<th class="text-end col-action">Actions</th>}</tr></thead><tbody>
+@foreach(var item in Model){
+    var needsLogin = (ViewBag.PartnersNeedingLogin as HashSet<string>)?.Contains(item.Id) ?? false;
+    <tr>
+        <td><strong>@item.DealerName</strong><div class="mini-muted">@item.Email</div></td>
+        <td>@item.ContactPerson<div class="mini-muted">@item.Mobile</div></td>
+        <td>@item.City</td><td>@item.MarginPercent%</td>
+        @{
+            var allTargetRows = item.GetTargetRows();
+            var currentTargetRow = item.GetTargetForYear(DateTime.Today.Year);
+        }
+        <td>
+            @if (currentTargetRow != null)
+            {
+                <text>@currentTargetRow.Year</text> <br /><span class="mini-muted">₹@currentTargetRow.Amount.ToString("N0")</span>
+                if (allTargetRows.Count > 1)
+                {
+                    <br /><span class="mini-muted" data-bs-toggle="tooltip" data-bs-title="@string.Join(" · ", allTargetRows.Select(r => $"{r.Year}: ₹{r.Amount:N0}"))">+@(allTargetRows.Count - 1) more year(s)</span>
+                }
+            }
+            else
+            {
+                <span class="mini-muted">No target set</span>
+            }
+        </td>
+        <td>
+            @if (currentTargetRow?.FromDate != null || currentTargetRow?.ToDate != null)
+            {
+                @($"{currentTargetRow.FromDate?.ToString("dd/MM/yyyy") ?? "-"} - {currentTargetRow.ToDate?.ToString("dd/MM/yyyy") ?? "-"}")
+            }
+            else
+            {
+                <span class="mini-muted">-</span>
+            }
+        </td>
+        <td>@(item.JoiningDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+        <td><span class="badge bg-soft-primary">PSS: @(item.GivesPss?"Yes":"No")</span> <span class="badge bg-soft-info">API: @(item.GivesApi?"Yes":"No")</span><div class="mini-muted">@(item.PssApiChangeDate?.ToString("dd/MM/yyyy") ?? "") @item.PssApiRemark</div></td>
+        <td>@(item.IsActive?"Active":"Inactive")@if(!item.IsActive){<div class="mini-muted">Left: @(item.LeftDate?.ToString("dd/MM/yyyy") ?? "-") · @item.LeftRemark</div>}</td>
+        @if(canManagePartners || canManageUsers)
+        {
+            <td class="text-end col-action"><div class="table-actions">
+                @if(canManagePartners)
+                {
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i><span>Edit</span></a>
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this partner?');" class="d-inline"><input type="hidden" name="id" value="@item.Id" /><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i><span>Delete</span></button></form>
+                }
+                @if(canManageUsers && needsLogin)
+                {
+                    <a asp-controller="Admin" asp-action="Create" asp-route-role="Partner" asp-route-partnerId="@item.Id" class="btn btn-sm btn-outline-success"><i class="bi bi-person-plus"></i><span>Create Login</span></a>
+                }
+                else if (!needsLogin)
+                {
+                    <span class="badge bg-soft-success align-self-center">Login Exists</span>
+                }
+            </div></td>
+        }
+    </tr>
+}
+@if(!Model.Any()){<tr><td colspan="10" class="text-center text-muted py-4">No partners found.</td></tr>}
+</tbody></table></div>
+<div class="enterprise-table-pagination no-print">
+    <div class="mini-muted" data-table-info="dealerTable"></div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="dealerTable"><i class="bi bi-chevron-left"></i></button>
+        <span class="small" data-table-page="dealerTable">1 / 1</span>
+        <div class="enterprise-page-numbers" data-table-pages="dealerTable"></div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="dealerTable"><i class="bi bi-chevron-right"></i></button>
+    </div>
+</div>
+</div>

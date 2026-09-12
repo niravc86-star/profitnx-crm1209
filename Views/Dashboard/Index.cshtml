@@ -1,0 +1,312 @@
+@model ProfitNx.CRM.Services.DashboardSummary
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    ViewData["Title"] = "Sales Command Dashboard";
+    ViewData["Subtitle"] = "Monthly business forecast, partner contribution, pipeline health and priority actions.";
+    var recentInquiries = ViewBag.RecentInquiries as List<Inquiry> ?? new List<Inquiry>();
+    var conversion = Model.TotalInquiries == 0 ? 0 : (int)Math.Round((decimal)Model.SoldInquiries * 100 / Model.TotalInquiries);
+    // "This month sold" = every Sold inquiry this calendar month, regardless of who closed it
+    // (Admin direct, Partner-forwarded, or User-assigned) — falls back to SoldDate when BillDate
+    // isn't set, so a sale isn't missed just because billing hasn't happened yet.
+    var monthSold = recentInquiries.Where(x => x.Status == "Sold" &&
+        ((x.BillDate.HasValue && x.BillDate.Value.Month == DateTime.Today.Month && x.BillDate.Value.Year == DateTime.Today.Year)
+         || (!x.BillDate.HasValue && x.SoldDate.HasValue && x.SoldDate.Value.Month == DateTime.Today.Month && x.SoldDate.Value.Year == DateTime.Today.Year))).ToList();
+    // "Sales Done" (hero tile) = Admin + Partner + User sold amount combined this month.
+    // Previously this only summed partner-forwarded sales (Model.PartnerSales), so Admin's own
+    // direct sales and User-handled sales never showed up here even when they were sold.
+    var monthValue = monthSold.Sum(x => x.AmountWithoutGst);
+    var demoPipelineCount = recentInquiries.Count(x => x.Status == "Demo Scheduled" || x.Status == "Demo Done" || x.Status == "Negotiation");
+    var forecast = monthValue + (demoPipelineCount * 10800m);
+    var activePartnerPipeline = Model.AdminToPartnerPipeline;
+    var supportToAdminPipeline = Model.SupportToAdminPipeline;
+    var adminToUserPipeline = Model.AdminToUserPipeline;
+    // Exclude inquiries originating from Support team when building partner wise rows
+    var partnerRows = recentInquiries.Where(x => !string.IsNullOrWhiteSpace(x.ForwardedToPartnerId) && !string.IsNullOrWhiteSpace(x.ForwardedToPartnerName) && !(x.InquirySource.Equals("Support Team", StringComparison.OrdinalIgnoreCase) || x.AttendedByRole.Equals("Support", StringComparison.OrdinalIgnoreCase)))
+        .GroupBy(x => x.ForwardedToPartnerName)
+        .Select(g => new { Partner = g.Key, Total = g.Count(), Active = g.Count(x => x.Status != "Sold" && x.Status != "Close"), Sold = g.Count(x => x.Status == "Sold"), Amount = g.Where(x => x.Status == "Sold").Sum(x => x.AmountWithoutGst) })
+        .OrderByDescending(x => x.Amount).ThenByDescending(x => x.Sold).Take(6).ToList();
+    var pipelineRows = recentInquiries.Where(x => x.Status == "Follow Up" || x.Status == "Demo Scheduled" || x.Status == "Demo Done" || x.Status == "Negotiation")
+        .OrderBy(x => x.NextFollowUpDate ?? x.DemoScheduledDate ?? DateTime.MaxValue).Take(6).ToList();
+    var todayFollowUps = ViewBag.TodayFollowUps as List<Inquiry> ?? new List<Inquiry>();
+    var rangeFollowUps = ViewBag.RangeFollowUps as List<Inquiry> ?? new List<Inquiry>();
+    DateTime? followUpFromDate = ViewBag.FollowUpFromDate as DateTime?;
+    DateTime? followUpToDate = ViewBag.FollowUpToDate as DateTime?;
+    string DateInput(DateTime? d) => d.HasValue ? d.Value.ToString("yyyy-MM-dd") : string.Empty;
+    string Dt(DateTime d) => d.TimeOfDay.TotalSeconds == 0 ? d.ToString("dd/MM/yyyy") : d.ToString("dd/MM/yyyy HH:mm");
+    var canEditInquiry = await PermissionService.HasPermissionAsync(User, "inquiry.edit");
+    var canCreateInquiry = await PermissionService.HasPermissionAsync(User, "inquiry.create") || await PermissionService.HasPermissionAsync(User, "inquiry.create.support");
+    var canLiveDashboard = await PermissionService.HasPermissionAsync(User, "dashboard.live");
+    var inquiryOpenAction = canEditInquiry ? "Edit" : "Details";
+}
+
+<div class="crm-pro-dashboard">
+    <section class="pro-hero-panel polished-hero">
+        <div>
+            <span class="pro-eyebrow">@(User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "") Command Center</span>
+            @{
+                var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
+                if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    <h2>Executive CRM Dashboard</h2>
+                    <p>Sales, stock, partner, product and conversion overview.</p>
+                }
+                else
+                {
+                    <h2>ProfitNx Sales Command Dashboard</h2>
+                    <p>Expected business, partner contribution, pipeline health and priority focus in one view.</p>
+                }
+            }
+        </div>
+        <div class="pro-hero-metrics">
+            <a asp-controller="Inquiry" asp-action="Index" class="hero-metric small-tile"><span>Forecast</span><strong>₹@forecast.ToString("N0")</strong></a>
+            <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Sold" class="hero-metric small-tile"><span>Sales Done</span><strong>₹@monthValue.ToString("N0")</strong></a>
+            <a asp-controller="Inquiry" asp-action="Index" class="hero-metric small-tile"><span>Active Pipeline</span><strong>@(Model.TotalInquiries - Model.SoldInquiries - Model.Closed)</strong></a>
+            @if (canLiveDashboard)
+            {
+                <a asp-controller="Dashboard" asp-action="Live" class="hero-metric small-tile" title="Open Live Dashboard"><span>Live</span><strong><i class="bi bi-broadcast-pin"></i></strong></a>
+            }
+        </div>
+    </section>
+
+    <div class="pro-card mt-4 followup-command-card">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+            <div>
+                <h4 class="mb-1">Today Follow-up Control</h4>
+                <p class="mini-muted mb-0">Admin view: follow-up tracking by partner, user and admin with date range selection.</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-controller="Inquiry" asp-action="Index" asp-route-FollowUpFromDate="@DateTime.Today.ToString("yyyy-MM-dd")" asp-route-FollowUpToDate="@DateTime.Today.ToString("yyyy-MM-dd")" class="btn btn-brand btn-sm">Today: @todayFollowUps.Count</a>
+                <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Follow Up" class="btn btn-outline-primary btn-sm">All Follow Up</a>
+            </div>
+        </div>
+        <form method="get" class="professional-filter-grid compact-filter-grid mb-3">
+            <div class="filter-cell date-cell"><label class="form-label small">Follow-up From</label><input type="date" name="followUpFromDate" value="@DateInput(followUpFromDate)" class="form-control" /></div>
+            <div class="filter-cell date-cell"><label class="form-label small">Follow-up To</label><input type="date" name="followUpToDate" value="@DateInput(followUpToDate)" class="form-control" /></div>
+            <div class="filter-actions"><button class="btn btn-brand w-100">Go</button><a asp-action="Index" class="btn btn-outline-secondary w-100">Clear</a></div>
+        </form>
+        <div class="dashboard-grid compact mb-3">
+            <a asp-controller="Inquiry" asp-action="Index" asp-route-FollowUpFromDate="@DateTime.Today.ToString("yyyy-MM-dd")" asp-route-FollowUpToDate="@DateTime.Today.ToString("yyyy-MM-dd")" class="dash-card accent-coral"><span>Today Follow-up</span><strong>@todayFollowUps.Count</strong></a>
+            <a asp-controller="Inquiry" asp-action="Index" asp-route-FollowUpToDate="@DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd")" class="dash-card accent-dark"><span>Overdue</span><strong>@recentInquiries.Count(x => x.NextFollowUpDate.HasValue && x.NextFollowUpDate.Value.Date < DateTime.Today && x.Status != "Sold" && x.Status != "Close")</strong></a>
+            <a asp-controller="Inquiry" asp-action="Index" asp-route-FollowUpFromDate="@DateTime.Today.ToString("yyyy-MM-dd")" asp-route-FollowUpToDate="@DateTime.Today.AddDays(7).ToString("yyyy-MM-dd")" class="dash-card accent-cyan"><span>Next 7 Days</span><strong>@recentInquiries.Count(x => x.NextFollowUpDate.HasValue && x.NextFollowUpDate.Value.Date >= DateTime.Today && x.NextFollowUpDate.Value.Date <= DateTime.Today.AddDays(7) && x.Status != "Sold" && x.Status != "Close")</strong></a>
+        </div>
+        <div class="table-responsive compact-table-wrap">
+            <table class="table table-hover align-middle mb-0 compact-crm-table">
+                <thead><tr><th>Owner</th><th>Today</th><th>Total in Filter</th><th>Pending Customers</th></tr></thead>
+                <tbody>
+                @foreach (var g in rangeFollowUps.GroupBy(x => string.IsNullOrWhiteSpace(x.ForwardedToPartnerName) ? (string.IsNullOrWhiteSpace(x.AssignedUserName) ? "Admin/Unassigned" : x.AssignedUserName) : x.ForwardedToPartnerName).OrderByDescending(g => g.Count()))
+                {
+                    <tr>
+                        <td><strong>@g.Key</strong></td>
+                        <td><span class="status-badge bg-soft-primary">@g.Count(x => x.NextFollowUpDate!.Value.Date == DateTime.Today)</span></td>
+                        <td>@g.Count()</td>
+                        <td>@string.Join(", ", g.Take(3).Select(x => string.IsNullOrWhiteSpace(x.FirmName) ? x.PersonName : x.FirmName))</td>
+                    </tr>
+                }
+                @if (!rangeFollowUps.Any()) { <tr><td colspan="4" class="text-center text-muted py-4">No follow-ups found in the selected date range.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="pro-kpi-grid pro-kpi-grid-7">
+        <a asp-controller="Inquiry" asp-action="Index" class="pro-kpi purple"><span>Total</span><strong>@Model.TotalInquiries</strong><small>All inquiries</small></a>
+        <a asp-controller="Inquiry" asp-action="Index" asp-route-InquiryQuality="Genuine" class="pro-kpi green"><span>Genuine</span><strong>@Model.GenuineInquiries</strong><small>Quality inquiries</small></a>
+        <a asp-controller="Inquiry" asp-action="Index" asp-route-InquiryQuality="Not Genuine" class="pro-kpi orange"><span>Not Genuine</span><strong>@Model.NotGenuineInquiries</strong><small>Low priority</small></a>
+        <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Follow Up" class="pro-kpi amber"><span>Follow Up</span><strong>@Model.FollowUps</strong><small>Needs action</small></a>
+        <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Sold" class="pro-kpi emerald"><span>Sold</span><strong>@Model.SoldInquiries</strong><small>@Model.TotalLicensesSold license</small></a>
+        <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Close" class="pro-kpi dark"><span>Close</span><strong>@Model.Closed</strong><small>Closed cases</small></a>
+        <a asp-controller="Reports" asp-action="Index" class="pro-kpi sky"><span>Conversion</span><strong>@conversion%</strong><small>Sold / total</small><div class="pro-progress"><i style="width:@conversion%"></i></div></a>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-xl-8">
+            <div class="pro-card h-100">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div><h4 class="mb-1">Business Trend</h4><p class="mini-muted mb-0">Stage wise current pipeline.</p></div>
+                    <a asp-controller="Reports" asp-action="Index" class="btn btn-brand btn-sm">Reports</a>
+                </div>
+                <div class="pro-bars">
+                    <a asp-controller="Inquiry" asp-action="Index" style="height:@Math.Max(18, Model.TotalInquiries * 14)px"><span>Total</span><b>@Model.TotalInquiries</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Sold" style="height:@Math.Max(18, Model.SoldInquiries * 24)px"><span>Sold</span><b>@Model.SoldInquiries</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Follow Up" style="height:@Math.Max(18, Model.FollowUps * 24)px"><span>Follow</span><b>@Model.FollowUps</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Demo Scheduled" style="height:@Math.Max(18, Model.DemoScheduled * 24)px"><span>Demo Sch.</span><b>@Model.DemoScheduled</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Demo Done" style="height:@Math.Max(18, Model.DemoDone * 24)px"><span>Demo Done</span><b>@Model.DemoDone</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Close" style="height:@Math.Max(18, Model.Closed * 24)px"><span>Close</span><b>@Model.Closed</b></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="pro-card h-100">
+                <h4>Smart Focus Plan</h4>
+                <div class="focus-lines">
+                    <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Follow Up"><span>Follow-up pending</span><b>@Model.FollowUps</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Demo Scheduled"><span>Scheduled demo</span><b>@Model.DemoScheduled</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Demo Done"><span>Completed demo / closing</span><b>@Model.DemoDone</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index"><span><i class="bi bi-headset me-1 text-warning"></i>Support → Admin pipeline</span><b>@supportToAdminPipeline</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index"><span><i class="bi bi-person-badge me-1 text-info"></i>Admin → User pipeline</span><b>@adminToUserPipeline</b></a>
+                    <a asp-controller="Inquiry" asp-action="Index"><span><i class="bi bi-building me-1 text-success"></i>Admin → Partner pipeline</span><b>@activePartnerPipeline</b></a>
+                    <a asp-controller="Reports" asp-action="Index"><span>Conversion health</span><b>@conversion%</b></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pro-card ai-growth-card mt-1">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h4 class="mb-1"><i class="bi bi-stars me-2 text-primary"></i>Business Growth Hints</h4>
+                <p class="mini-muted mb-0">Rule-based CRM suggestions generated from current inquiry and pipeline data.</p>
+            </div>
+            <a asp-controller="Reports" asp-action="Index" asp-route-reportType="detailed" class="btn btn-soft btn-sm">Open Detailed Report</a>
+        </div>
+        <div class="ai-hint-grid mt-3">
+            <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Follow Up"><strong>@Model.FollowUps follow-ups</strong><span>Call pending follow-up customers first. Same day follow-up improves conversion.</span></a>
+            <a asp-controller="Inquiry" asp-action="Index" asp-route-InquiryQuality="Genuine"><strong>@Model.GenuineInquiries genuine leads</strong><span>Prioritize genuine inquiries and schedule demo before partner/user reassignment.</span></a>
+            <a asp-controller="Inquiry" asp-action="Index" asp-route-Status="Demo Scheduled"><strong>@Model.DemoScheduled demos scheduled</strong><span>Prepare demo checklist and close next action date before demo starts.</span></a>
+            <a asp-controller="Reports" asp-action="Index" asp-route-reportType="partner"><strong>@activePartnerPipeline partner pipeline</strong><span>Review valid partner-forwarded pipeline only. Support → Admin inquiries stay in Admin bucket until forwarded.</span></a>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1 business-three-grid">
+        <div class="col-xl-4">
+            <div class="pro-card h-100 business-card partner-card">
+                <h4>Partner Wise Business</h4>
+                <div class="table-responsive">
+                    <table class="table align-middle compact-crm-table mb-0">
+                        <thead><tr><th>Partner</th><th>Total</th><th>Active</th><th>Sold</th><th>Business</th></tr></thead>
+                        <tbody>
+                        @foreach (var p in partnerRows)
+                        {
+                            <tr><td><strong>@p.Partner</strong></td><td>@p.Total</td><td>@p.Active</td><td><span class="status-badge bg-soft-success">@p.Sold</span></td><td>₹@p.Amount.ToString("N0")</td></tr>
+                        }
+                        @if (!partnerRows.Any()) { <tr><td colspan="5" class="text-muted text-center py-4">No partner business yet.</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="pro-card h-100 business-card admin-card">
+                <h4>Admin Wise Business</h4>
+                <div class="table-responsive">
+                    <table class="table align-middle compact-crm-table mb-0">
+                        <thead><tr><th>Admin</th><th>Total</th><th>Active</th><th>Sold</th><th>Business</th></tr></thead>
+                        <tbody>
+                        @foreach (var a in Model.AdminBusiness.Take(8))
+                        {
+                            <tr><td><strong>@a.Name</strong></td><td>@a.Total</td><td>@a.Active</td><td><span class="status-badge bg-soft-success">@a.Sold</span></td><td>₹@a.GrossAmount.ToString("N0")</td></tr>
+                        }
+                        @if (!Model.AdminBusiness.Any()) { <tr><td colspan="5" class="text-muted text-center py-4">No admin business data yet.</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="pro-card h-100 business-card user-card">
+                <h4>User Wise Business</h4>
+                <div class="table-responsive">
+                    <table class="table align-middle compact-crm-table mb-0">
+                        <thead><tr><th>User</th><th>Total</th><th>Active</th><th>Sold</th><th>Business</th></tr></thead>
+                        <tbody>
+                        @foreach (var u in Model.UserBusiness.Take(8))
+                        {
+                            <tr><td><strong>@u.Name</strong></td><td>@u.Total</td><td>@u.Active</td><td><span class="status-badge bg-soft-success">@u.Sold</span></td><td>₹@u.GrossAmount.ToString("N0")</td></tr>
+                        }
+                        @if (!Model.UserBusiness.Any()) { <tr><td colspan="5" class="text-muted text-center py-4">No user business data yet.</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-xl-12">
+            <div class="pro-card h-100">
+                <h4>Priority Pipeline</h4>
+                <div class="priority-list">
+                    @foreach (var item in pipelineRows)
+                    {
+                        <a asp-controller="Inquiry" asp-action="@inquiryOpenAction" asp-route-id="@item.Id">
+                            <strong>@(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)</strong>
+                            <span>@item.Status</span>
+                            <small>@(item.NextFollowUpDate?.ToString("dd/MM/yyyy") ?? item.DemoScheduledDate?.ToString("dd/MM/yyyy") ?? "No date")</small>
+                        </a>
+                    }
+                    @if (!pipelineRows.Any()) { <div class="text-muted py-4">No urgent follow-up/demo pipeline.</div> }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-xl-6">
+            <div class="pro-card h-100">
+                <h4>Partner Wise Sales Summary</h4>
+                <div class="table-responsive">
+                    <table class="table align-middle compact-crm-table mb-0">
+                        <thead><tr><th>Partner</th><th>Qty</th><th>Gross</th><th>Margin</th><th>Net</th></tr></thead>
+                        <tbody>
+                        @foreach (var p in Model.PartnerSales.Take(8))
+                        {
+                            <tr><td><strong>@p.Name</strong></td><td>@p.Quantity</td><td>₹@p.GrossAmount.ToString("N0")</td><td>@p.MarginPercent% / ₹@p.MarginAmount.ToString("N0")</td><td>₹@p.NetAmount.ToString("N0")</td></tr>
+                        }
+                        @if (!Model.PartnerSales.Any()) { <tr><td colspan="5" class="text-center text-muted py-4">No partner sales found.</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="pro-card h-100">
+                <h4>Product Wise Sales Summary</h4>
+                <div class="table-responsive">
+                    <table class="table align-middle compact-crm-table mb-0">
+                        <thead><tr><th>Product</th><th>Qty</th><th>Amount</th></tr></thead>
+                        <tbody>
+                        @foreach (var p in Model.ProductSales.Take(8))
+                        {
+                            <tr><td><strong>@p.Name</strong></td><td>@p.Quantity</td><td>₹@p.GrossAmount.ToString("N0")</td></tr>
+                        }
+                        @if (!Model.ProductSales.Any()) { <tr><td colspan="3" class="text-center text-muted py-4">No product sales found.</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pro-card mt-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div><h4 class="mb-1">Recent Inquiry Control</h4><p class="mini-muted mb-0">Latest inquiries with status, next action and sold-by details.</p></div>
+            @if (canCreateInquiry) { <a asp-controller="Inquiry" asp-action="Create" class="btn btn-brand btn-sm"><i class="bi bi-plus-circle"></i><span>New Inquiry</span></a> }
+        </div>
+        <div class="table-responsive compact-table-wrap">
+            <table class="table table-hover align-middle mb-0 compact-crm-table">
+                <thead><tr><th>Date</th><th>Customer</th><th>Product</th><th>Owner</th><th>Status</th><th>Next Action</th><th>Sold By</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var item in recentInquiries.Take(12))
+                {
+                    var nextAction = item.Status == "Sold" ? $"Bill {item.BillNo}" : item.Status == "Close" ? item.CloseReason : item.NextFollowUpDate?.ToString("dd/MM/yyyy") ?? "No date";
+                    var soldBy = !string.IsNullOrWhiteSpace(item.SoldByName) ? item.SoldByName : (item.Status == "Sold" ? (!string.IsNullOrWhiteSpace(item.ForwardedToPartnerName) ? item.ForwardedToPartnerName : item.AssignedUserName) : "-");
+                    <tr>
+                        <td><strong>@Dt(item.CreatedDate)</strong><div class="mini-muted">Updated: @Dt(item.LastUpdated)</div></td>
+                        <td><strong>@(string.IsNullOrWhiteSpace(item.FirmName) ? item.PersonName : item.FirmName)</strong><div class="mini-muted">@item.City · @item.Mobile1</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(item.ProductName) ? "-" : item.ProductName)<div class="mini-muted">@item.VersionType</div></td>
+                        <td><strong>@item.AssignedUserName</strong><div class="mini-muted">Partner: @(string.IsNullOrWhiteSpace(item.ForwardedToPartnerName) ? "Not Forwarded" : item.ForwardedToPartnerName)</div><div class="mini-muted">Support: @(string.IsNullOrWhiteSpace(item.SupportExecutiveName) ? "-" : item.SupportExecutiveName)</div></td>
+                        <td><a asp-controller="Inquiry" asp-action="Index" asp-route-Status="@item.Status" class="status-badge @(item.Status=="Sold"?"bg-soft-success":item.Status=="Close"?"bg-soft-danger":"bg-soft-primary")">@item.Status</a></td>
+                        <td>@nextAction</td>
+                        <td>@soldBy<div class="mini-muted">@item.SoldByRole</div></td>
+                        <td><a asp-controller="Inquiry" asp-action="@inquiryOpenAction" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">@(canEditInquiry ? "Zoom / Update" : "View Details")</a></td>
+                    </tr>
+                }
+                @if (!recentInquiries.Any()) { <tr><td colspan="8" class="text-center text-muted py-4">No inquiry data yet.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Support to Admin inquiries should not appear in Partner Wise Business or Partner Pipeline. -->

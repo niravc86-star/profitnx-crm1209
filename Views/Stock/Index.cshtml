@@ -1,0 +1,132 @@
+@model List<StockItem>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    var products = ViewBag.Products as List<Product> ?? new();
+    var partners = ViewBag.PartnerMasters as List<Dealer> ?? new();
+    var selectedPartnerId = ViewBag.SelectedPartnerId as string;
+    var selectedProductId = ViewBag.SelectedProductId as string;
+    var selectedVersion = ViewBag.SelectedVersion as string;
+    var selectedStatus = ViewBag.SelectedStatus as string;
+    var selectedBillNo = ViewBag.SelectedBillNo as string;
+    var selectedLicenseNo = ViewBag.SelectedLicenseNo as string;
+    DateTime? selectedBillDate = ViewBag.SelectedBillDate as DateTime?;
+    DateTime? selectedFromDate = ViewBag.SelectedFromDate as DateTime?;
+    DateTime? selectedToDate = ViewBag.SelectedToDate as DateTime?;
+    int? selectedPurchaseYear = ViewBag.SelectedPurchaseYear as int?;
+    var roleName = ViewBag.RoleName as string ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+    var isPartner = roleName.Equals("Partner", StringComparison.OrdinalIgnoreCase);
+    var canManageStock = await PermissionService.HasPermissionAsync(User, "stock.manage");
+    ViewData["Title"] = isPartner ? "My License Stock" : "Partner Stock Control";
+    ViewData["Subtitle"] = "Partner-wise purchased, sold, balance, bill and license number status.";
+    var partnerGroups = Model.GroupBy(x => string.IsNullOrWhiteSpace(x.PartnerName) ? "Unassigned" : x.PartnerName).OrderBy(x => x.Key).ToList();
+    List<string> Licenses(StockItem item) => (item.LicenseNumbers ?? string.Empty).Split(new[] {'\r','\n',',',';'}, StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(x=>!string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+}
+<div class="dashboard-grid mb-4">
+    <div class="dash-card accent-purple"><span>Purchased</span><strong>@Model.Sum(x => x.TotalPurchased)</strong></div>
+    <div class="dash-card accent-green"><span>Sold</span><strong>@Model.Sum(x => x.TotalSold)</strong></div>
+    <div class="dash-card accent-cyan"><span>Balance</span><strong>@Model.Sum(x => x.AvailableStock)</strong></div>
+    <div class="dash-card accent-dark"><span>Balance Value</span><strong>@Model.Sum(x => x.ApproxValueWithoutGst).ToString("N0")</strong></div>
+</div>
+<div class="card-soft p-3 mb-4 professional-filter-card">
+    <form method="get" class="professional-filter-grid compact-filter-grid">
+        @if(!isPartner){<div class="filter-cell"><label class="form-label small">Partner</label><select name="partnerId" class="form-select"><option value="">All Partners</option>@foreach(var p in partners){<option value="@p.Id" selected="@(selectedPartnerId==p.Id)">@p.DealerName</option>}</select></div>}
+        <div class="filter-cell"><label class="form-label small">Product</label><select name="productId" class="form-select"><option value="">All Products</option>@foreach(var p in products){<option value="@p.Id" selected="@(selectedProductId==p.Id)">@p.Name (@p.Version)</option>}</select></div>
+        <div class="filter-cell"><label class="form-label small">Version</label><input name="version" value="@selectedVersion" class="form-control" placeholder="Version" /></div>
+        <div class="filter-cell"><label class="form-label small">Stock Status</label><select name="status" class="form-select"><option value="">All</option><option value="available" selected='@(selectedStatus=="available")'>Available</option><option value="soldout" selected='@(selectedStatus=="soldout")'>Sold Out</option></select></div>
+        <div class="filter-cell"><label class="form-label small">Bill No</label><input name="billNo" value="@selectedBillNo" class="form-control" placeholder="Bill No" /></div>
+        <div class="filter-cell"><label class="form-label small">Bill Date</label><input name="billDate" value="@(selectedBillDate?.ToString("yyyy-MM-dd"))" type="date" class="form-control" /></div>
+        <div class="filter-cell"><label class="form-label small">From Date</label><input name="fromDate" value="@(selectedFromDate?.ToString("yyyy-MM-dd"))" type="date" class="form-control" /></div>
+        <div class="filter-cell"><label class="form-label small">To Date</label><input name="toDate" value="@(selectedToDate?.ToString("yyyy-MM-dd"))" type="date" class="form-control" /></div>
+        <div class="filter-cell"><label class="form-label small">Purchase Year</label><input name="purchaseYear" value="@selectedPurchaseYear" type="number" min="2000" max="2100" class="form-control" placeholder="e.g. 2026" /></div>
+        <div class="filter-cell"><label class="form-label small">License No</label><input name="licenseNo" value="@selectedLicenseNo" class="form-control" placeholder="Search license" /></div>
+        <div class="filter-actions"><button class="btn btn-brand w-100">Go</button><a asp-action="Index" class="btn btn-outline-secondary w-100">Clear</a></div>
+    </form>
+</div>
+@if (canManageStock){<div class="mb-4 d-flex gap-2 flex-wrap"><a asp-action="CreateBill" class="btn btn-brand px-4">+ Add Stock Bill (Multiple Products)</a><a asp-action="Create" class="btn btn-outline-primary px-4">+ Add Single Product Stock</a></div>}
+<div class="dash-panel mb-4">
+    <h4 class="mb-3">Partner-wise Stock Summary</h4>
+    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Partner</th><th>Purchased</th><th>Sold</th><th>Balance</th><th>Stock Value W/O GST</th><th>Status</th></tr></thead><tbody>
+    @foreach(var g in partnerGroups){var balance=g.Sum(x=>x.AvailableStock);<tr><td><strong>@g.Key</strong></td><td>@g.Sum(x=>x.TotalPurchased)</td><td>@g.Sum(x=>x.TotalSold)</td><td><button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#partner_@(g.Key.GetHashCode().ToString().Replace("-","N"))">@balance Zoom</button></td><td>@g.Sum(x=>x.ApproxValueWithoutGst).ToString("N2")</td><td><span class="status-badge @(balance<=0?"bg-soft-danger":"bg-soft-success")">@(balance<=0?"No Stock":"Available")</span></td></tr>}
+    @if(!Model.Any()){<tr><td colspan="6" class="text-center text-muted py-4">No stock data yet.</td></tr>}
+    </tbody></table></div>
+</div>
+
+<div class="dash-panel">
+    <h4 class="mb-3">License Stock Register</h4>
+    <div class="enterprise-table-toolbar no-print">
+    <div class="toolbar-left">
+        <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="stockTable" />
+        <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="stockTable">
+            <option value="20" selected>20 records</option>
+            <option value="40">40 records</option>
+            <option value="100">100 records</option>
+            <option value="200">200 records</option>
+        </select>
+    </div>
+    <div class="toolbar-right">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="stockTable"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+    </div>
+</div>
+<div class="table-responsive enterprise-table-scroll"><table class="table table-hover align-middle mb-0 enterprise-data-table" id="stockTable" data-table-id="stockTable"><thead><tr><th>Partner</th><th>Product</th><th>Version</th><th>Purchased</th><th>Sold</th><th>Available</th><th>Value W/O GST</th><th>Bill No / Date</th><th>License Info</th>@if(canManageStock){<th class="col-action"></th>}</tr></thead><tbody>
+    @foreach (var item in Model){var lowStock=item.AvailableStock<=item.ReorderLevel;var lid="stock_"+item.Id.Replace("-","");<tr><td><strong>@(string.IsNullOrWhiteSpace(item.PartnerName)?"Unassigned":item.PartnerName)</strong><div class="mini-muted">@item.WarehouseLocation</div></td><td><strong>@item.ProductName</strong><div class="mini-muted">@item.Notes</div></td><td>@item.Version</td><td>@item.TotalPurchased</td><td>@item.TotalSold</td><td><button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#@lid">@item.AvailableStock Zoom</button></td><td>@item.ApproxValueWithoutGst.ToString("N2")</td><td>@(string.IsNullOrWhiteSpace(item.BillNo)?"-":item.BillNo)<div class="mini-muted">@(item.LastPurchaseDate?.ToString("dd/MM/yyyy") ?? "-")</div></td><td><button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#@lid">Zoom</button></td>@if(canManageStock){<td class="text-end"><a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-1">Edit</a><form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this stock row?');"><button type="submit" class="btn btn-sm btn-outline-danger">Delete</button></form></td>}</tr>}
+    </tbody></table></div>
+<div class="enterprise-table-pagination no-print">
+    <div class="mini-muted" data-table-info="stockTable"></div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-prev="stockTable"><i class="bi bi-chevron-left"></i></button>
+        <span class="small" data-table-page="stockTable">1 / 1</span>
+        <div class="enterprise-page-numbers" data-table-pages="stockTable"></div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-next="stockTable"><i class="bi bi-chevron-right"></i></button>
+    </div>
+</div>
+</div>
+
+
+@foreach(var r in Model.GroupBy(x => string.IsNullOrWhiteSpace(x.PartnerName) ? "Unassigned" : x.PartnerName).Select(g => new { Partner = g.Key, Rows = g.ToList(), Id = g.Key.GetHashCode().ToString().Replace("-","N") })){
+<div class="modal fade stock-license-modal" id="amount_@r.Id" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">@r.Partner - Product wise stock amount</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="table-responsive"><table class="table"><thead><tr><th>Product</th><th>Version</th><th>Purchased</th><th>Sold</th><th>Available</th><th>Amount W/O GST</th></tr></thead><tbody>@foreach(var x in r.Rows.GroupBy(y => new { y.ProductName, y.Version }).Select(y => new { y.Key.ProductName, y.Key.Version, Purchased = y.Sum(z => z.TotalPurchased), Sold = y.Sum(z => z.TotalSold), Available = y.Sum(z => z.AvailableStock), Amount = y.Sum(z => z.ApproxValueWithoutGst), Id = (r.Partner + y.Key.ProductName + y.Key.Version).GetHashCode().ToString().Replace("-","N") }).OrderBy(x=>x.ProductName)){<tr><td><strong>@x.ProductName</strong></td><td>@x.Version</td><td>@x.Purchased</td><td>@x.Sold</td><td><button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#licgroup_@x.Id">@x.Available Zoom</button></td><td>@x.Amount.ToString("N2")</td></tr>}</tbody></table></div></div></div></div></div>
+}
+
+@foreach(var lg in Model.GroupBy(x => new { Partner = string.IsNullOrWhiteSpace(x.PartnerName) ? "Unassigned" : x.PartnerName, x.ProductName, x.Version }).Select(g => new { g.Key.Partner, g.Key.ProductName, g.Key.Version, Rows = g.ToList(), Id = (g.Key.Partner + g.Key.ProductName + g.Key.Version).GetHashCode().ToString().Replace("-","N") })){
+    var licSeq = 1;
+    var hasLicenses = false;
+<div class="modal fade stock-license-modal" id="licgroup_@lg.Id" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">@lg.Partner - @lg.ProductName / @lg.Version license numbers</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>#</th><th>License Number</th><th>Bill No</th><th>Bill Date</th><th>Status</th></tr></thead><tbody>
+@foreach(var row in lg.Rows)
+{
+    var list = Licenses(row);
+    if(!list.Any() && row.TotalPurchased > 0){ for(var i=1;i<=row.TotalPurchased;i++){ list.Add("License " + i); } }
+    var used = Math.Min(row.TotalSold, list.Count);
+    for(var i=0;i<list.Count;i++)
+    {
+        hasLicenses = true;
+        var isUsed = i < used;
+        <tr><td>@licSeq</td><td><strong>@list[i]</strong></td><td>@(string.IsNullOrWhiteSpace(row.BillNo) ? "-" : row.BillNo)</td><td>@(row.LastPurchaseDate?.ToString("dd/MM/yyyy") ?? "-")</td><td><span class="status-badge @(isUsed?"bg-soft-danger":"bg-soft-success")">@(isUsed?"Sold":"Available")</span></td></tr>
+        licSeq++;
+    }
+}
+@if(!hasLicenses){<tr><td colspan="5" class="text-muted text-center">No license numbers entered.</td></tr>}
+</tbody></table></div></div></div></div></div>
+}
+
+@foreach (var item in Model)
+{
+    var licenseList = Licenses(item);
+    if(!licenseList.Any() && item.TotalPurchased > 0){ for(var i=1;i<=item.TotalPurchased;i++){ licenseList.Add("License " + i); } }
+    var usedCount = Math.Min(item.TotalSold, licenseList.Count);
+    <div class="modal fade stock-license-modal" id='stock_@item.Id.Replace("-","")' tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">License Stock - @item.ProductName</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-3"><strong>Partner</strong><div>@item.PartnerName</div></div><div class="col-md-3"><strong>Product / Version</strong><div>@item.ProductName / @item.Version</div></div>
+                <div class="col-md-2"><strong>Purchased</strong><div>@item.TotalPurchased</div></div><div class="col-md-2"><strong>Sold</strong><div>@item.TotalSold</div></div><div class="col-md-2"><strong>Available</strong><div>@item.AvailableStock</div></div>
+                <div class="col-md-4"><strong>Bill No / Date</strong><div>@(string.IsNullOrWhiteSpace(item.BillNo)?"-":item.BillNo) / @(item.LastPurchaseDate?.ToString("dd/MM/yyyy") ?? "-")</div></div><div class="col-md-4"><strong>Value W/O GST</strong><div>@item.ApproxValueWithoutGst.ToString("N2")</div></div><div class="col-md-4"><strong>Location</strong><div>@item.WarehouseLocation</div></div>
+            </div>
+            <div class="table-responsive"><table class="table align-middle"><thead><tr><th>#</th><th>License Number</th><th>Status</th></tr></thead><tbody>
+            @for(var i=0;i<licenseList.Count;i++){var used=i<usedCount;<tr><td>@(i+1)</td><td><strong>@licenseList[i]</strong></td><td><span class="status-badge @(used?"bg-soft-danger":"bg-soft-success")">@(used?"Sold":"Available")</span></td></tr>}
+            @if(!licenseList.Any()){<tr><td colspan="3" class="text-muted text-center">No license numbers entered. Edit stock and enter one license per line.</td></tr>}
+            </tbody></table></div>
+        </div></div></div>
+    </div>
+}
+@foreach(var g in partnerGroups){<div class="modal fade stock-license-modal" id="partner_@(g.Key.GetHashCode().ToString().Replace("-","N"))" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">@g.Key - Product wise stock</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="table-responsive"><table class="table"><thead><tr><th>Product</th><th>Version</th><th>Purchased</th><th>Sold</th><th>Available</th></tr></thead><tbody>@foreach(var x in g.GroupBy(y => new { y.ProductName, y.Version }).Select(y => new { y.Key.ProductName, y.Key.Version, Purchased = y.Sum(z => z.TotalPurchased), Sold = y.Sum(z => z.TotalSold), Available = y.Sum(z => z.AvailableStock) })){<tr><td>@x.ProductName</td><td>@x.Version</td><td>@x.Purchased</td><td>@x.Sold</td><td>@x.Available</td></tr>}</tbody></table></div></div></div></div></div>}
+@section Scripts{
+<script>document.addEventListener('hidden.bs.modal', function(){document.querySelectorAll('.modal-backdrop').forEach(x=>x.remove());document.body.classList.remove('modal-open');document.body.style.removeProperty('overflow');document.body.style.removeProperty('padding-right');});</script>
+}

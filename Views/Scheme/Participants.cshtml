@@ -1,0 +1,106 @@
+@model List<ProfitNx.CRM.Models.SchemeParticipation>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    ViewData["Title"] = "Scheme Participants";
+    var scheme = ViewBag.Scheme as ProfitNx.CRM.Models.Scheme;
+    var availableUsers = ViewBag.AvailableUsers as List<ProfitNx.CRM.Models.AppUser> ?? new();
+    var participantVm = ViewBag.ParticipantVm as ProfitNx.CRM.ViewModels.SchemeParticipationFormViewModel ?? new();
+    var canManageSchemes = await PermissionService.HasPermissionAsync(User, "scheme.manage");
+}
+<div class="row g-4">
+    <div class="col-xl-4">
+        <div class="card card-soft border-0">
+            <div class="card-body p-4">
+                <h5 class="mb-1">@scheme?.Name</h5>
+                <p class="text-muted">@scheme?.Description</p>
+                <div class="small text-muted mb-3">
+                    Period: @scheme?.StartDate.ToString("dd/MM/yyyy") - @scheme?.EndDate.ToString("dd/MM/yyyy")
+                </div>
+
+                @if (canManageSchemes)
+                {
+                    <form asp-action="AddParticipant" method="post" class="row g-3">
+                        <input name="SchemeId" type="hidden" value="@participantVm.SchemeId" />
+
+                        <div class="col-12">
+                            <label class="form-label">Select User / Partner</label>
+                            <select name="UserId" class="form-select" required>
+                                <option value="">-- Select --</option>
+                                @foreach (var item in availableUsers)
+                                {
+                                    <option value="@item.Id">@item.FullName (@item.Role) @(!string.IsNullOrWhiteSpace(item.PartnerCode) ? $" - {item.PartnerCode}" : "")</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Joined Date</label>
+                            <input type="date" name="JoinedDate" class="form-control" value="@participantVm.JoinedDate.ToString("yyyy-MM-dd")" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Active Until</label>
+                            <input type="date" name="ActiveUntil" class="form-control" />
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-brand w-100">Join in Scheme</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card card-soft border-0">
+            <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <strong>Joined Users / Partners</strong>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Back</a>
+            </div>
+            <div class="table-responsive px-2 px-md-4 pb-4">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Partner Code</th>
+                            <th>Joined Date</th>
+                            <th>Active Until</th>
+                            @if (canManageSchemes)
+                            {
+                                <th></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.UserName</td>
+                            <td><span class="stat-pill bg-soft-primary">@item.Role</span></td>
+                            <td>@item.PartnerCode</td>
+                            <td>@item.JoinedDate.ToString("dd/MM/yyyy")</td>
+                            <td>@(item.ActiveUntil?.ToString("dd/MM/yyyy") ?? "-")</td>
+                            @if (canManageSchemes)
+                            {
+                                <td class="text-end">
+                                    <form asp-action="RemoveParticipant" method="post" class="d-inline" onsubmit="return confirm('Remove this participant from scheme?');">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="schemeId" value="@item.SchemeId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">No participants joined yet.</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

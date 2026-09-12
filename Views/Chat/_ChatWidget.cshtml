@@ -1,0 +1,243 @@
+@{
+    // Reused in two places:
+    //  1) Views/Chat/Index.cshtml - the full Chat page (ViewBag.ChatWidgetMode = false)
+    //  2) Views/Shared/_Layout.cshtml - the site-wide floating chat drawer (ViewBag.ChatWidgetMode = true)
+    // The contact list is always populated by chat.js from the Contacts JSON endpoint,
+    // so this partial never needs a server-rendered list - it works identically (and
+    // instantly, with no extra sheet/db reads) no matter which page it's dropped into.
+    var currentUserId = ViewBag.CurrentUserId as string ?? string.Empty;
+    var currentUserName = ViewBag.CurrentUserName as string ?? string.Empty;
+    var widgetMode = (bool?)ViewBag.ChatWidgetMode ?? false;
+}
+<div id="chatRoot" class="chat-shell @(widgetMode ? "chat-widget-mode" : "chat-page-mode")"
+     data-current-user-id="@currentUserId"
+     data-current-user-name="@currentUserName"
+     data-contacts-url="@Url.Action("Contacts", "Chat")"
+     data-messages-url="@Url.Action("Messages", "Chat")"
+     data-send-url="@Url.Action("Send", "Chat")"
+     data-unread-url="@Url.Action("UnreadCount", "Chat")"
+     data-rights-url="@Url.Action("Rights", "Chat")"
+     data-clear-chat-url="@Url.Action("ClearChat", "Chat")"
+     data-delete-message-url="@Url.Action("DeleteMessage", "Chat")"
+     data-delete-chat-url="@Url.Action("DeleteChat", "Chat")"
+     data-react-url="@Url.Action("React", "Chat")"
+     data-star-url="@Url.Action("ToggleStar", "Chat")"
+     data-pin-url="@Url.Action("TogglePin", "Chat")">
+    <form id="chatAntiForgeryForm" style="display:none">@Html.AntiForgeryToken()</form>
+
+    <div class="chat-contacts-pane">
+        <div class="chat-contacts-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="chatSearchInput" placeholder="Search people..." autocomplete="off" />
+        </div>
+        <ul class="chat-contact-list" id="chatContactList">
+            <li class="chat-contact-empty text-muted small p-3" data-initial-placeholder>Loading people...</li>
+        </ul>
+    </div>
+
+    <div class="chat-thread-pane" id="chatThreadPane">
+        <div class="chat-drop-overlay" id="chatDropOverlay"><i class="bi bi-paperclip"></i><span>Drop file to attach</span></div>
+        <div class="chat-empty-state" id="chatEmptyState">
+            <i class="bi bi-chat-square-text"></i>
+            <p>Select someone from the list to start chatting.</p>
+        </div>
+        <div class="chat-thread-active d-none" id="chatThreadActive">
+            <div class="chat-thread-header">
+                <button type="button" class="chat-back-btn" id="chatBackBtn" title="Back to chat list"><i class="bi bi-arrow-left"></i></button>
+                <div class="chat-thread-avatar" id="chatThreadAvatar"></div>
+                <div><strong id="chatThreadName"></strong><div class="small text-muted" id="chatThreadStatus"></div></div>
+                <button type="button" class="chat-settings-toggle-btn" id="chatSettingsToggleBtn" title="Chat settings" data-bs-toggle="tooltip" data-bs-title="Theme, font & emoji"><i class="bi bi-sliders"></i></button>
+            </div>
+            <!-- ADDED (2026-08-18): "N selected" toolbar shown instead of the header
+                 while multi-select mode (from the message menu's "Select" action) is on. -->
+            <div class="chat-select-bar d-none" id="chatSelectBar">
+                <button type="button" id="chatSelectCancelBtn" title="Cancel selection"><i class="bi bi-x-lg"></i></button>
+                <span id="chatSelectCount">0 selected</span>
+                <div class="chat-select-actions">
+                    <button type="button" id="chatSelectForwardBtn" title="Forward selected"><i class="bi bi-arrow-90deg-right"></i></button>
+                    <button type="button" id="chatSelectDeleteBtn" title="Delete selected" class="d-none"><i class="bi bi-trash3"></i></button>
+                </div>
+            </div>
+            <!-- ADDED (2026-08-18): banner for the conversation's pinned message (if any). -->
+            <div class="chat-pinned-banner d-none" id="chatPinnedBanner">
+                <i class="bi bi-pin-angle-fill"></i>
+                <div class="chat-pinned-banner-text" id="chatPinnedBannerText"></div>
+                <button type="button" id="chatPinnedBannerUnpin" title="Unpin message"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <!-- ADDED (2026-08-18): "Replying to ..." strip shown above the input bar
+                 while composing a reply (WhatsApp-style). -->
+            <div class="chat-reply-preview d-none" id="chatReplyPreview">
+                <div class="chat-reply-preview-bar"></div>
+                <div class="chat-reply-preview-body">
+                    <strong id="chatReplyPreviewSender"></strong>
+                    <span id="chatReplyPreviewText"></span>
+                </div>
+                <button type="button" id="chatReplyPreviewCancel" title="Cancel reply"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="chat-attachment-preview d-none" id="chatAttachmentPreview">
+                <i class="bi bi-paperclip"></i> <span id="chatAttachmentPreviewName"></span>
+                <button type="button" id="chatAttachmentPreviewRemove"><i class="bi bi-x-circle-fill"></i></button>
+            </div>
+            <form class="chat-input-bar" id="chatSendForm">
+                <button type="button" class="chat-attach-btn" id="chatAttachBtn" title="Attach file"><i class="bi bi-paperclip"></i></button>
+                <input type="file" id="chatAttachmentInput" hidden />
+                <textarea id="chatMessageInput" placeholder="Type a message..." rows="1"></textarea>
+                <button type="submit" class="chat-send-btn" id="chatSendBtn"><i class="bi bi-send-fill"></i></button>
+            </form>
+
+            <!-- Change 3 (2026-08-06): slide-in settings panel - puts the empty
+                 space beside the thread to use instead of leaving it blank. -->
+            <aside class="chat-settings-panel" id="chatSettingsPanel" aria-hidden="true">
+                <div class="chat-settings-panel-header">
+                    <strong><i class="bi bi-sliders"></i> Chat Settings</strong>
+                    <button type="button" class="chat-settings-close-btn" id="chatSettingsCloseBtn" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="chat-settings-panel-body">
+                    <div class="chat-settings-section">
+                        <div class="chat-settings-label">Apply to</div>
+                        <div class="chat-scope-toggle" id="chatScopeToggle">
+                            <button type="button" class="chat-scope-option active" data-scope="all">All chats</button>
+                            <button type="button" class="chat-scope-option" data-scope="chat" title="Open a conversation first">This chat only</button>
+                        </div>
+                        <div class="chat-settings-hint" id="chatScopeHint">Theme &amp; font apply to every conversation.</div>
+                    </div>
+                    <div class="chat-settings-section">
+                        <div class="chat-settings-label">Theme</div>
+                        <div class="chat-theme-grid" id="chatThemeGrid">
+                            <button type="button" class="chat-theme-swatch" data-theme="aurora" title="Aurora"><span class="chat-theme-swatch-dot chat-theme-dot-aurora"></span>Aurora</button>
+                            <button type="button" class="chat-theme-swatch" data-theme="ocean" title="Ocean"><span class="chat-theme-swatch-dot chat-theme-dot-ocean"></span>Ocean</button>
+                            <button type="button" class="chat-theme-swatch" data-theme="sunset" title="Sunset"><span class="chat-theme-swatch-dot chat-theme-dot-sunset"></span>Sunset</button>
+                            <button type="button" class="chat-theme-swatch" data-theme="midnight" title="Midnight"><span class="chat-theme-swatch-dot chat-theme-dot-midnight"></span>Midnight</button>
+                            <button type="button" class="chat-theme-swatch" data-theme="emerald" title="Emerald"><span class="chat-theme-swatch-dot chat-theme-dot-emerald"></span>Emerald</button>
+                            <button type="button" class="chat-theme-swatch" data-theme="rosegold" title="Rose Gold"><span class="chat-theme-swatch-dot chat-theme-dot-rosegold"></span>Rose Gold</button>
+                        </div>
+                    </div>
+                    <div class="chat-settings-section">
+                        <div class="chat-settings-label">Font size</div>
+                        <div class="chat-font-toggle" id="chatFontToggle">
+                            <button type="button" class="chat-font-option" data-font="sm">A<span>Small</span></button>
+                            <button type="button" class="chat-font-option" data-font="md">A<span>Medium</span></button>
+                            <button type="button" class="chat-font-option" data-font="lg">A<span>Large</span></button>
+                        </div>
+                    </div>
+                    <div class="chat-settings-section">
+                        <div class="chat-settings-label">Quick emoji</div>
+                        <!-- CHANGED (2026-08-22): first row is now built dynamically by chat.js
+                             (your most-used emoji, remembered per device) - these 24 are just the
+                             starting/fallback set until you have usage history. "More emojis..."
+                             opens the full picker (chat-emoji-data.js) with every category. -->
+                        <div class="chat-emoji-grid" id="chatEmojiGrid">
+                            <button type="button" class="chat-emoji-btn">😀</button>
+                            <button type="button" class="chat-emoji-btn">😂</button>
+                            <button type="button" class="chat-emoji-btn">😊</button>
+                            <button type="button" class="chat-emoji-btn">😍</button>
+                            <button type="button" class="chat-emoji-btn">😎</button>
+                            <button type="button" class="chat-emoji-btn">🤔</button>
+                            <button type="button" class="chat-emoji-btn">👍</button>
+                            <button type="button" class="chat-emoji-btn">👎</button>
+                            <button type="button" class="chat-emoji-btn">🙏</button>
+                            <button type="button" class="chat-emoji-btn">👏</button>
+                            <button type="button" class="chat-emoji-btn">🎉</button>
+                            <button type="button" class="chat-emoji-btn">🔥</button>
+                            <button type="button" class="chat-emoji-btn">❤️</button>
+                            <button type="button" class="chat-emoji-btn">💯</button>
+                            <button type="button" class="chat-emoji-btn">✅</button>
+                            <button type="button" class="chat-emoji-btn">❌</button>
+                            <button type="button" class="chat-emoji-btn">😢</button>
+                            <button type="button" class="chat-emoji-btn">😡</button>
+                            <button type="button" class="chat-emoji-btn">🙌</button>
+                            <button type="button" class="chat-emoji-btn">👋</button>
+                            <button type="button" class="chat-emoji-btn">🤝</button>
+                            <button type="button" class="chat-emoji-btn">📌</button>
+                            <button type="button" class="chat-emoji-btn">⏰</button>
+                            <button type="button" class="chat-emoji-btn">📎</button>
+                        </div>
+                        <button type="button" class="chat-emoji-grid-more" id="chatEmojiGridMore">
+                            <i class="bi bi-emoji-smile"></i> More emojis…
+                        </button>
+                    </div>
+                    <!-- Clear/Delete: hidden by default, chat.js shows only the buttons
+                         the current user has rights for (chat.clear / chat.delete,
+                         set per Role/User from Role Wise Rights / User Wise Rights). -->
+                    <div class="chat-settings-section chat-danger-zone d-none" id="chatDangerZone">
+                        <div class="chat-settings-label">Clear &amp; Delete</div>
+                        <button type="button" class="chat-danger-btn d-none" id="chatClearChatBtn" title="Remove this conversation from your own view only">
+                            <i class="bi bi-eraser-fill"></i> Clear Chat (My View)
+                        </button>
+                        <button type="button" class="chat-danger-btn chat-danger-btn-delete d-none" id="chatDeleteChatBtn" title="Permanently delete this entire conversation for both people">
+                            <i class="bi bi-trash3-fill"></i> Delete All Chat
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<!-- ADDED (2026-08-18): WhatsApp-style per-message action menu. A single
+     shared instance is repositioned/re-targeted by chat.js on every
+     long-press (touch) / right-click (mouse) / "..." tap on a bubble,
+     instead of building one per bubble. -->
+<div class="chat-msg-menu-backdrop d-none" id="chatMsgMenuBackdrop"></div>
+<div class="chat-msg-menu d-none" id="chatMsgMenu" role="menu">
+    <!-- CHANGED (2026-08-22): these 6 quick-reaction buttons are no longer fixed -
+         chat.js rewrites them on open to your 6 most-used reactions (remembered
+         per device), falling back to this default set until you have history.
+         The "+" button opens the full emoji picker so ANY emoji can be used as
+         a reaction, not just these 6. -->
+    <div class="chat-msg-menu-reactions" id="chatMsgMenuReactions">
+        <button type="button" data-emoji="👍" title="Like">👍</button>
+        <button type="button" data-emoji="❤️" title="Love">❤️</button>
+        <button type="button" data-emoji="😂" title="Haha">😂</button>
+        <button type="button" data-emoji="😮" title="Wow">😮</button>
+        <button type="button" data-emoji="😢" title="Sad">😢</button>
+        <button type="button" data-emoji="🙏" title="Thanks">🙏</button>
+        <button type="button" class="chat-msg-menu-more-emoji" id="chatMsgMenuMoreEmoji" title="More emojis">
+            <i class="bi bi-plus-lg"></i>
+        </button>
+    </div>
+    <ul class="chat-msg-menu-list">
+        <li data-action="reply"><i class="bi bi-reply-fill"></i> Reply</li>
+        <li data-action="forward"><i class="bi bi-arrow-90deg-right"></i> Forward</li>
+        <li data-action="copy"><i class="bi bi-copy"></i> Copy</li>
+        <li data-action="star"><i class="bi bi-star"></i> <span data-star-label>Star</span></li>
+        <li data-action="pin"><i class="bi bi-pin-angle"></i> <span data-pin-label>Pin</span></li>
+        <li data-action="select"><i class="bi bi-check2-square"></i> Select</li>
+        <li data-action="delete" class="chat-msg-menu-danger d-none" data-requires-delete-right><i class="bi bi-trash3"></i> Delete</li>
+    </ul>
+</div>
+
+<!-- ADDED (2026-08-22): full emoji picker - opened from the "+" next to the quick
+     reactions and from "More emojis..." under the settings-panel Quick emoji grid.
+     Data comes from chat-emoji-data.js (window.CHAT_EMOJI_CATEGORIES); chat.js
+     renders the tabs/grid, runs the search box, and tracks per-device usage
+     frequency so your regulars float to the top of both quick rows. -->
+<div class="chat-emoji-picker-backdrop d-none" id="chatEmojiPickerBackdrop"></div>
+<div class="chat-emoji-picker d-none" id="chatEmojiPicker" role="dialog" aria-label="Emoji picker">
+    <div class="chat-emoji-picker-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="chatEmojiPickerSearch" placeholder="Search emoji" autocomplete="off" />
+    </div>
+    <div class="chat-emoji-picker-tabs" id="chatEmojiPickerTabs"></div>
+    <div class="chat-emoji-picker-body" id="chatEmojiPickerBody"></div>
+</div>
+
+<!-- ADDED (2026-08-18): Forward-to picker, reuses the already-loaded contact list. -->
+<div class="modal fade" id="chatForwardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-arrow-90deg-right"></i> Forward message</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="chatForwardSearch" class="form-control mb-2" placeholder="Search people..." autocomplete="off" />
+            <ul class="chat-forward-contact-list" id="chatForwardContactList"></ul>
+        </div>
+        <div class="modal-footer">
+            <span class="me-auto small text-muted" id="chatForwardSelectedCount">0 selected</span>
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="chatForwardSendBtn" disabled><i class="bi bi-send-fill"></i> Send</button>
+        </div>
+    </div></div>
+</div>

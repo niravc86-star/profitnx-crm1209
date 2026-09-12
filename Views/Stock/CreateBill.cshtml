@@ -1,0 +1,75 @@
+@{
+    ViewData["Title"] = "Add Stock Bill";
+    ViewData["Subtitle"] = "Enter multiple product/version and qty-wise license numbers in a single bill.";
+    var products = ViewBag.Products as List<ProfitNx.CRM.Models.Product> ?? new();
+    var partners = ViewBag.PartnerMasters as List<ProfitNx.CRM.Models.Dealer> ?? new();
+}
+<div class="dash-panel p-4 p-lg-5">
+    <form asp-action="CreateBill" method="post" id="stockBillForm">
+        <div asp-validation-summary="All" class="alert alert-danger"></div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Partner</label>
+                <select name="PartnerId" class="form-select" required>
+                    <option value="">-- Select Partner --</option>
+                    @foreach (var partner in partners)
+                    {
+                        <option value="@partner.Id">@partner.DealerName (@partner.ContactPerson)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Bill No</label>
+                <input name="BillNo" class="form-control" placeholder="Bill / purchase no" required />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Bill Date</label>
+                <input name="BillDate" type="date" value="@(ViewBag.BillDate ?? DateTime.Today.ToString("yyyy-MM-dd"))" class="form-control" required />
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle" id="billLines">
+                <thead><tr><th style="min-width:260px">Product</th><th>Version</th><th style="width:120px">Qty</th><th style="width:140px">Reorder Level</th><th style="min-width:280px">License Numbers</th><th></th></tr></thead>
+                <tbody>
+                    <tr class="bill-line">
+                        <td><select name="ProductId" class="form-select product-select" required><option value="">-- Select Product --</option>@foreach(var p in products){<option value="@p.Id" data-version="@p.Version">@p.Name - @p.Version (@p.Code)</option>}</select></td>
+                        <td><input name="Version" class="form-control version-input" placeholder="Auto" /></td>
+                        <td><input name="TotalPurchased" type="number" min="1" value="1" class="form-control" required /></td>
+                        <td><input name="ReorderLevel" type="number" min="0" class="form-control" placeholder="Optional" /></td>
+                        <td><textarea name="LicenseNumbers" class="form-control" rows="2" placeholder="One license per line" required></textarea></td>
+                        <td><button type="button" class="btn btn-outline-danger remove-line">Delete</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="mini-muted mb-4">Leave Reorder Level blank to automatically reuse the reorder level already set for this partner + product on a previous bill/stock entry — no need to re-enter it every time. When the total available stock (combined across all bills/purchases) drops to or below that level, Admin and Partner both receive an automatic notification/alert.</p>
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-outline-primary" id="addLine">+ Add Product</button>
+            <button type="submit" class="btn btn-brand px-4">Save Bill Stock</button>
+            <a asp-action="Index" class="btn btn-outline-secondary px-4">Back</a>
+        </div>
+    </form>
+</div>
+@section Scripts{
+<script>
+(function(){
+    const body = document.querySelector('#billLines tbody');
+    const first = body.querySelector('.bill-line');
+    document.getElementById('addLine').addEventListener('click', function(){
+        const row = first.cloneNode(true);
+        row.querySelectorAll('input, textarea').forEach(x => { if(x.name === 'ReorderLevel') x.value = ''; else if(x.type === 'number') x.value = 1; else x.value = ''; });
+        row.querySelectorAll('select').forEach(x => x.selectedIndex = 0);
+        body.appendChild(row);
+    });
+    body.addEventListener('click', function(e){
+        if(e.target.classList.contains('remove-line') && body.querySelectorAll('.bill-line').length > 1){ e.target.closest('tr').remove(); }
+    });
+    body.addEventListener('change', function(e){
+        if(e.target.classList.contains('product-select')){
+            const opt = e.target.options[e.target.selectedIndex];
+            e.target.closest('tr').querySelector('.version-input').value = opt.getAttribute('data-version') || '';
+        }
+    });
+})();
+</script>
+}

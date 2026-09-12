@@ -1,0 +1,36 @@
+@model List<ProfitNx.CRM.Models.RoleMaster>
+@inject ProfitNx.CRM.Services.IPermissionService PermissionService
+@{
+    ViewData["Title"] = "Role Master";
+    var canManageRoles = await PermissionService.HasPermissionAsync(User, "roles.manage");
+    var canManageRoleRights = await PermissionService.HasPermissionAsync(User, "permissions.manage");
+    var canManageUserRights = await PermissionService.HasPermissionAsync(User, "userpermissions.manage");
+}
+<div class="page-actions mb-4">
+    @if (canManageRoles) { <a asp-action="Create" class="btn btn-brand"><i class="bi bi-plus-circle"></i><span>Add Role</span></a> }
+    @if (canManageRoleRights) { <a asp-action="Permissions" class="btn btn-outline-primary"><i class="bi bi-shield-check"></i><span>Role Wise Rights</span></a> }
+    @if (canManageUserRights) { <a asp-action="UserWiseRights" class="btn btn-outline-primary"><i class="bi bi-person-check"></i><span>User Wise Rights</span></a> }
+</div>
+<div class="card card-soft border-0">
+    <div class="table-responsive p-3">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>Role</th><th>Description</th><th>Landing Page</th><th>Status</th>@if(canManageRoles){<th class="text-end">Actions</th>}</tr></thead>
+            <tbody>
+            @foreach(var item in Model)
+            {
+                <tr>
+                    <td class="fw-semibold">@item.Name</td><td>@item.Description</td><td>@item.LandingPage</td>
+                    <td><span class="stat-pill @(item.IsActive ? "bg-soft-success" : "bg-soft-danger")">@(item.IsActive ? "Active" : "Inactive")</span></td>
+                    @if(canManageRoles)
+                    {
+                        <td class="text-end"><div class="table-actions">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i><span>Edit</span></a>
+                            <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this role?');"><input type="hidden" name="id" value="@item.Id" /><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i><span>Delete</span></button></form>
+                        </div></td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

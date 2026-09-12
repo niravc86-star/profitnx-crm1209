@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: profitnx-crm
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ASPNETCORE_URLS
+        value: http://+:10000
+    # NOTE: google-service-account.json must be added manually in the
+    # Render dashboard under Environment -> Secret Files (path:
+    # google-service-account.json). It is intentionally NOT included here
+    # because Blueprint files (render.yaml) are committed to git and this
+    # repo's .gitignore correctly excludes the real secret file.

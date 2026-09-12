@@ -1,0 +1,32 @@
+@model InquiryFormViewModel
+@{
+    ViewData["Title"] = "Create Inquiry";
+    var partners = ViewBag.Partners as List<AppUser> ?? new List<AppUser>();
+}
+<div class="modal-zoom-page"><div class="modal-zoom-card card border-0 shadow-sm rounded-4 p-4"><div class="d-flex justify-content-between align-items-center mb-3"><div><h3 class="mb-0">Submit Inquiry to Admin</h3><div class="mini-muted">Fast inquiry entry in zoom style.</div></div><a asp-action="Index" class="btn btn-outline-secondary rounded-pill">Back</a></div>
+    <form asp-action="Create" method="post">
+        <div class="row g-3">
+            <div class="col-md-3"><label class="form-label">Date</label><input asp-for="CreatedDate" type="date" class="form-control" /></div>
+            <div class="col-md-4"><label class="form-label">Firm Name</label><input asp-for="FirmName" class="form-control" /></div>
+            <div class="col-md-4"><label class="form-label">Person Name</label><input asp-for="PersonName" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">City</label><input asp-for="City" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Mobile 1</label><input asp-for="Mobile1" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Mobile 2</label><input asp-for="Mobile2" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Email 1</label><input asp-for="Email1" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Email 2</label><input asp-for="Email2" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Product</label><input asp-for="ProductName" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Version</label><select asp-for="VersionType" class="form-select"><option>New</option><option>Upgrade</option></select></div>
+            <div class="col-md-3"><label class="form-label">Forward to Partner</label><select asp-for="ForwardedToPartnerId" class="form-select"><option value="">-- Select Partner --</option>@foreach (var p in partners){<option value="@p.Id">@p.FullName</option>}</select></div>
+            <div class="col-md-3"><label class="form-label">Next Follow Up</label><input asp-for="NextFollowUpDate" type="date" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Licenses Purchased</label><input asp-for="LicensesPurchased" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Amount W/O GST</label><input asp-for="AmountWithoutGst" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Amount With GST</label><input asp-for="AmountWithGst" class="form-control" /></div>
+            <div class="col-md-12"><label class="form-label">Customer Info</label><textarea asp-for="CustomerInfo" class="form-control" rows="2"></textarea></div>
+            <div class="col-md-12"><label class="form-label">Remarks</label><textarea asp-for="Remarks" class="form-control" rows="3"></textarea></div>
+            <div class="col-md-12"><button type="submit" class="btn btn-brand">Save Inquiry</button></div>
+        </div>
+    </form>
+</div>
+
+</div>
+

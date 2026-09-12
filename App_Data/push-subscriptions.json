@@ -1,0 +1,26 @@
+[
+  {
+    "Id": "e8b8bdca20b74b8eaaf54704e35053f1",
+    "UserId": "U-ADMIN",
+    "UserName": "Admin",
+    "Endpoint": "https://fcm.googleapis.com/fcm/send/doBh8sr15Cw:APA91bH1J4o20zjzPKnKblfYqsBMV0Sd5DRZvYGjri7A7giRPmrNKqlkFybfPgHVYYLOh0WQIxNasDdAP1PlJs4EyRlCUGnYSq37HoJlMvxiP7UIbqwNVJidxFyoIld3DWcmAXyztPgZ",
+    "P256dh": "BBmdq51eVg0EkgeOa68QEWhs5ovkvGCKegckx7kTiccH67VYrcwFuHs7Nq-5So4jG3SaG54iG1jVuCWGrYYVCls",
+    "Auth": "2MguPvqX7Nuv1er3g4Lycg",
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+    "CreatedAt": "2026-09-10T14:04:24.5995824Z",
+    "LastSeenAt": "2026-09-10T14:04:28.1448111Z",
+    "IsActive": true
+  },
+  {
+    "Id": "bf731ea7fee44bd78086ee043273f2d9",
+    "UserId": "U-ADMIN",
+    "UserName": "Admin",
+    "Endpoint": "https://fcm.googleapis.com/fcm/send/dhpTS8LpGtY:APA91bG-5l1OFj60D4HnDdmgMVvjbnKsRKL3G-AD4RLFq94LQ5TOqm5DdRj0z84mqbyyfqjmV2UUcAKXkf_iDqaS-DrZfuIGmcjpxo-LCy7sxIx-K0feZHWiUrvd13Wu0NUjv9i8jQek",
+    "P256dh": "BEzEJnotYIjGi5fA3eMl1QCrb0e_uQZGYLTzQBpfwfFzXenU5tT0FZmh8V44yk0-oKfErQzNa1-CexJn9bsiHSw",
+    "Auth": "kv6gVoB5Dg_GnFlf-GxnVQ",
+    "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+    "CreatedAt": "2026-09-10T14:06:03.303856Z",
+    "LastSeenAt": "2026-09-10T14:06:29.8892361Z",
+    "IsActive": true
+  }
+]

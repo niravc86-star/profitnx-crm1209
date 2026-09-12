@@ -1,0 +1,106 @@
+@model List<ProfitNx.CRM.ViewModels.ChatThreadSummaryViewModel>
+@{
+    ViewData["Title"] = "All Conversations";
+    ViewData["Subtitle"] = "Admin view - every chat conversation happening in the CRM.";
+    var canDelete = (bool?)ViewBag.CanDelete ?? false;
+}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div><h3 class="mb-0"><i class="bi bi-shield-check"></i> All Conversations</h3><div class="text-muted small">Read-only monitoring. Only visible to rights holding "Chat - View / Monitor All Conversations".</div></div>
+    <a asp-controller="Chat" asp-action="Index" class="btn btn-outline-dark btn-sm"><i class="bi bi-arrow-left"></i> Back to My Chat</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle bg-white rounded-4 shadow-sm">
+        <thead>
+            <tr><th>Between</th><th>Last Message</th><th>Messages</th><th>Last Activity</th><th></th></tr>
+        </thead>
+        <tbody id="chatAdminTableBody">
+            @foreach (var thread in Model)
+            {
+                <tr class="chat-admin-row" data-user-a="@thread.UserAId" data-user-b="@thread.UserBId" data-user-a-name="@thread.UserAName" data-user-b-name="@thread.UserBName">
+                    <td><strong>@thread.UserAName</strong> <i class="bi bi-arrow-left-right text-muted"></i> <strong>@thread.UserBName</strong></td>
+                    <td class="text-truncate" style="max-width:320px">@thread.LastMessage</td>
+                    <td>@thread.MessageCount</td>
+                    <td>@(thread.LastMessageDate?.ToString("dd/MM/yyyy hh:mm tt"))</td>
+                    <td class="text-nowrap d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-primary chat-admin-view-btn"><i class="bi bi-eye-fill"></i> View</button>
+                        @if (canDelete)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-danger chat-admin-delete-btn" title="Permanently delete this entire conversation"><i class="bi bi-trash3-fill"></i> Delete All</button>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="5" class="text-center text-muted py-4">No conversations yet.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<form id="chatAdminAntiForgeryForm" style="display:none">@Html.AntiForgeryToken()</form>
+
+<div class="modal fade" id="chatAdminThreadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="chatAdminThreadTitle">Conversation</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><div class="chat-messages" id="chatAdminThreadMessages" style="height:60vh"></div></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+    (function(){
+        const threadUrl = '@Url.Action("Thread", "Chat")';
+        const deleteThreadUrl = '@Url.Action("AdminDeleteThread", "Chat")';
+        const tokenInput = document.querySelector('#chatAdminAntiForgeryForm input[name="__RequestVerificationToken"]');
+        const modalEl = document.getElementById('chatAdminThreadModal');
+        const modal = new bootstrap.Modal(modalEl);
+        function bubble(m){
+            const att = m.attachmentUrl ? `<div class="chat-attachment"><a href="${m.attachmentUrl}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> ${m.attachmentName || 'Attachment'}</a></div>` : '';
+            return `<div class="chat-bubble-row"><div class="chat-bubble"><div class="chat-bubble-sender">${m.senderName || ''}</div>${m.message ? `<div>${m.message.replace(/</g,'&lt;')}</div>` : ''}${att}<div class="chat-bubble-time">${m.sentDate || ''}</div></div></div>`;
+        }
+        document.querySelectorAll('.chat-admin-view-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const row = btn.closest('.chat-admin-row');
+                const userAId = row.dataset.userA, userBId = row.dataset.userB;
+                document.getElementById('chatAdminThreadTitle').textContent = row.dataset.userAName + ' \u2194 ' + row.dataset.userBName;
+                const box = document.getElementById('chatAdminThreadMessages');
+                box.innerHTML = '<div class="text-muted small p-3">Loading...</div>';
+                modal.show();
+                try{
+                    const res = await fetch(`${threadUrl}?userAId=${encodeURIComponent(userAId)}&userBId=${encodeURIComponent(userBId)}`, { cache: 'no-store' });
+                    const data = await res.json();
+                    box.innerHTML = data.map(bubble).join('') || '<div class="text-muted small p-3">No messages.</div>';
+                    box.scrollTop = box.scrollHeight;
+                }catch{
+                    box.innerHTML = '<div class="text-danger small p-3">Could not load conversation.</div>';
+                }
+            });
+        });
+        document.querySelectorAll('.chat-admin-delete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const row = btn.closest('.chat-admin-row');
+                const userAId = row.dataset.userA, userBId = row.dataset.userB;
+                if (!confirm(`Permanently delete ALL chat between ${row.dataset.userAName} and ${row.dataset.userBName}? This cannot be undone.`)) return;
+                try {
+                    const formData = new FormData();
+                    formData.set('userAId', userAId);
+                    formData.set('userBId', userBId);
+                    formData.set('__RequestVerificationToken', tokenInput ? tokenInput.value : '');
+                    const res = await fetch(deleteThreadUrl, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (!res.ok) { alert('Could not delete this conversation.'); return; }
+                    row.remove();
+                    if (!document.querySelectorAll('#chatAdminTableBody .chat-admin-row').length) {
+                        document.getElementById('chatAdminTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No conversations yet.</td></tr>';
+                    }
+                } catch {
+                    alert('Could not delete this conversation. Please check your connection and try again.');
+                }
+            });
+        });
+    })();
+    </script>
+}

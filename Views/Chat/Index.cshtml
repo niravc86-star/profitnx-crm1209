@@ -1,0 +1,21 @@
+@model List<ProfitNx.CRM.ViewModels.ChatContactViewModel>
+@{
+    ViewData["Title"] = "Chat";
+    ViewData["Subtitle"] = "Chat within the CRM with your team - file attachments supported.";
+    var canViewAll = (bool?)ViewBag.CanViewAll ?? false;
+    ViewBag.ChatWidgetMode = false;
+}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div><h3 class="mb-0"><i class="bi bi-chat-dots-fill"></i> Chat</h3><div class="text-muted small">Internal team chat - your Admin controls who can use Chat.</div></div>
+    @if (canViewAll)
+    {
+        <a asp-controller="Chat" asp-action="AllConversations" class="btn btn-outline-dark btn-sm"><i class="bi bi-eye-fill"></i> Monitor All Conversations</a>
+    }
+</div>
+
+@await Html.PartialAsync("~/Views/Chat/_ChatWidget.cshtml")
+
+@section Scripts {
+    <script src="~/js/chat-emoji-data.js" asp-append-version="true"></script>
+    <script src="~/js/chat.js" asp-append-version="true"></script>
+}

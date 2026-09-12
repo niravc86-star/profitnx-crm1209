@@ -1,0 +1,174 @@
+/* ==========================================================================
+   Report Hero contrast fix — 2026-08-24
+   ==========================================================================
+   Reported (screenshots, Reports screen): under Midnight (Dark) and Premium
+   Elite themes, the plain hero banner used by "Total Inquiry List — Source
+   Wise" and "Implementation / Training Report" shows near-invisible text —
+   the eyebrow, the heading and the sub-line all wash out to pale text on a
+   pale card, while the round ProfitNx logo badge on the right stays sharp.
+
+   ROOT CAUSE
+   Only TWO of the report-hero banners on this page carry a plain
+   `class="report-hero mb-4 report-print-section"` — the "Total Inquiry
+   List" and "Implementation / Training Report" headers. Every other hero
+   on the app also carries `ai-report-hero premium-ai-hero`, which gives it
+   its own hard-coded dark navy gradient + white text (professional-ui.css)
+   that already reads fine in any theme. The two plain banners instead rely
+   entirely on the theme-conditional rule in app-theme-switcher.css
+   (`html[data-app-theme="..."] .report-hero{...}`). That rule was written
+   once and never re-verified against the many later "readability guard"
+   patches (2026-08-17 / 08-18 / 08-22) that were all scoped to grids,
+   toolbars and modals — the plain `.report-hero` banner itself was never
+   re-covered, so it silently drifted out of sync and is the one spot left
+   still showing the light-card styling underneath pale, low-contrast text.
+
+   FIX
+   Loaded LAST (after every existing theme file) so it always wins. Restate
+   the full card treatment for `.report-hero` directly — background, border,
+   heading, sub-line, eyebrow and glow — at higher specificity than the
+   original rule (adds the `body.crm-app-body` prefix used by every later
+   guard file in this codebase, exactly like the 2026-08-22 fix), so it
+   cannot silently lose to anything loaded in between.
+   ========================================================================== */
+
+html[data-app-theme="midnight"] body.crm-app-body .report-hero {
+  background: #141a34 !important;
+  border: 1px solid rgba(255, 255, 255, .06) !important;
+  color: #dbe3f5 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .report-hero h2 {
+  color: #f2f5ff !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .report-hero p {
+  color: #8b96b8 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .report-hero .eyebrow {
+  color: #7ea8ff !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .report-hero:after {
+  display: none !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .report-hero .ai-orb,
+html[data-app-theme="midnight"] body.crm-app-body .report-hero .logo-orb {
+  background: linear-gradient(145deg, #3b4f8a, #1e2a55) !important;
+  color: #f5f7ff !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .35) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .report-hero .ai-orb i,
+html[data-app-theme="midnight"] body.crm-app-body .report-hero .logo-orb i {
+  color: #f5f7ff !important;
+  opacity: 1 !important;
+}
+
+html[data-app-theme="premium"] body.crm-app-body .report-hero {
+  background: rgba(24, 18, 53, .72) !important;
+  border: 1px solid rgba(202, 161, 74, .2) !important;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, .35) !important;
+  color: #e9e6f5 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero h2 {
+  color: #f7f2ff !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero p {
+  color: #a79fcf !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero .eyebrow {
+  color: #e0c479 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero:after {
+  display: none !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero .ai-orb,
+html[data-app-theme="premium"] body.crm-app-body .report-hero .logo-orb {
+  background: linear-gradient(145deg, #4a3a7a, #2a1f55) !important;
+  color: #f5f7ff !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .45) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero .ai-orb i,
+html[data-app-theme="premium"] body.crm-app-body .report-hero .logo-orb i {
+  color: #f5f7ff !important;
+  opacity: 1 !important;
+}
+
+
+/* ==========================================================================
+   Premium Elite ONLY — standardize report-hero heading UI
+   Match "Total Inquiry List — Source Wise" visual style across all reports.
+   Does not touch midnight / light / other themes.
+   ========================================================================== */
+html[data-app-theme="premium"] body.crm-app-body .report-hero {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 22px !important;
+  background: rgba(24, 18, 53, 0.78) !important;
+  border: 1px solid rgba(202, 161, 74, 0.22) !important;
+  border-radius: 28px !important;
+  padding: 26px 30px !important;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.35) !important;
+  color: #e9e6f5 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero:after {
+  display: none !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero .eyebrow {
+  display: block !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: #e0c479 !important;
+  margin-bottom: 6px !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero h2 {
+  margin: 0 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+  color: #f7f2ff !important;
+  font-size: 1.65rem !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero p {
+  margin: 6px 0 0 !important;
+  color: #a79fcf !important;
+  font-size: 0.9rem !important;
+  max-width: 720px !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero .ai-orb,
+html[data-app-theme="premium"] body.crm-app-body .report-hero .logo-orb {
+  width: 96px !important;
+  height: 96px !important;
+  min-width: 96px !important;
+  border-radius: 30px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: #ffffff !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4) !important;
+  border: none !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero .logo-orb img,
+html[data-app-theme="premium"] body.crm-app-body .report-hero .ai-orb img {
+  max-width: 78% !important;
+  max-height: 78% !important;
+  object-fit: contain !important;
+}
+/* AI hero variants under Premium keep their gradient but same typography rhythm */
+html[data-app-theme="premium"] body.crm-app-body .report-hero.premium-ai-hero {
+  background: linear-gradient(135deg, #162a49 0%, #294f87 65%, #267e96 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero.premium-ai-hero .ai-orb {
+  background: rgba(255, 255, 255, 0.13) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .report-hero.premium-ai-hero .ai-orb i {
+  color: #ffffff !important;
+  font-size: 2rem !important;
+}

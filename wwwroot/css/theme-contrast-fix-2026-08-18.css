@@ -1,0 +1,287 @@
+/* ==========================================================================
+   Dark theme contrast fix — 2026-08-18
+   ==========================================================================
+   Reported (screenshots): under Midnight (Dark) / Premium Elite / "Dark Mode
+   (On)" (Dark Mode is just a shortcut that switches the theme to Midnight -
+   see app-theme-switcher.js toggleDarkMode()), text goes near-invisible in
+   several places across the CRM:
+
+   1) "IMPLEMENTATION & TRAINING" eyebrow pill on the New Implementation /
+      Training form (and the same .section-label / .module-kicker pill used
+      on other pages) - confirmed from screenshot: pale/ghost text on a pale
+      pill, i.e. text-on-text with almost no contrast.
+
+   2) Implementation & Training list rows (.professional-table inside
+      .crm-panel) - the bold values (customer name, owner name, progress %)
+      wash out while the plain text right next to them in the same cell
+      stays readable.
+
+   ROOT CAUSE
+   Both bugs share the same shape: a component keeps its own hard-coded
+   LIGHT colours (background and/or text) that were never given a Midnight /
+   Premium Elite variant, while a broader, later-loaded rule (the generic
+   heading/text safety net in theme-readability-guard-2026-08-17.css, or a
+   theme rule for a *different* selector) repaints part of that component -
+   usually just the text - for dark themes without knowing the component's
+   own background never changed. The result is light text stranded on a
+   light background (badges), or a background that never actually turned
+   dark while nearby text assumed it had (table rows).
+
+   .section-label is the clearest example: it is defined as a light pill
+   (background:#f0f5ff / color:#2c59e5, see new-ui-reference-2026-07-29.css)
+   and was never added to any per-theme selector list, so on Midnight /
+   Premium Elite it keeps that same light pill - while the generic
+   "<span> colour" rule in theme-readability-guard.css (correctly, for the
+   many *unstyled* spans it was written for) repaints its text light too,
+   because it has no way to know this particular span sits on its own light
+   background rather than the dark page.
+
+   FIX
+   This file is loaded LAST (after theme-readability-guard.css) and uses the
+   same high-specificity `html[data-app-theme="..."] body.crm-app-body …`
+   technique already used throughout this codebase, so it reliably wins
+   regardless of load order elsewhere. Two kinds of rule:
+     a) Pill/chip/badge components that were never given a dark variant -
+        give each its own matching dark background + text pair (so a
+        background change can never ship without its matching text change,
+        or vice versa - the exact mismatch that caused these bugs).
+     b) Implementation & Training table cells - restate the row background
+        as transparent (so the panel's dark background always shows through
+        the row, never a stray light default) at the SAME maximum
+        specificity as the bold/muted text colours, so background and text
+        can no longer be won by two different rules with two different
+        specificities.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------
+   (a) Eyebrow pills / chips that kept their light styling on dark themes.
+   -------------------------------------------------------------------- */
+
+/* .section-label + .module-kicker - "IMPLEMENTATION & TRAINING" style eyebrow pill */
+html[data-app-theme="midnight"] body.crm-app-body .section-label,
+html[data-app-theme="midnight"] body.crm-app-body .module-kicker {
+  background: rgba(124, 77, 255, .16) !important;
+  color: #c3b1ff !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .section-label,
+html[data-app-theme="premium"] body.crm-app-body .module-kicker {
+  background: rgba(202, 161, 74, .16) !important;
+  color: #e9d9a8 !important;
+}
+
+/* .readonly-badge - "Customer details locked" pill on the Edit form */
+html[data-app-theme="midnight"] body.crm-app-body .readonly-badge {
+  background: #1b2140 !important; color: #c8d3f0 !important; border-color: rgba(255,255,255,.1) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .readonly-badge {
+  background: rgba(202, 161, 74, .1) !important; color: #e9e6f5 !important; border-color: rgba(202,161,74,.22) !important;
+}
+
+/* .paid-training-chip - green "Paid" chip next to a record's type */
+html[data-app-theme="midnight"] body.crm-app-body .paid-training-chip {
+  background: rgba(47, 191, 148, .16) !important; color: #5fe0bb !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .paid-training-chip {
+  background: rgba(47, 191, 148, .18) !important; color: #7be8c8 !important;
+}
+
+/* .transferred-view-chip - amber "transferred" note on a record */
+html[data-app-theme="midnight"] body.crm-app-body .transferred-view-chip {
+  background: rgba(240, 138, 43, .16) !important; color: #f6b673 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .transferred-view-chip {
+  background: rgba(202, 161, 74, .16) !important; color: #e9d9a8 !important;
+}
+
+/* .tag / .target-chip / .history-chip - blue pills reused on several pages */
+html[data-app-theme="midnight"] body.crm-app-body .tag,
+html[data-app-theme="midnight"] body.crm-app-body .target-chip,
+html[data-app-theme="midnight"] body.crm-app-body .history-chip {
+  background: rgba(124, 77, 255, .16) !important; color: #c3b1ff !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .tag,
+html[data-app-theme="premium"] body.crm-app-body .target-chip,
+html[data-app-theme="premium"] body.crm-app-body .history-chip {
+  background: rgba(202, 161, 74, .16) !important; color: #e9d9a8 !important;
+}
+
+/* .ai-free-chip - green "free" AI usage chip */
+html[data-app-theme="midnight"] body.crm-app-body .ai-free-chip {
+  background: rgba(47, 191, 148, .16) !important; color: #5fe0bb !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .ai-free-chip {
+  background: rgba(47, 191, 148, .18) !important; color: #7be8c8 !important;
+}
+
+/* .smart-score-badge / .profile-pill - white pills used on Reports and the top bar */
+html[data-app-theme="midnight"] body.crm-app-body .smart-score-badge,
+html[data-app-theme="midnight"] body.crm-app-body .profile-pill {
+  background: #1b2140 !important; color: #dbe3f5 !important; border-color: rgba(255,255,255,.1) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .smart-score-badge,
+html[data-app-theme="premium"] body.crm-app-body .profile-pill {
+  background: rgba(202, 161, 74, .1) !important; color: #f3ecff !important; border-color: rgba(202,161,74,.22) !important;
+}
+
+/* .user-role-pill / .detail-mode-badge - grey/blue/green pills on Settings & Users */
+html[data-app-theme="midnight"] body.crm-app-body .user-role-pill,
+html[data-app-theme="midnight"] body.crm-app-body .detail-mode-badge {
+  background: #1b2140 !important; color: #c8d3f0 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .user-role-pill,
+html[data-app-theme="premium"] body.crm-app-body .detail-mode-badge {
+  background: rgba(202, 161, 74, .1) !important; color: #e9e6f5 !important;
+}
+
+/* --------------------------------------------------------------------
+   (b) Implementation & Training table rows - pin the row background to
+   transparent (so the panel's own dark background always shows through)
+   at the same maximum specificity as the text colours, so the two can
+   never be decided by two different, mismatched rules again.
+   -------------------------------------------------------------------- */
+html[data-app-theme="midnight"] body.crm-app-body .crm-panel,
+html[data-app-theme="midnight"] body.crm-app-body .metric-card {
+  background: #141a34 !important; border-color: rgba(255, 255, 255, .06) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .professional-table,
+html[data-app-theme="midnight"] body.crm-app-body .professional-table tbody,
+html[data-app-theme="midnight"] body.crm-app-body .professional-table tbody tr,
+html[data-app-theme="midnight"] body.crm-app-body .professional-table td {
+  background: transparent !important; border-color: rgba(255, 255, 255, .07) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .primary-cell strong,
+html[data-app-theme="midnight"] body.crm-app-body .owner-cell strong,
+html[data-app-theme="midnight"] body.crm-app-body .progress-copy strong {
+  color: #f2f5ff !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .primary-cell span,
+html[data-app-theme="midnight"] body.crm-app-body .primary-cell small,
+html[data-app-theme="midnight"] body.crm-app-body .owner-cell small,
+html[data-app-theme="midnight"] body.crm-app-body .progress-copy small,
+html[data-app-theme="midnight"] body.crm-app-body .record-type-line,
+html[data-app-theme="midnight"] body.crm-app-body .guidance-text,
+html[data-app-theme="midnight"] body.crm-app-body .mini-muted {
+  color: #8b96b8 !important;
+}
+
+html[data-app-theme="premium"] body.crm-app-body .crm-panel,
+html[data-app-theme="premium"] body.crm-app-body .metric-card {
+  background: rgba(24, 18, 53, .92) !important; border-color: rgba(202, 161, 74, .2) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .professional-table,
+html[data-app-theme="premium"] body.crm-app-body .professional-table tbody,
+html[data-app-theme="premium"] body.crm-app-body .professional-table tbody tr,
+html[data-app-theme="premium"] body.crm-app-body .professional-table td {
+  background: transparent !important; border-color: rgba(202, 161, 74, .18) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .primary-cell strong,
+html[data-app-theme="premium"] body.crm-app-body .owner-cell strong,
+html[data-app-theme="premium"] body.crm-app-body .progress-copy strong {
+  color: #f7f2ff !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .primary-cell span,
+html[data-app-theme="premium"] body.crm-app-body .primary-cell small,
+html[data-app-theme="premium"] body.crm-app-body .owner-cell small,
+html[data-app-theme="premium"] body.crm-app-body .progress-copy small,
+html[data-app-theme="premium"] body.crm-app-body .record-type-line,
+html[data-app-theme="premium"] body.crm-app-body .guidance-text,
+html[data-app-theme="premium"] body.crm-app-body .mini-muted {
+  color: #a79fcf !important;
+}
+
+/* Table header keeps its own light strip by design (every theme); only make
+   sure its text stays dark-on-light so it always reads regardless of theme. */
+html[data-app-theme="midnight"] body.crm-app-body .professional-table thead th,
+html[data-app-theme="premium"] body.crm-app-body .professional-table thead th {
+  background: #f8fafc !important; color: #475467 !important;
+}
+
+/* ==========================================================================
+   Round 3 — 2026-08-22: Pro Grid column headers unreadable in both dark
+   themes (Total Inquiry List + Implementation/Training Report grids).
+
+   ROOT CAUSE: each column label sits in a nested <span> inside .pg-th
+   (e.g. <div class="pg-th"><span>Sale Date</span>...). The generic
+   "span { color }" safety-net a few lines up in
+   theme-readability-guard-2026-08-17.css (loaded before this file) matches
+   that <span> directly, which beats an *inherited* colour from the parent
+   .pg-th no matter how that parent rule was written — so the header text
+   was repainted a generic light shade while the strip behind it never got
+   a matching dark background, leaving pale text on a near-white strip in
+   both Midnight and Premium Elite. Fixing this at max specificity, in the
+   last-loaded file, so it can't be re-overridden the same way again.
+   ========================================================================== */
+html[data-app-theme="midnight"] body.crm-app-body table.pg-table thead th {
+  background: rgba(255, 255, 255, .04) !important; border-color: rgba(255, 255, 255, .08) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .pg-th,
+html[data-app-theme="midnight"] body.crm-app-body .pg-th span,
+html[data-app-theme="midnight"] body.crm-app-body .pg-th i {
+  color: #a9b4d1 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .pg-panel,
+html[data-app-theme="midnight"] body.crm-app-body .pg-filter-pop {
+  background: #141a34 !important; border-color: rgba(255, 255, 255, .08) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .pg-toolbar-left h4 { color: #f2f5ff !important; }
+html[data-app-theme="midnight"] body.crm-app-body .pg-count-chip {
+  background: rgba(255, 255, 255, .08) !important; color: #c8d3f0 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .pg-search-box {
+  background: rgba(255, 255, 255, .06) !important; border-color: rgba(255, 255, 255, .12) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .pg-search-box input { color: #dbe3f5 !important; }
+html[data-app-theme="midnight"] body.crm-app-body .pg-search-box i,
+html[data-app-theme="midnight"] body.crm-app-body .pg-hint { color: #8b96b8 !important; }
+html[data-app-theme="midnight"] body.crm-app-body .pg-filter-btn { color: #8b96b8 !important; }
+html[data-app-theme="midnight"] body.crm-app-body .pg-filter-btn:hover,
+html[data-app-theme="midnight"] body.crm-app-body .pg-filter-btn.pg-filter-active {
+  background: rgba(124, 77, 255, .18) !important; color: #c3b1ff !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body .pg-filter-pop input,
+html[data-app-theme="midnight"] body.crm-app-body .pg-filter-pop select {
+  background: rgba(255, 255, 255, .06) !important; border-color: rgba(255, 255, 255, .12) !important; color: #dbe3f5 !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body table.pg-table tfoot td {
+  background: rgba(255, 255, 255, .04) !important; color: #f2f5ff !important; border-color: rgba(255, 255, 255, .14) !important;
+}
+html[data-app-theme="midnight"] body.crm-app-body table.pg-table tbody tr.clickable-row:hover { background: rgba(255, 255, 255, .05) !important; }
+html[data-app-theme="midnight"] body.crm-app-body .pg-empty-state { color: #8b96b8 !important; }
+
+html[data-app-theme="premium"] body.crm-app-body table.pg-table thead th {
+  background: rgba(202, 161, 74, .1) !important; border-color: rgba(202, 161, 74, .18) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pg-th,
+html[data-app-theme="premium"] body.crm-app-body .pg-th span,
+html[data-app-theme="premium"] body.crm-app-body .pg-th i {
+  color: #e0c479 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pg-panel,
+html[data-app-theme="premium"] body.crm-app-body .pg-filter-pop {
+  background: rgba(24, 18, 53, .85) !important; border-color: rgba(202, 161, 74, .2) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pg-toolbar-left h4 { color: #f7f2ff !important; }
+html[data-app-theme="premium"] body.crm-app-body .pg-count-chip {
+  background: rgba(202, 161, 74, .14) !important; color: #e9d9a8 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pg-search-box {
+  background: rgba(255, 255, 255, .05) !important; border-color: rgba(202, 161, 74, .25) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pg-search-box input { color: #f3ecff !important; }
+html[data-app-theme="premium"] body.crm-app-body .pg-search-box i,
+html[data-app-theme="premium"] body.crm-app-body .pg-hint { color: #a79fcf !important; }
+html[data-app-theme="premium"] body.crm-app-body .pg-filter-btn { color: #a79fcf !important; }
+html[data-app-theme="premium"] body.crm-app-body .pg-filter-btn:hover,
+html[data-app-theme="premium"] body.crm-app-body .pg-filter-btn.pg-filter-active {
+  background: rgba(202, 161, 74, .16) !important; color: #e0c479 !important;
+}
+html[data-app-theme="premium"] body.crm-app-body .pg-filter-pop input,
+html[data-app-theme="premium"] body.crm-app-body .pg-filter-pop select {
+  background: rgba(255, 255, 255, .05) !important; border-color: rgba(202, 161, 74, .25) !important; color: #f3ecff !important;
+}
+html[data-app-theme="premium"] body.crm-app-body table.pg-table tfoot td {
+  background: rgba(202, 161, 74, .08) !important; color: #f7f2ff !important; border-color: rgba(202, 161, 74, .3) !important;
+}
+html[data-app-theme="premium"] body.crm-app-body table.pg-table tbody tr.clickable-row:hover { background: rgba(202, 161, 74, .06) !important; }
+html[data-app-theme="premium"] body.crm-app-body .pg-empty-state { color: #a79fcf !important; }
+

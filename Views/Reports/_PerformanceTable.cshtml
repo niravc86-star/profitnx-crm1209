@@ -1,0 +1,22 @@
+@model List<PerformanceReportRow>
+@{
+    var canSeeAmount = (bool?)ViewBag.CanSeeAmount ?? false;
+}
+<div class="table-responsive">
+<table class="table align-middle mb-0 report-business-table">
+<thead><tr><th>Name</th><th>Total</th><th>Active</th><th>Sold</th>@if(canSeeAmount){<th>Business</th>}<th>Conv.</th></tr></thead>
+<tbody>
+@foreach (var row in Model)
+{
+    var active = row.Total - row.Sold - row.Closed;
+    <tr>
+        <td><strong>@row.Name</strong><div class="mini-muted">Status summary</div></td>
+        <td>@row.Total</td>
+        <td>@active</td>
+        <td><span class="status-badge bg-soft-success">@row.Sold</span></td>
+        @if(canSeeAmount){<td>@row.SalesAmount.ToString("N2")</td>}
+        <td><span class="status-badge bg-soft-primary">@row.ConversionPercent%</span></td>
+    </tr>
+}
+@if (!Model.Any()){<tr><td colspan="@(canSeeAmount?6:5)" class="text-center text-muted py-3">No data yet.</td></tr>}
+</tbody></table></div>

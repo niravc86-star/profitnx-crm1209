@@ -1,0 +1,144 @@
+/* ==========================================================================
+   Login screen — premium / unique visual pass — 2026-08-24
+   ==========================================================================
+   Goal: make the login card feel like a distinct, designed brand moment
+   instead of a generic light form-on-dark-background pattern, without
+   touching auth, markup structure, or any per-theme override that already
+   exists in app-theme-switcher.css (button gradient, input focus color per
+   theme, page background per theme) — this file only adds decoration
+   around those, so every theme keeps its own accent identity.
+   Loaded last on the login page only (Views/Account/Login.cshtml <head>).
+   ========================================================================== */
+
+/* -------------------------------------------------------------------------
+   Ambient brand glow behind the card — two soft color blobs (brand blue +
+   brand red, echoing the Profit Nx logo) that sit behind the panel on any
+   theme's background. Pure decoration, no interaction, no layout impact.
+   ------------------------------------------------------------------------- */
+.crm-login-panel{
+  isolation:isolate;
+}
+.crm-login-panel::after{
+  content:"";
+  position:absolute;
+  inset:-40px;
+  z-index:-1;
+  background:
+    radial-gradient(60% 55% at 12% -10%, rgba(30,145,224,.35), transparent 70%),
+    radial-gradient(55% 50% at 108% 108%, rgba(230,57,53,.28), transparent 70%);
+  filter:blur(28px);
+  opacity:.85;
+  pointer-events:none;
+}
+
+/* Foil edge: a slim gradient ring around the card instead of a flat white
+   border, using a padding-box/border-box double background so it works on
+   top of the card's own translucent white fill without extra markup. */
+.crm-login-panel{
+  border:1px solid transparent !important;
+  background:
+    linear-gradient(#fff,#fff) padding-box,
+    linear-gradient(135deg,#1e91e0 0%,#7dd3fc 30%,#f4f4f5 55%,#e64a45 100%) border-box !important;
+}
+
+/* Replace the old flat 3-color top bar with a brand blue -> red sweep that
+   drifts slowly, echoing the logo without shouting. */
+.crm-login-panel::before{
+  background:linear-gradient(90deg,#1e91e0,#5cc4f2 35%,#f4c04a 65%,#e6453f);
+  background-size:200% 100%;
+  height:4px;
+  opacity:1;
+  animation:crmLoginSweep 6s ease-in-out infinite;
+}
+@keyframes crmLoginSweep{
+  0%,100%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+}
+@media (prefers-reduced-motion: reduce){
+  .crm-login-panel::before{animation:none}
+}
+
+/* -------------------------------------------------------------------------
+   Secure badge — refined pill with a live status dot instead of a flat
+   grey chip, reads as an actual trust signal rather than filler text.
+   ------------------------------------------------------------------------- */
+.crm-secure-signin{
+  background:linear-gradient(135deg,#eef8f1,#e6f4ff) !important;
+  color:#1c6b4a !important;
+  border:1px solid rgba(28,107,74,.14);
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:6px 12px 6px 10px !important;
+  font-weight:850 !important;
+  letter-spacing:.08em !important;
+}
+.crm-secure-signin::before{
+  content:"";
+  width:6px;height:6px;border-radius:50%;
+  background:#22b573;
+  box-shadow:0 0 0 0 rgba(34,181,115,.55);
+  animation:crmSecurePulse 2.2s ease-out infinite;
+}
+@keyframes crmSecurePulse{
+  0%{box-shadow:0 0 0 0 rgba(34,181,115,.5)}
+  70%{box-shadow:0 0 0 6px rgba(34,181,115,0)}
+  100%{box-shadow:0 0 0 0 rgba(34,181,115,0)}
+}
+@media (prefers-reduced-motion: reduce){
+  .crm-secure-signin::before{animation:none}
+}
+
+/* -------------------------------------------------------------------------
+   Heading — a small brand-colored accent mark instead of plain black text,
+   gives "Welcome back" a designed focal point.
+   ------------------------------------------------------------------------- */
+.crm-login-heading{position:relative;padding-left:14px}
+.crm-login-heading::before{
+  content:"";
+  position:absolute;left:0;top:6px;bottom:10px;width:4px;border-radius:4px;
+  background:linear-gradient(180deg,#1e91e0,#e6453f);
+}
+
+/* -------------------------------------------------------------------------
+   Inputs — brand-tinted focus glow on the wrapper (icon shifts to brand
+   blue) layered underneath whatever border-color each theme already sets
+   on :focus, so themed accent colors are untouched.
+   ------------------------------------------------------------------------- */
+.crm-login-input:focus-within{
+  filter:drop-shadow(0 6px 18px rgba(30,145,224,.14));
+}
+.crm-login-input:focus-within > i{
+  color:#1e91e0;
+}
+.crm-login-input .form-control{
+  border-radius:12px !important;
+}
+
+/* -------------------------------------------------------------------------
+   Sign-in button — slightly richer resting shadow so it reads as the
+   card's primary action even before hover; theme-specific gradient/colors
+   from app-theme-switcher.css are left completely untouched.
+   ------------------------------------------------------------------------- */
+.crm-login-button{
+  border-radius:12px !important;
+  letter-spacing:.01em;
+}
+
+/* -------------------------------------------------------------------------
+   Footer trust row + "Powered by" — a touch more breathing room and a
+   subtle divider dot between the two trust items instead of a plain gap.
+   ------------------------------------------------------------------------- */
+.crm-login-trust{gap:0 !important}
+.crm-login-trust span{padding:0 12px}
+.crm-login-trust span:first-child{border-right:1px solid #e8edf3}
+.crm-login-powered{letter-spacing:.02em}
+
+/* -------------------------------------------------------------------------
+   Panel padding: a little more generous so the new left-accent heading and
+   foil border have room to breathe (desktop/tablet only — mobile keeps the
+   existing compact spacing already tuned for small screens).
+   ------------------------------------------------------------------------- */
+@media (min-width:521px){
+  .crm-login-panel{padding:34px 36px 24px}
+}

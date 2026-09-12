@@ -1,0 +1,52 @@
+@model List<CommissionRow>
+@{
+    var filter = ViewBag.Filter as CommissionFilterViewModel ?? new CommissionFilterViewModel();
+    var partners = ViewBag.Partners as List<AppUser> ?? new();
+    var users = ViewBag.Users as List<AppUser> ?? new();
+    ViewData["Title"] = "Partner Sales & Commission Report";
+    ViewData["Subtitle"] = "Filter partner/user sales, margin and net commission details.";
+    var totalAmount = Model.Sum(x => x.AmountWithoutGst);
+    var totalPartnerMargin = Model.Sum(x => x.PartnerMarginAmount);
+    var totalCommission = Model.Sum(x => x.CommissionAmount);
+    var totalNet = Model.Sum(x => x.AfterLessMarginAmount);
+    var totalWithGst = Model.Sum(x => x.AmountWithGst);
+}
+<div class="card-soft p-3 mb-4 no-print">
+    <form method="get" class="professional-filter-grid compact-filter-grid report-filter-grid">
+        <div class="filter-cell"><label class="form-label small">From Date</label><input type="date" name="FromDate" value="@(filter.FromDate?.ToString("yyyy-MM-dd"))" class="form-control flatpickr-input" /></div>
+        <div class="filter-cell"><label class="form-label small">To Date</label><input type="date" name="ToDate" value="@(filter.ToDate?.ToString("yyyy-MM-dd"))" class="form-control flatpickr-input" /></div>
+        <div class="filter-cell"><label class="form-label small">Partner</label><select name="PartnerId" class="form-select"><option value="">All Partners</option>@foreach(var p in partners){<option value="@p.Id" selected="@(filter.PartnerId==p.Id)">@p.FullName</option>}</select></div>
+        <div class="filter-cell"><label class="form-label small">User</label><select name="UserId" class="form-select"><option value="">All Users</option>@foreach(var u in users){<option value="@u.Id" selected="@(filter.UserId==u.Id)">@u.FullName</option>}</select></div>
+        <div class="filter-actions"><button class="btn btn-brand">Go</button><a asp-action="Index" class="btn btn-outline-secondary">Clear</a></div>
+    </form>
+</div>
+<div class="dashboard-grid compact mb-4">
+    <div class="dash-card accent-purple"><span>Amount W/O GST</span><strong>@totalAmount.ToString("N2")</strong></div>
+    <div class="dash-card accent-cyan"><span>Partner Margin</span><strong>@totalPartnerMargin.ToString("N2")</strong></div>
+    <div class="dash-card accent-green"><span>Company Margin</span><strong>@totalCommission.ToString("N2")</strong></div>
+    <div class="dash-card accent-coral"><span>Amount With GST</span><strong>@totalWithGst.ToString("N2")</strong></div>
+</div>
+<div class="dash-panel">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h4 class="mb-0">Commission Details</h4>
+        <button onclick="window.print()" class="btn btn-soft no-print"><i class="bi bi-printer"></i> Print / PDF</button>
+    </div>
+    <div class="enterprise-table-toolbar no-print">
+    <div class="toolbar-left">
+        <input type="search" class="form-control form-control-sm rounded-pill" style="min-width:180px;max-width:260px" placeholder="Quick search..." data-table-search="commissionTable" />
+        <select class="form-select form-select-sm" style="width:auto" data-table-pagesize="commissionTable">
+            <option value="20" selected>20 records</option>
+            <option value="40">40 records</option>
+            <option value="100">100 records</option>
+            <option value="200">200 records</option>
+        </select>
+    </div>
+    <div class="toolbar-right">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-table-reset="commissionTable"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+    </div>
+</div>
+<div class="table-responsive enterprise-table-scroll"><table class="table align-middle commission-table enterprise-data-table" id="commissionTable" data-table-id="commissionTable"><thead><tr><th>Billing Date</th><th>Bill No.</th><th>License No.</th><th>Firm Name</th><th>City</th><th>Product</th><th>Version</th><th>Amount W/O GST</th><th>Partner Margin %</th><th>Partner Margin Amount</th><th>After Partner Margin</th><th>Margin %</th><th>Margin Amount</th><th>After Less Margin</th><th>Amount With GST</th><th>Remarks</th></tr></thead><tbody>
+    @foreach(var x in Model){<tr><td>@(x.BillDate?.ToString("dd/MM/yyyy") ?? x.InquiryDate.ToString("dd/MM/yyyy"))</td><td>@x.BillNo</td><td>@x.LicenseNumber</td><td>@x.FirmName</td><td>@x.City</td><td>@x.ProductName</td><td>@x.VersionType</td><td>@x.AmountWithoutGst.ToString("N2")</td><td>@x.PartnerMarginPercent.ToString("N2")</td><td>@x.PartnerMarginAmount.ToString("N2")</td><td>@x.AfterPartnerMarginAmount.ToString("N2")</td><td>@x.MarginPercent.ToString("N2")</td><td>@x.CommissionAmount.ToString("N2")</td><td>@x.AfterLessMarginAmount.ToString("N2")</td><td>@x.AmountWithGst.ToString("N2")</td><td>@x.Remarks</td></tr>}
+    @if(!Model.Any()){<tr><td colspan="16" class="text-center text-muted py-4">No sold data found for selected filter.</td></tr>}
+    </tbody><tfoot><tr><th colspan="7" class="text-end">Total</th><th>@totalAmount.ToString("N2")</th><th></th><th>@totalPartnerMargin.ToString("N2")</th><th>@Model.Sum(x=>x.AfterPartnerMarginAmount).ToString("N2")</th><th></th><th>@totalCommission.ToString("N2")</th><th>@totalNet.ToString("N2")</th><th>@totalWithGst.ToString("N2")</th><th></th></tr></tfoot></table></div>
+</div>

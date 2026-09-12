@@ -1,0 +1,478 @@
+/* ==========================================================================
+   PREMIUM ELITE & MIDNIGHT DARK — Full CRM visibility audit (2026-08-27)
+   Loaded LAST. Fixes login alerts, notification-log buttons, help modal,
+   generic buttons/text/forms/tables across the CRM for dark themes only.
+   Does not change layout structure or business logic.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1) LOGIN — Error / alert visibility (Screenshot 1)
+   -------------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .crm-login-alert,
+html[data-app-theme="premium"]  .crm-login-alert,
+html[data-app-theme="midnight"] .crm-login-panel .alert,
+html[data-app-theme="premium"]  .crm-login-panel .alert {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  margin-bottom: 16px !important;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(248, 113, 113, 0.45) !important;
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.55), rgba(69, 10, 10, 0.65)) !important;
+  color: #fecaca !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+html[data-app-theme="midnight"] .crm-login-alert i,
+html[data-app-theme="premium"]  .crm-login-alert i,
+html[data-app-theme="midnight"] .crm-login-panel .alert i,
+html[data-app-theme="premium"]  .crm-login-panel .alert i {
+  color: #f87171 !important;
+  font-size: 1.05rem !important;
+  flex-shrink: 0 !important;
+  margin-top: 1px !important;
+}
+html[data-app-theme="midnight"] .crm-login-alert span,
+html[data-app-theme="premium"]  .crm-login-alert span,
+html[data-app-theme="midnight"] .crm-login-panel .alert span,
+html[data-app-theme="premium"]  .crm-login-panel .alert span {
+  color: #fecaca !important;
+  opacity: 1 !important;
+  line-height: 1.45 !important;
+}
+
+/* Generic alert variants — strong contrast on dark surfaces */
+html[data-app-theme="midnight"] .alert-danger,
+html[data-app-theme="premium"]  .alert-danger {
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.5), rgba(69, 10, 10, 0.6)) !important;
+  color: #fecaca !important;
+  border: 1px solid rgba(248, 113, 113, 0.4) !important;
+}
+html[data-app-theme="midnight"] .alert-danger *,
+html[data-app-theme="premium"]  .alert-danger * {
+  color: #fecaca !important;
+}
+html[data-app-theme="midnight"] .alert-success,
+html[data-app-theme="premium"]  .alert-success {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.5), rgba(4, 47, 46, 0.6)) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(52, 211, 153, 0.4) !important;
+}
+html[data-app-theme="midnight"] .alert-success *,
+html[data-app-theme="premium"]  .alert-success * {
+  color: #a7f3d0 !important;
+}
+html[data-app-theme="midnight"] .alert-warning,
+html[data-app-theme="premium"]  .alert-warning {
+  background: linear-gradient(135deg, rgba(120, 53, 15, 0.5), rgba(69, 26, 3, 0.6)) !important;
+  color: #fde68a !important;
+  border: 1px solid rgba(251, 191, 36, 0.4) !important;
+}
+html[data-app-theme="midnight"] .alert-warning *,
+html[data-app-theme="premium"]  .alert-warning * {
+  color: #fde68a !important;
+}
+html[data-app-theme="midnight"] .alert-info,
+html[data-app-theme="premium"]  .alert-info {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.5), rgba(23, 37, 84, 0.6)) !important;
+  color: #bfdbfe !important;
+  border: 1px solid rgba(96, 165, 250, 0.4) !important;
+}
+html[data-app-theme="midnight"] .alert-info *,
+html[data-app-theme="premium"]  .alert-info * {
+  color: #bfdbfe !important;
+}
+
+/* --------------------------------------------------------------------------
+   2) NOTIFICATION LOGS — Buttons (Screenshot 3)
+   -------------------------------------------------------------------------- */
+
+/* Primary / brand actions — Queue Notification, Go */
+html[data-app-theme="midnight"] .page-actions .btn-brand,
+html[data-app-theme="midnight"] .page-actions a.btn-brand,
+html[data-app-theme="midnight"] .filter-actions .btn-brand,
+html[data-app-theme="midnight"] .btn-brand {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35) !important;
+}
+html[data-app-theme="midnight"] .page-actions .btn-brand *,
+html[data-app-theme="midnight"] .btn-brand *,
+html[data-app-theme="midnight"] .btn-brand i {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .page-actions .btn-brand:hover,
+html[data-app-theme="midnight"] .btn-brand:hover {
+  filter: brightness(1.08) !important;
+  color: #ffffff !important;
+}
+
+html[data-app-theme="premium"] .page-actions .btn-brand,
+html[data-app-theme="premium"] .page-actions a.btn-brand,
+html[data-app-theme="premium"] .filter-actions .btn-brand {
+  background: linear-gradient(135deg, #caa14a, #f1d385) !important;
+  color: #1a1330 !important;
+  border: 0 !important;
+  font-weight: 800 !important;
+}
+html[data-app-theme="premium"] .page-actions .btn-brand *,
+html[data-app-theme="premium"] .page-actions .btn-brand i {
+  color: #1a1330 !important;
+  opacity: 1 !important;
+}
+
+/* Danger / delete — Delete All Old, Delete Selected — high contrast */
+html[data-app-theme="midnight"] .page-actions .btn-outline-danger,
+html[data-app-theme="midnight"] .btn-outline-danger,
+html[data-app-theme="midnight"] button.btn-outline-danger,
+html[data-app-theme="midnight"] .btn-sm.btn-outline-danger {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #fecaca !important;
+  border: 1px solid rgba(248, 113, 113, 0.55) !important;
+  font-weight: 700 !important;
+}
+html[data-app-theme="midnight"] .page-actions .btn-outline-danger *,
+html[data-app-theme="midnight"] .btn-outline-danger *,
+html[data-app-theme="midnight"] .btn-outline-danger i {
+  color: #fecaca !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .page-actions .btn-outline-danger:hover,
+html[data-app-theme="midnight"] .btn-outline-danger:hover {
+  background: rgba(239, 68, 68, 0.28) !important;
+  color: #fff1f2 !important;
+  border-color: #f87171 !important;
+}
+
+html[data-app-theme="premium"] .page-actions .btn-outline-danger,
+html[data-app-theme="premium"] .btn-outline-danger,
+html[data-app-theme="premium"] button.btn-outline-danger,
+html[data-app-theme="premium"] .btn-sm.btn-outline-danger {
+  background: linear-gradient(135deg, #b91c1c, #dc2626) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 6px 16px rgba(185, 28, 28, 0.35) !important;
+  border-radius: 999px !important;
+}
+html[data-app-theme="premium"] .page-actions .btn-outline-danger *,
+html[data-app-theme="premium"] .btn-outline-danger *,
+html[data-app-theme="premium"] .btn-outline-danger i {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="premium"] .page-actions .btn-outline-danger:hover,
+html[data-app-theme="premium"] .btn-outline-danger:hover {
+  filter: brightness(1.1) !important;
+  color: #ffffff !important;
+}
+
+/* Select All label */
+html[data-app-theme="midnight"] label.small,
+html[data-app-theme="premium"]  label.small,
+html[data-app-theme="midnight"] .form-check-label,
+html[data-app-theme="premium"]  .form-check-label {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  opacity: 1 !important;
+}
+
+/* Clear / secondary */
+html[data-app-theme="midnight"] .filter-actions .btn-outline-secondary,
+html[data-app-theme="midnight"] a.btn-outline-secondary {
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+  background: transparent !important;
+}
+html[data-app-theme="midnight"] .filter-actions .btn-outline-secondary:hover,
+html[data-app-theme="midnight"] a.btn-outline-secondary:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-app-theme="premium"] .filter-actions .btn-outline-secondary,
+html[data-app-theme="premium"] a.btn-outline-secondary {
+  background: linear-gradient(135deg, #caa14a, #f1d385) !important;
+  color: #1a1330 !important;
+  border: 0 !important;
+  font-weight: 700 !important;
+}
+html[data-app-theme="premium"] .filter-actions .btn-outline-secondary * {
+  color: #1a1330 !important;
+}
+
+/* --------------------------------------------------------------------------
+   3) HELP MODAL — Language / Read Aloud / Video (Screenshot 2)
+   -------------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .help-modal-footer,
+html[data-app-theme="premium"]  .help-modal-footer,
+html[data-app-theme="midnight"] .crm-modal-card .modal-footer,
+html[data-app-theme="premium"]  .crm-modal-card .modal-footer {
+  background: var(--dm-bg-card, #151c3a) !important;
+  border-top: 1px solid var(--dm-border-primary, rgba(255, 255, 255, 0.12)) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .help-modal-footer label,
+html[data-app-theme="premium"]  .help-modal-footer label,
+html[data-app-theme="midnight"] [data-help-lang-label],
+html[data-app-theme="premium"]  [data-help-lang-label] {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .help-modal-footer .form-select,
+html[data-app-theme="premium"]  .help-modal-footer .form-select,
+html[data-app-theme="midnight"] [data-help-lang],
+html[data-app-theme="premium"]  [data-help-lang] {
+  background: var(--dm-bg-input, #1b2344) !important;
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border: 1px solid var(--dm-border-primary, rgba(255, 255, 255, 0.18)) !important;
+  min-width: 130px !important;
+}
+html[data-app-theme="midnight"] .help-modal-footer .form-select option,
+html[data-app-theme="premium"]  .help-modal-footer .form-select option {
+  background: #151c3a !important;
+  color: #f5f7ff !important;
+}
+
+/* Read Aloud — force strong contrast (fixes invisible text on dark themes) */
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-btn],
+html[data-app-theme="midnight"] #crmHelpModal button[data-help-voice-btn],
+html[data-app-theme="midnight"] #crmHelpModal .help-modal-footer button.btn[data-help-voice-btn],
+html[data-app-theme="midnight"] #crmHelpModal .help-modal-footer .btn-outline-primary:not([data-help-video-btn]) {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+  text-shadow: none !important;
+}
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-btn] *,
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-btn] i,
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-btn] span,
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-label] {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-btn]:hover,
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-btn]:focus {
+  filter: brightness(1.08) !important;
+  color: #ffffff !important;
+}
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-btn].is-speaking,
+html[data-app-theme="midnight"] #crmHelpModal [data-help-voice-btn][aria-pressed="true"] {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn],
+html[data-app-theme="premium"] #crmHelpModal button[data-help-voice-btn],
+html[data-app-theme="premium"] #crmHelpModal .help-modal-footer .btn-outline-primary,
+html[data-app-theme="premium"] #crmHelpModal .help-modal-footer button.btn:not([data-help-video-btn]) {
+  background: linear-gradient(135deg, #caa14a, #f1d385) !important;
+  background-color: #caa14a !important;
+  color: #1a1330 !important;
+  border: 0 !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+  box-shadow: 0 6px 16px rgba(202, 161, 74, 0.4) !important;
+  text-shadow: none !important;
+}
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn] *,
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn] i,
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn] span,
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-label] {
+  color: #1a1330 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #1a1330 !important;
+}
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn]:hover,
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn]:focus {
+  filter: brightness(1.06) !important;
+  color: #1a1330 !important;
+}
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn].is-speaking,
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn][aria-pressed="true"],
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn].is-speaking *,
+html[data-app-theme="premium"] #crmHelpModal [data-help-voice-btn][aria-pressed="true"] * {
+  background: linear-gradient(135deg, #b91c1c, #dc2626) !important;
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Hide empty voice-note row */
+#crmHelpModal [data-help-voice-note] {
+  display: none !important;
+}
+
+/* Video Guide — intentional coming-soon / disabled look */
+html[data-app-theme="midnight"] [data-help-video-btn],
+html[data-app-theme="midnight"] .help-modal-footer .btn-outline-secondary[data-help-video-btn],
+html[data-app-theme="midnight"] a[data-help-video-btn] {
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: #94a3b8 !important;
+  border: 1px dashed rgba(148, 163, 184, 0.45) !important;
+  font-weight: 600 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  opacity: 0.85 !important;
+}
+html[data-app-theme="midnight"] [data-help-video-btn] *,
+html[data-app-theme="midnight"] [data-help-video-btn] i {
+  color: #94a3b8 !important;
+}
+
+html[data-app-theme="premium"] [data-help-video-btn],
+html[data-app-theme="premium"] a[data-help-video-btn] {
+  background: rgba(202, 161, 74, 0.12) !important;
+  color: #c9b87a !important;
+  border: 1px dashed rgba(202, 161, 74, 0.45) !important;
+  font-weight: 600 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  opacity: 0.9 !important;
+}
+html[data-app-theme="premium"] [data-help-video-btn] *,
+html[data-app-theme="premium"] [data-help-video-btn] i {
+  color: #c9b87a !important;
+}
+
+html[data-app-theme="midnight"] .help-modal-footer .text-muted,
+html[data-app-theme="premium"]  .help-modal-footer .text-muted {
+  color: var(--dm-text-muted, #8b94b8) !important;
+  opacity: 1 !important;
+}
+
+/* Help body steps */
+html[data-app-theme="midnight"] [data-help-body],
+html[data-app-theme="premium"]  [data-help-body] {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .crm-modal-card .modal-title,
+html[data-app-theme="premium"]  .crm-modal-card .modal-title,
+html[data-app-theme="midnight"] [data-help-title],
+html[data-app-theme="premium"]  [data-help-title] {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+}
+html[data-app-theme="midnight"] .crm-modal-eyebrow,
+html[data-app-theme="premium"]  .crm-modal-eyebrow {
+  color: var(--dm-text-muted, #8b94b8) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4) GLOBAL BUTTON / TEXT SAFETY NET
+   -------------------------------------------------------------------------- */
+html[data-app-theme="midnight"] .btn:not(:disabled):not(.disabled),
+html[data-app-theme="premium"]  .btn:not(:disabled):not(.disabled) {
+  opacity: 1 !important;
+}
+html[data-app-theme="midnight"] .btn:focus-visible,
+html[data-app-theme="premium"]  .btn:focus-visible {
+  outline: 2px solid #60a5fa !important;
+  outline-offset: 2px !important;
+}
+html[data-app-theme="premium"] .btn:focus-visible {
+  outline-color: #e0c479 !important;
+}
+
+/* Placeholders */
+html[data-app-theme="midnight"] ::placeholder,
+html[data-app-theme="premium"]  ::placeholder {
+  color: var(--dm-text-placeholder, #7a83a8) !important;
+  opacity: 1 !important;
+}
+
+/* Table headers / cells */
+html[data-app-theme="midnight"] .table thead th,
+html[data-app-theme="premium"]  .table thead th {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  background: var(--dm-bg-card, #151c3a) !important;
+  border-color: var(--dm-border-primary, rgba(255, 255, 255, 0.1)) !important;
+}
+html[data-app-theme="midnight"] .table tbody td,
+html[data-app-theme="premium"]  .table tbody td {
+  color: var(--dm-text-primary, #f5f7ff) !important;
+  border-color: var(--dm-border-primary, rgba(255, 255, 255, 0.08)) !important;
+}
+
+/* Dropdown / select options */
+html[data-app-theme="midnight"] select option,
+html[data-app-theme="premium"]  select option,
+html[data-app-theme="midnight"] .form-select option,
+html[data-app-theme="premium"]  .form-select option {
+  background: #151c3a !important;
+  color: #f5f7ff !important;
+}
+
+/* Form labels globally */
+html[data-app-theme="midnight"] .form-label,
+html[data-app-theme="premium"]  .form-label,
+html[data-app-theme="midnight"] label:not(.btn),
+html[data-app-theme="premium"]  label:not(.btn) {
+  color: var(--dm-text-secondary, #b9c2e0) !important;
+  opacity: 1 !important;
+}
+
+/* Modal close button visibility */
+html[data-app-theme="midnight"] .btn-close,
+html[data-app-theme="premium"]  .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%) !important;
+  opacity: 0.85 !important;
+}
+html[data-app-theme="midnight"] .btn-close:hover,
+html[data-app-theme="premium"]  .btn-close:hover {
+  opacity: 1 !important;
+}
+
+/* Sidebar / nav text safety */
+html[data-app-theme="midnight"] .menu-link,
+html[data-app-theme="premium"]  .menu-link {
+  opacity: 1 !important;
+}
+
+/* Disabled buttons remain distinguishable */
+html[data-app-theme="midnight"] .btn:disabled,
+html[data-app-theme="premium"]  .btn:disabled,
+html[data-app-theme="midnight"] .btn.disabled,
+html[data-app-theme="premium"]  .btn.disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+/* --------------------------------------------------------------------------
+   5) RESPONSIVE — help footer & filter actions
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .help-modal-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .help-modal-footer .d-flex {
+    flex-wrap: wrap !important;
+  }
+  [data-help-voice-btn],
+  [data-help-video-btn] {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .page-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .page-actions .btn,
+  .page-actions a.btn {
+    flex: 1 1 auto !important;
+    min-width: 140px !important;
+  }
+}
