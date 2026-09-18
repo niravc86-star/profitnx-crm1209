@@ -171,7 +171,9 @@ public class AccountController : Controller
 
         var identity = new ClaimsIdentity(User.Claims.Where(c => c.Type != "ThemePreference"), CookieAuthenticationDefaults.AuthenticationScheme);
         identity.AddClaim(new Claim("ThemePreference", key));
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+                var currentAuth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        var preservedProps = currentAuth?.Properties ?? new AuthenticationProperties();
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), preservedProps);
 
         Response.Cookies.Append("pnx_theme", key,
             new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true, HttpOnly = false, SameSite = SameSiteMode.Lax });
