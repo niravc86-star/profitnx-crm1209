@@ -1,0 +1,124 @@
+cat /home/claude/premium-mobile-app.css
+Output
+
+/* ==========================================================================
+   Premium Mobile App Layer — 2026-09-18
+   Loaded LAST. Purpose: make the CRM feel like a real installed app on
+   mobile — not a webpage — without touching desktop layout or any of the
+   existing theme files. Everything below is scoped to max-width:991.98px.
+   ========================================================================== */
+
+@media (max-width: 991.98px) {
+
+  /* ---------- 1. Base feel: no browser-chrome artifacts ---------- */
+  html body.crm-app-body {
+    -webkit-tap-highlight-color: transparent !important;
+    overscroll-behavior-y: none !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+  html body.crm-app-body * { -webkit-tap-highlight-color: transparent !important; }
+  html body.crm-app-body ::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+  html body.crm-app-body .page-surface,
+  html body.crm-app-body .table-responsive,
+  html body.crm-app-body .side-rail {
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* ---------- 2. Header: safe-area + soft elevation ---------- */
+  html body.crm-app-body .top-panel.clean-top-panel {
+    padding-top: calc(12px + env(safe-area-inset-top)) !important;
+    box-shadow: 0 6px 18px rgba(4, 14, 28, .10) !important;
+  }
+
+  /* ---------- 3. Sidebar drawer: smoother slide + soft blur backdrop ---------- */
+  html body.crm-app-body .side-rail {
+    transition: transform .28s cubic-bezier(.22,.9,.32,1) !important;
+    box-shadow: 28px 0 70px rgba(3,14,29,.45) !important;
+    padding-top: calc(16px + env(safe-area-inset-top)) !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+  }
+  html body.crm-app-body .crm-sidebar-backdrop {
+    -webkit-backdrop-filter: blur(2px) !important;
+    backdrop-filter: blur(2px) !important;
+  }
+
+  /* ---------- 4. Tactile feedback on every tappable thing ---------- */
+  html body.crm-app-body .menu-link,
+  html body.crm-app-body .btn,
+  html body.crm-app-body .top-action-button,
+  html body.crm-app-body .top-alert,
+  html body.crm-app-body .top-logout-button,
+  html body.crm-app-body .mobile-nav-toggle,
+  html body.crm-app-body .theme-switch-btn {
+    transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease !important;
+  }
+  html body.crm-app-body .menu-link:active,
+  html body.crm-app-body .btn:active,
+  html body.crm-app-body .top-action-button:active,
+  html body.crm-app-body .top-alert:active,
+  html body.crm-app-body .top-logout-button:active,
+  html body.crm-app-body .mobile-nav-toggle:active,
+  html body.crm-app-body .theme-switch-btn:active {
+    transform: scale(.94) !important;
+  }
+
+  /* ---------- 5. Consistent card elevation everywhere ---------- */
+  html body.crm-app-body .dash-panel,
+  html body.crm-app-body .page-surface,
+  html body.crm-app-body .simple-report-card,
+  html body.crm-app-body .card-soft,
+  html body.crm-app-body .form-panel,
+  html body.crm-app-body .inquiry-card {
+    border-radius: 18px !important;
+    box-shadow: 0 10px 30px rgba(3,14,29,.10) !important;
+  }
+
+  /* ---------- 6. Buttons: proper tap-target size, rounded-xl ---------- */
+  html body.crm-app-body .btn {
+    min-height: 44px !important;
+    border-radius: 12px !important;
+    font-weight: 650 !important;
+  }
+
+  /* ---------- 7. Inputs: no default blue browser outline ---------- */
+  html body.crm-app-body .form-control:focus,
+  html body.crm-app-body .form-select:focus {
+    box-shadow: 0 0 0 3px rgba(77,121,255,.25) !important;
+    border-color: #4d79ff !important;
+  }
+
+  /* ---------- 8. Modals as native-style bottom sheets ---------- */
+  html body.crm-app-body .modal-dialog {
+    margin: 0 !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    min-height: 100dvh !important;
+    max-width: 100% !important;
+  }
+  html body.crm-app-body .modal-content {
+    width: 100% !important;
+    border-radius: 22px 22px 0 0 !important;
+    max-height: 88dvh !important;
+    overflow-y: auto !important;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+    animation: pnxSheetUp .26s cubic-bezier(.22,.9,.32,1) !important;
+  }
+  @keyframes pnxSheetUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* ---------- 9. Bottom safe-area so content never hides under gesture bar ---------- */
+  html body.crm-app-body .main-panel {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* ---------- 10. Gentle fade-in on every page load (feels like app navigation) ---------- */
+  html body.crm-app-body .page-surface {
+    animation: pnxFadeIn .22s ease !important;
+  }
+  @keyframes pnxFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
