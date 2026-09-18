@@ -248,7 +248,9 @@ html body.crm-app-body .menu-group-label i { display: inline-flex !important; vi
     width: auto !important;
     max-width: none !important;
     border-radius: 22px !important;
-    max-height: 70vh !important;
+        max-height: 80vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
   html body.crm-app-body .dropdown-menu {
     max-width: calc(100vw - 24px) !important;
