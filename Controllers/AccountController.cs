@@ -107,7 +107,12 @@ public class AccountController : Controller
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+                var authProps = new AuthenticationProperties
+        {
+            IsPersistent = model.RememberMe,
+            ExpiresUtc = model.RememberMe ? DateTimeOffset.UtcNow.AddDays(30) : (DateTimeOffset?)null
+        };
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProps);
 
         try
         {
