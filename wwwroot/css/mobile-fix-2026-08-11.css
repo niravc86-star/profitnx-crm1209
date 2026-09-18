@@ -215,3 +215,44 @@ html body.crm-app-body .menu-group-label i { display: inline-flex !important; vi
     display: block !important;
   }
 }
+
+/* ---------- Equal-size menu cards + fix theme-switch popup overflow (2026-09-18b) ---------- */
+@media (max-width: 991.98px) {
+  html body.crm-app-body .menu-link {
+    height: 82px !important;
+    min-height: 82px !important;
+    overflow: hidden !important;
+  }
+  html body.crm-app-body .menu-link .menu-text {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: normal !important;
+    font-size: .72rem !important;
+    line-height: 1.15 !important;
+    word-break: break-word !important;
+  }
+  html body.crm-app-body .menu-link.primary-menu-action { height: auto !important; min-height: 56px !important; }
+}
+
+/* ---------- Any popup/dropdown menu: never overflow off-screen on mobile ---------- */
+@media (max-width: 767px) {
+  html body.crm-app-body .theme-switch-menu {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    border-radius: 22px !important;
+    max-height: 70vh !important;
+  }
+  html body.crm-app-body .dropdown-menu {
+    max-width: calc(100vw - 24px) !important;
+    left: auto !important;
+    right: 12px !important;
+  }
+}
