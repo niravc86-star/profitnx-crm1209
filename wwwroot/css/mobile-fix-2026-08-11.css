@@ -111,3 +111,71 @@
   html body .crm-login-features { gap: 6px !important; }
   html body .crm-login-panel { padding: 20px 16px 16px !important; border-radius: 18px !important; }
 }
+
+html body.crm-app-body .menu-group-label span,
+html body.crm-app-body .menu-group-label i { display: inline-flex !important; visibility: visible !important; }
+
+/* ---------- Mobile menu: card-grid layout (2026-09-18) ---------- */
+@media (max-width: 991.98px) {
+  html body.crm-app-body .menu-list,
+  html body.crm-app-body .premium-menu-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    overflow: visible !important;
+  }
+
+  html body.crm-app-body .menu-group {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    background: rgba(255,255,255,.03) !important;
+    border: 1px solid rgba(255,255,255,.08) !important;
+    border-radius: 14px !important;
+    padding: 10px !important;
+  }
+
+  html body.crm-app-body .menu-group-label {
+    grid-column: 1 / -1 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: rgba(77,121,255,.14) !important;
+    border-left: 3px solid #4d79ff !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    margin: 0 0 2px 0 !important;
+    font-size: .74rem !important;
+  }
+
+  html body.crm-app-body .menu-link {
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 6px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 74px !important;
+    height: auto !important;
+    padding: 10px 6px !important;
+    background: rgba(255,255,255,.04) !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    border-radius: 12px !important;
+  }
+  html body.crm-app-body .menu-link.primary-menu-action {
+    grid-column: 1 / -1 !important;
+    flex-direction: row !important;
+  }
+  html body.crm-app-body .menu-link .menu-icon {
+    width: 30px !important; height: 30px !important; flex: 0 0 30px !important;
+  }
+  html body.crm-app-body .menu-link .menu-text {
+    white-space: normal !important;
+    font-size: .78rem !important;
+    line-height: 1.15 !important;
+    display: block !important;
+  }
+  html body.crm-app-body .menu-link .menu-shortcut,
+  html body.crm-app-body .menu-mini-badge { display: none !important; }
+}
