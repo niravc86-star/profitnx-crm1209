@@ -113,7 +113,10 @@
                     </div>
                     <span asp-validation-for="Password" class="text-danger"></span>
                 </div>
-
+                <label class="crm-login-remember" style="display:flex;align-items:center;gap:8px;margin:2px 0 14px;font-size:.86rem;cursor:pointer;">
+                    <input asp-for="RememberMe" type="checkbox" style="width:16px;height:16px;" />
+                    <span>Remember me on this device</span>
+                </label>
                 <button type="submit" class="crm-login-button">
                     <span>Sign in</span><i class="bi bi-arrow-right"></i>
                 </button>
