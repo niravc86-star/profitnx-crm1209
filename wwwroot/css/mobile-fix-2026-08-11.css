@@ -258,3 +258,15 @@ html body.crm-app-body .menu-group-label i { display: inline-flex !important; vi
     right: 12px !important;
   }
 }
+
+/* ---------- FINAL equal-size menu cards (2026-09-18c) ---------- */
+@media (max-width: 991.98px) {
+  html body.crm-app-body .menu-group { align-items: stretch !important; }
+  html body.crm-app-body .menu-link:not(.primary-menu-action) {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 82px !important;
+    min-height: 82px !important;
+    max-height: 82px !important;
+  }
+}
