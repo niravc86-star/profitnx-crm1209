@@ -299,6 +299,8 @@
       if (element.dataset.bsTitle && !element.dataset.bsToggle) element.dataset.bsToggle = 'tooltip';
     });
     if (!window.bootstrap) return;
+    var canHover = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (!canHover) return;
     qa('[data-bs-toggle="tooltip"]').forEach((element) => {
       if (!bootstrap.Tooltip.getInstance(element)) new bootstrap.Tooltip(element, { trigger: 'hover focus', boundary: document.body });
     });
