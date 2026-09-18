@@ -179,3 +179,39 @@ html body.crm-app-body .menu-group-label i { display: inline-flex !important; vi
   html body.crm-app-body .menu-link .menu-shortcut,
   html body.crm-app-body .menu-mini-badge { display: none !important; }
 }
+
+/* ---------- Header icon-row: wrap instead of overflow (2026-09-18) ---------- */
+@media (max-width: 480px) {
+  html body.crm-app-body .top-panel.clean-top-panel {
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+    align-items: flex-start !important;
+  }
+  html body.crm-app-body .top-panel.clean-top-panel > div:first-of-type {
+    flex: 1 1 100% !important;
+  }
+  html body.crm-app-body .profile-area {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    justify-content: flex-end !important;
+    flex-wrap: wrap !important;
+    row-gap: 6px !important;
+  }
+}
+
+/* ---------- Menu card text: never clip, always wrap fully (2026-09-18) ---------- */
+@media (max-width: 991.98px) {
+  html body.crm-app-body .menu-link {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 64px !important;
+  }
+  html body.crm-app-body .menu-link .menu-text {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+    display: block !important;
+  }
+}
