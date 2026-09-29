@@ -7,8 +7,9 @@ services:
     envVars:
       - key: ASPNETCORE_URLS
         value: http://+:10000
-    # NOTE: google-service-account.json must be added manually in the
-    # Render dashboard under Environment -> Secret Files (path:
-    # google-service-account.json). It is intentionally NOT included here
-    # because Blueprint files (render.yaml) are committed to git and this
-    # repo's .gitignore correctly excludes the real secret file.
+    # IMPORTANT: Set GOOGLE_SERVICE_ACCOUNT_JSON in Render as a Secret Environment
+    # Variable containing the COMPLETE fresh service-account JSON. This takes priority
+    # over any credential file bundled in the application and prevents an old/deleted
+    # service-account key from being used accidentally.
+    #
+    # Alternative: mount a fresh google-service-account.json as a Render Secret File.

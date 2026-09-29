@@ -130,7 +130,10 @@
 
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="google-service-account.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- The real Google service-account JSON is deployment secret material.
+         It is intentionally not stored in this ZIP/repository. If supplied locally
+         under App_Data it can be copied during build/publish. On Render, prefer the
+         GOOGLE_SERVICE_ACCOUNT_JSON secret environment variable. -->
     <None Update="App_Data/google-service-account.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Update="App_Data/README.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Update="App_Data/login-history.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('App_Data/login-history.json')" />
