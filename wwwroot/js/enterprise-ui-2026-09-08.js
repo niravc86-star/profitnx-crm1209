@@ -131,6 +131,11 @@
         cell.style.setProperty('position', 'sticky', 'important');
         cell.style.setProperty('right', '0', 'important');
         cell.style.setProperty('z-index', '50', 'important');
+        // Keep all four Inquiry action icons on a single row.
+        cell.style.setProperty('width', '160px', 'important');
+        cell.style.setProperty('min-width', '160px', 'important');
+        cell.style.setProperty('max-width', '160px', 'important');
+        cell.style.setProperty('white-space', 'nowrap', 'important');
         void cell.offsetHeight;
       });
     });
@@ -845,6 +850,11 @@
         cell.style.setProperty('right', '0px', 'important');
         cell.style.setProperty('left', 'auto', 'important');
         cell.style.setProperty('z-index', '60', 'important');
+        // Keep all four Inquiry action icons on a single row in the frozen column.
+        cell.style.setProperty('width', '160px', 'important');
+        cell.style.setProperty('min-width', '160px', 'important');
+        cell.style.setProperty('max-width', '160px', 'important');
+        cell.style.setProperty('white-space', 'nowrap', 'important');
         // force opaque bg from computed theme if empty
         var bg = window.getComputedStyle(cell).backgroundColor;
         if (!bg || bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') {

@@ -62,6 +62,9 @@ public class GoogleSheetsService : IGoogleSheetsService
                     "to the ID from your Google Sheet URL.");
             }
 
+            // Prefer deployment-provided secrets over any credential file shipped with
+            // the application. This prevents an old/deleted service-account key bundled
+            // in the ZIP from silently being used on Render/IIS/Docker.
             var credentialJson = configuration["GoogleSheets:CredentialsJson"];
             if (string.IsNullOrWhiteSpace(credentialJson))
                 credentialJson = Environment.GetEnvironmentVariable("GOOGLE_SERVICE_ACCOUNT_JSON");
@@ -78,11 +81,9 @@ public class GoogleSheetsService : IGoogleSheetsService
                 if (credentialPath == null)
                 {
                     throw new InvalidOperationException(
-                        "Google service-account credential file was not found. Copy your REAL Google service-account key " +
-                        "as 'google-service-account.json' into the project/published application folder, or set " +
-                        "GoogleSheets:CredentialsFile to an absolute path. You can also set the " +
-                        "GOOGLE_APPLICATION_CREDENTIALS environment variable. Do not rename the example file without " +
-                        "replacing its placeholder values. Searched: " + string.Join("; ", searchedPaths));
+                        "Google service-account credential was not found. Set GOOGLE_SERVICE_ACCOUNT_JSON " +
+                        "to a fresh service-account JSON key, or mount a fresh google-service-account.json. " +
+                        "Searched: " + string.Join("; ", searchedPaths));
                 }
 
                 string jsonText;
@@ -99,6 +100,21 @@ public class GoogleSheetsService : IGoogleSheetsService
 
                 ValidateServiceAccountJson(jsonText, credentialPath);
                 credential = GoogleCredential.FromJson(jsonText);
+            }
+
+            try
+            {
+                sheetsService = new SheetsService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential.CreateScoped(SheetsService.Scope.Spreadsheets),
+                    ApplicationName = "ProfitNx CRM"
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "Google Sheets credential could not be initialized. Verify that the service-account JSON " +
+                    "is a fresh key for an active Google Cloud service account.", ex);
             }
 
             sheetsService = new SheetsService(new BaseClientService.Initializer
@@ -119,8 +135,9 @@ public class GoogleSheetsService : IGoogleSheetsService
         var environmentPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
 
         var candidateValues = new List<string>();
-        if (!string.IsNullOrWhiteSpace(configuredPath)) candidateValues.Add(configuredPath.Trim());
+        // Deployment-provided environment path wins over project-local defaults.
         if (!string.IsNullOrWhiteSpace(environmentPath)) candidateValues.Add(environmentPath.Trim());
+        if (!string.IsNullOrWhiteSpace(configuredPath)) candidateValues.Add(configuredPath.Trim());
         if (candidateValues.Count == 0) candidateValues.Add("google-service-account.json");
 
         var candidates = new List<string>();
@@ -139,6 +156,8 @@ public class GoogleSheetsService : IGoogleSheetsService
             // App_Data is convenient on IIS/published deployments and is already part
             // of this project. Only the file name is appended to avoid duplicate folders.
             candidates.Add(Path.GetFullPath(Path.Combine(contentRootPath, "App_Data", Path.GetFileName(candidateValue))));
+            candidates.Add(Path.GetFullPath(Path.Combine(contentRootPath, Path.GetFileName(candidateValue))));
+            candidates.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, Path.GetFileName(candidateValue))));
         }
 
         var distinctCandidates = candidates
@@ -419,6 +438,17 @@ public class GoogleSheetsService : IGoogleSheetsService
                 retry++;
                 if (retry > 5) throw;
                 await Task.Delay(TimeSpan.FromMilliseconds(500 * retry * retry));
+            }
+            catch (Exception ex) when (ex.Message.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase)
+                                     || ex.Message.Contains("account not found", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "Google authentication failed (invalid_grant / account not found). " +
+                    "The configured service-account key belongs to a Google service account that is no longer valid. " +
+                    "Create a fresh service-account key in the active Google Cloud project, set " +
+                    "GOOGLE_SERVICE_ACCOUNT_JSON (or mount the fresh google-service-account.json), " +
+                    "share the target spreadsheet with that service account email as Editor, and redeploy. " +
+                    "Also verify the server clock is correct.", ex);
             }
         }
     }

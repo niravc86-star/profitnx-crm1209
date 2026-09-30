@@ -350,3 +350,156 @@ tr.virtual-pad > td {
 .virtual-scroll-port table.inquiry-action-table > tbody > tr.virtual-pad {
   content-visibility: visible;
 }
+
+
+/* ============================================================
+   2026-09-25 FINAL INQUIRY ACTION STICKY FIX
+   Keep horizontal scrolling on .inquiry-grid and prevent the
+   table itself from clipping position:sticky cells.
+   ============================================================ */
+
+html body #inquiryReport .table-responsive.inquiry-grid,
+html body #inquiryReport .inquiry-grid.table-responsive {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  position: relative !important;
+  max-width: 100% !important;
+}
+
+/* compact-crm-table / align-middle previously applies overflow:hidden
+   to the table itself, which clips the sticky Action column. */
+html body #inquiryReport #inquiryGrid {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  border-radius: 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: max-content !important;
+  min-width: 100% !important;
+}
+
+/* The Action column remains attached to the right edge of the
+   inquiry-grid scroll viewport while all other columns scroll. */
+html body #inquiryReport #inquiryGrid thead th.col-action,
+html body #inquiryReport #inquiryGrid tbody td.col-action {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  right: 0 !important;
+  left: auto !important;
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
+  z-index: 70 !important;
+  background-clip: padding-box !important;
+  box-shadow: -8px 0 12px -8px rgba(15, 23, 42, .25) !important;
+}
+
+/* Keep the header above body cells. */
+html body #inquiryReport #inquiryGrid thead th.col-action {
+  z-index: 71 !important;
+}
+
+/* Theme-safe backgrounds for the frozen column. */
+html:not([data-app-theme]) body #inquiryReport #inquiryGrid thead th.col-action,
+html:not([data-app-theme]) body #inquiryReport #inquiryGrid tbody td.col-action {
+  background: #fff !important;
+}
+
+html[data-app-theme="midnight"] body #inquiryReport #inquiryGrid thead th.col-action,
+html[data-app-theme="midnight"] body #inquiryReport #inquiryGrid tbody td.col-action {
+  background: #1e293b !important;
+}
+
+html[data-app-theme="premium"] body #inquiryReport #inquiryGrid thead th.col-action,
+html[data-app-theme="premium"] body #inquiryReport #inquiryGrid tbody td.col-action {
+  background: #1a1330 !important;
+}
+
+/* 2026-09-29: Keep all four Inquiry action icons on ONE ROW inside
+   the frozen Action column (View, Edit, Delete, Update Status). */
+html body table.inquiry-action-table thead th.col-action,
+html body table.inquiry-action-table tbody td.col-action,
+html body table.inquiry-action-table tbody td.inquiry-action-td,
+html body table.inquiry-action-table thead th:last-child,
+html body table.inquiry-action-table tbody td:last-child {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  white-space: nowrap !important;
+}
+
+html body table.inquiry-action-table .qs-action-compact,
+html body table.inquiry-action-table .qs-action-cell {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  width: max-content !important;
+  min-width: 100% !important;
+  white-space: nowrap !important;
+}
+
+html body table.inquiry-action-table .qs-action-compact .qs-icon-btn,
+html body table.inquiry-action-table .qs-action-cell .qs-icon-btn {
+  flex: 0 0 32px !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+}
+
+/* The final freeze rule must also win over the older 120px mobile/desktop rules. */
+@media (max-width: 768px) {
+  html body table.inquiry-action-table thead th.col-action,
+  html body table.inquiry-action-table tbody td.col-action,
+  html body table.inquiry-action-table tbody td.inquiry-action-td,
+  html body table.inquiry-action-table thead th:last-child,
+  html body table.inquiry-action-table tbody td:last-child {
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+  }
+}
+
+
+/* 2026-09-29 FINAL: four Inquiry actions must always stay on ONE ROW.
+   4 x 32px buttons + gaps + cell padding fit comfortably in 160px. */
+html body table.inquiry-action-table td.col-action .qs-action-cell,
+html body table.inquiry-action-table td.inquiry-action-td .qs-action-cell {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+html body table.inquiry-action-table td.col-action .qs-action-cell > *,
+html body table.inquiry-action-table td.inquiry-action-td .qs-action-cell > * {
+  flex: 0 0 32px !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  margin: 0 !important;
+}
+
+html body table.inquiry-action-table td.col-action .qs-action-cell .qs-icon-btn,
+html body table.inquiry-action-table td.inquiry-action-td .qs-action-cell .qs-icon-btn {
+  flex: 0 0 32px !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+}
